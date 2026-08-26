@@ -91,7 +91,9 @@
     "noMatch": "No matching orders",
     "orderTypeDineIn": "Dine-in",
     "orderTypeTakeaway": "Takeaway",
-    "orderTypeDelivery": "Delivery"
+    "orderTypeDelivery": "Delivery",
+    "toastOpened": "Opened",
+    "toastClosed": "Closed"
   },
   "orderSummary": {
     "header": "🏪 {shopName}",

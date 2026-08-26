@@ -91,7 +91,9 @@
     "noMatch": "Không có đơn phù hợp",
     "orderTypeDineIn": "Ăn tại chỗ",
     "orderTypeTakeaway": "Mang đi",
-    "orderTypeDelivery": "Giao hàng"
+    "orderTypeDelivery": "Giao hàng",
+    "toastOpened": "Đã mở cửa",
+    "toastClosed": "Đã đóng cửa"
   },
   "orderSummary": {
     "header": "🏪 {shopName}",

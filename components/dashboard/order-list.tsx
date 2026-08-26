@@ -10,6 +10,7 @@ import {
   setOrderPaidAmount,
 } from '@/lib/actions'
 import { useToast, ToastView } from './use-toast'
+import { formatPrice } from '@/lib/format'
 
 // 订单与店铺的序列化类型（server component 已把 Decimal/Date 转成基础类型）
 export type OrderItem = {
@@ -31,6 +32,7 @@ export type OrderPlain = {
   note: string | null
   orderType: string | null
   tableNo: string | null
+  createdAt: string
   items: OrderItem[]
 }
 export type ShopPlain = {
@@ -112,6 +114,13 @@ const FILTERS: { value: string; labelKey: string }[] = [
   { value: 'CANCELLED', labelKey: 'statusCancelled' },
 ]
 
+// 订单时间：dd/MM HH:mm（折叠行展示用）
+function formatTime(iso: string): string {
+  const d = new Date(iso)
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${p(d.getDate())}/${p(d.getMonth() + 1)} ${p(d.getHours())}:${p(d.getMinutes())}`
+}
+
 // 订单列表：复制摘要 / 发 Zalo / 推进状态 / 取消 / 设置实收
 export function OrderList({
   orders,
@@ -129,6 +138,11 @@ export function OrderList({
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
   const [query, setQuery] = useState('')
   const { msg, show } = useToast()
+
+  // 已完成订单默认折叠（仅显示订单号+价格+时间），点展开看全貌
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
+  const isFolded = (order: OrderPlain) =>
+    order.status === 'COMPLETED' && (collapsed[order.id] ?? true)
 
   // P1-1 新订单实时性：记当前最大 orderNo，轮询发现更大则刷新 + 提示音
   const maxRef = useRef(0)
@@ -184,7 +198,7 @@ export function OrderList({
         return `- ${i.name} x${i.qty}${detail ? ` (${detail})` : ''}`
       }),
       ...(order.note ? [`${ts('note')}: ${order.note}`] : []),
-      ts('total', { total: Number(order.total).toLocaleString('vi-VN') }),
+      ts('total', { total: formatPrice(Number(order.total)) }),
       ts('thanks'),
     ]
     return lines.join('\n')
@@ -300,6 +314,32 @@ export function OrderList({
             ? order.tableNo
             : t(typeStyle.key)
           : ''
+        const folded = isFolded(order)
+        if (folded) {
+          return (
+            <div
+              key={order.id}
+              className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white px-4 py-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+            >
+              <button
+                onClick={() =>
+                  setCollapsed((prev) => ({ ...prev, [order.id]: false }))
+                }
+                className="flex items-center gap-2 text-left"
+              >
+                <span className="text-xs text-zinc-400">▸</span>
+                <span className="font-medium">{order.displayNo}</span>
+                <span className="text-xs text-zinc-400">
+                  {formatTime(order.createdAt)}
+                </span>
+              </button>
+              <span className="font-medium">
+                {formatPrice(Number(order.total))}đ
+              </span>
+            </div>
+          )
+        }
+
         return (
           <div
             key={order.id}
@@ -308,6 +348,17 @@ export function OrderList({
             <div className="mb-2 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="font-medium">{order.displayNo}</span>
+                {order.status === 'COMPLETED' && (
+                  <button
+                    onClick={() =>
+                      setCollapsed((prev) => ({ ...prev, [order.id]: true }))
+                    }
+                    aria-label="折叠"
+                    className="text-xs text-zinc-400 hover:text-zinc-600"
+                  >
+                    ▾
+                  </button>
+                )}
                 {typeStyle && (
                   <span
                     className={`rounded-full px-2 py-0.5 text-xs font-medium ${typeStyle.badge}`}
@@ -346,7 +397,7 @@ export function OrderList({
                           ...(item.options ?? []).map((o) => o.name),
                           ...(item.extras ?? []).map((e) =>
                             Number(e.price) > 0
-                              ? `${e.name} (+${Number(e.price).toLocaleString('vi-VN')}đ)`
+                              ? `${e.name} (+${formatPrice(Number(e.price))}đ)`
                               : e.name,
                           ),
                         ].join(' · ')}
@@ -365,7 +416,7 @@ export function OrderList({
 
             <div className="mb-3 flex items-center justify-between text-sm">
               <span className="font-medium">
-                {Number(order.total).toLocaleString('vi-VN')}đ
+                {formatPrice(Number(order.total))}đ
               </span>
               <span
                 className={
@@ -378,7 +429,7 @@ export function OrderList({
               >
                 {t(state === 'paid' ? 'paid' : state === 'partial' ? 'partial' : 'unpaid')}
                 {state !== 'paid'
-                  ? ` · ${t('debt')} ${debt.toLocaleString('vi-VN')}đ`
+                  ? ` · ${t('debt')} ${formatPrice(debt)}đ`
                   : ''}
               </span>
             </div>

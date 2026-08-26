@@ -12,6 +12,8 @@ import {
   updateShopSettings,
 } from '@/lib/actions'
 import type { ShopPlain } from './order-list'
+import { useToast, ToastView } from './use-toast'
+import { formatPrice } from '@/lib/format'
 
 // 上传本地图片到 /api/upload（multipart），返回可直访的静态 URL（/uploads/xxx）
 async function uploadImage(file: File): Promise<string> {
@@ -88,11 +90,18 @@ export function SettingsPanel({
   )
   const [saved, setSaved] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const { msg, show } = useToast()
 
-  function run(fn: () => Promise<void>) {
+  function run(fn: () => Promise<void>, okMsg?: string) {
     startTransition(async () => {
-      await fn()
-      router.refresh()
+      try {
+        await fn()
+        if (okMsg) show(okMsg)
+        router.refresh()
+      } catch (e) {
+        console.error('操作失败:', e)
+        show(t('toastError'))
+      }
     })
   }
 
@@ -121,21 +130,27 @@ export function SettingsPanel({
     <section className="flex flex-col gap-4">
       <h2 className="text-lg font-medium">{t('toggleOpen')}</h2>
 
-      {/* 营业开关 */}
+      {/* 营业开关（开=绿 / 关=红，切换有 toast 提示） */}
       <div className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
         <span
-          className={
+          className={`rounded-full px-3 py-1 text-sm font-medium ${
             shop.open
-              ? 'text-green-700 dark:text-green-300'
-              : 'text-zinc-500'
-          }
+              ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
+              : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+          }`}
         >
           {shop.open ? t('open') : t('closed')}
         </span>
         <button
-          onClick={() => run(toggleShopOpen)}
+          onClick={() =>
+            run(toggleShopOpen, shop.open ? t('toastClosed') : t('toastOpened'))
+          }
           disabled={pending}
-          className="rounded-md border border-zinc-300 px-3 py-2 text-sm transition-colors hover:bg-zinc-100 disabled:opacity-60 dark:border-zinc-700 dark:hover:bg-zinc-800"
+          className={`rounded-md px-3 py-2 text-sm transition-colors disabled:opacity-60 ${
+            shop.open
+              ? 'border border-red-300 text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950'
+              : 'bg-green-600 text-white hover:bg-green-700'
+          }`}
         >
           {shop.open ? t('closed') : t('open')}
         </button>
@@ -153,7 +168,7 @@ export function SettingsPanel({
                 <span className="text-lg">{p.emoji}</span>
                 <span className="text-sm font-medium">{p.name}</span>
                 <span className="text-sm text-zinc-500">
-                  {Number(p.price).toLocaleString('vi-VN')}đ
+                  {formatPrice(Number(p.price))}đ
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -256,6 +271,7 @@ export function SettingsPanel({
           {saved ? t('saved') : t('save')}
         </button>
       </form>
+      <ToastView msg={msg} />
     </section>
   )
 }

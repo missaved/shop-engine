@@ -4,6 +4,8 @@ import { useEffect, useState, useTransition } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import { createOrder } from '@/lib/shop-actions'
+import { formatPrice } from '@/lib/format'
+import { LocaleSwitcher } from '@/components/locale-switcher'
 
 // 菜单商品序列化类型（server component 已把 Decimal/可空字段转基础类型）
 export type MenuProduct = {
@@ -139,7 +141,7 @@ export function MenuOrder({
           const detail = [optStr, extraStr].filter(Boolean).join(' ')
           return `- ${p.name} x${qty[p.id]}${detail ? ' (' + detail + ')' : ''}`
         }),
-      `${t('total')}: ${total.toLocaleString('vi-VN')}đ`,
+      `${t('total')}: ${formatPrice(total)}đ`,
     ]
     return lines.join('\n')
   }
@@ -231,12 +233,15 @@ export function MenuOrder({
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-col px-4 pb-32">
-      {/* 店头 */}
+      {/* 店头 + 语言切换（自动切换由 middleware 处理，这里供手动切换） */}
       <div className="flex items-center justify-between py-4">
         <h1 className="text-xl font-semibold">{shopName}</h1>
-        {!open && (
-          <span className="text-sm text-red-600 dark:text-red-400">{t('closed')}</span>
-        )}
+        <div className="flex items-center gap-3">
+          <LocaleSwitcher />
+          {!open && (
+            <span className="text-sm text-red-600 dark:text-red-400">{t('closed')}</span>
+          )}
+        </div>
       </div>
 
       {/* 商品列表（按分类分组） */}
@@ -272,7 +277,7 @@ export function MenuOrder({
                         <p className="mt-0.5 line-clamp-2 text-xs text-zinc-500">{p.desc}</p>
                       )}
                       <div className="mt-1 text-sm font-semibold text-amber-600 dark:text-amber-500">
-                        {Number(p.price).toLocaleString('vi-VN')}đ
+                        {formatPrice(Number(p.price))}đ
                         {p.unit ? ` / ${p.unit}` : ''}
                       </div>
                     </div>
@@ -319,7 +324,7 @@ export function MenuOrder({
                                 : 'rounded-full border border-zinc-300 px-2 py-1 text-xs dark:border-zinc-700'
                             }
                           >
-                            {ex.name} +{Number(ex.price).toLocaleString('vi-VN')}đ
+                            {ex.name} +{formatPrice(Number(ex.price))}đ
                           </button>
                         )
                       })}
@@ -346,11 +351,11 @@ export function MenuOrder({
               {orderType === 'delivery' && minOrderAmount > 0 && subtotal < minOrderAmount ? (
                 <span className="text-[11px] opacity-80">
                   {t('minOrderHint', {
-                    amount: (minOrderAmount - subtotal).toLocaleString('vi-VN'),
+                    amount: formatPrice(minOrderAmount - subtotal),
                   })}
                 </span>
               ) : null}
-              <span className="font-bold">{total.toLocaleString('vi-VN')}đ</span>
+              <span className="font-bold">{formatPrice(total)}đ</span>
             </span>
           </button>
         </div>
@@ -432,7 +437,7 @@ export function MenuOrder({
                           </div>
                         )}
                         <div className="mt-0.5 text-sm font-semibold">
-                          {lineTotal.toLocaleString('vi-VN')}đ
+                          {formatPrice(lineTotal)}đ
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
@@ -559,15 +564,15 @@ export function MenuOrder({
 
               <div className="flex items-center justify-between">
                 <span className="text-sm text-zinc-600 dark:text-zinc-400">
-                  {t('total')}: {total.toLocaleString('vi-VN')}đ
+                  {t('total')}: {formatPrice(total)}đ
                   {fee > 0 && (
                     <span className="text-zinc-400 dark:text-zinc-500">
-                      {' '}({t('deliveryFee')} {fee.toLocaleString('vi-VN')}đ)
+                      {' '}({t('deliveryFee')} {formatPrice(fee)}đ)
                     </span>
                   )}
                   {orderType === 'delivery' && minOrderAmount > 0 && subtotal < minOrderAmount
                     ? ` · ${t('minOrderHint', {
-                        amount: (minOrderAmount - subtotal).toLocaleString('vi-VN'),
+                        amount: formatPrice(minOrderAmount - subtotal),
                       })}`
                     : ''}
                 </span>
@@ -699,7 +704,7 @@ function AddToCartSheet({
                   >
                     {o.name}
                     {Number(o.price) > 0
-                      ? ` +${Number(o.price).toLocaleString('vi-VN')}đ`
+                      ? ` +${formatPrice(Number(o.price))}đ`
                       : ''}
                   </button>
                 )
@@ -734,7 +739,7 @@ function AddToCartSheet({
                         : 'rounded-full border border-zinc-300 px-3 py-1.5 text-xs dark:border-zinc-700'
                     }
                   >
-                    {ex.name} +{Number(ex.price).toLocaleString('vi-VN')}đ
+                    {ex.name} +{formatPrice(Number(ex.price))}đ
                   </button>
                 )
               })}
@@ -763,7 +768,7 @@ function AddToCartSheet({
               +
             </button>
           </div>
-          <div className="text-lg font-bold">{lineTotal.toLocaleString('vi-VN')}đ</div>
+          <div className="text-lg font-bold">{formatPrice(lineTotal)}đ</div>
         </div>
 
         <button
@@ -771,7 +776,7 @@ function AddToCartSheet({
           onClick={() => onAdd(product.id, qty, selExtras, selOptions)}
           className="mt-4 w-full rounded-full bg-amber-500 py-3 font-semibold text-white active:scale-[0.99] dark:bg-amber-500 dark:text-white"
         >
-          {t('addToCart')} · {lineTotal.toLocaleString('vi-VN')}đ
+          {t('addToCart')} · {formatPrice(lineTotal)}đ
         </button>
       </div>
     </div>

@@ -91,7 +91,9 @@
     "noMatch": "无匹配订单",
     "orderTypeDineIn": "堂食",
     "orderTypeTakeaway": "外带",
-    "orderTypeDelivery": "外送"
+    "orderTypeDelivery": "外送",
+    "toastOpened": "已开张",
+    "toastClosed": "已打烊"
   },
   "orderSummary": {
     "header": "🏪 {shopName}",

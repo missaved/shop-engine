@@ -6,6 +6,7 @@ import { getShopBySlug } from '@/lib/tenant'
 import { isRateLimited, recordFailure } from '@/lib/rate-limit'
 import { Link } from '@/i18n/navigation'
 import { DeleteMyData } from '@/components/shop/delete-my-data'
+import { formatPrice } from '@/lib/format'
 
 // 订单状态 → 本地化 key（track 段）
 const STATUS_KEY: Record<string, string> = {
@@ -141,7 +142,7 @@ export default async function TrackOrderPage({
 
           <div className="flex items-center justify-between border-t border-zinc-200 pt-2 dark:border-zinc-700">
             <span className="text-sm font-medium">
-              {t('total')}: {Number(order.total).toLocaleString('vi-VN')}đ
+              {t('total')}: {formatPrice(Number(order.total))}đ
             </span>
             <span
               className={

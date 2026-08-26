@@ -2,6 +2,7 @@ import { getTranslations } from 'next-intl/server'
 import { requireUser } from '@/lib/dal'
 import { prisma } from '@/lib/prisma'
 import { signOut } from '@/auth'
+import { formatPrice } from '@/lib/format'
 import { OrderList } from '@/components/dashboard/order-list'
 import type { OrderPlain, ShopPlain } from '@/components/dashboard/order-list'
 import { SettingsPanel } from '@/components/dashboard/settings-panel'
@@ -61,6 +62,7 @@ export default async function DashboardPage() {
     note: o.note,
     orderType: (o.config as { orderType?: string } | null)?.orderType ?? null,
     tableNo: (o.config as { tableNo?: string } | null)?.tableNo ?? null,
+    createdAt: o.createdAt.toISOString(),
     items: o.items as unknown as OrderPlain['items'],
   }))
 
@@ -151,16 +153,6 @@ export default async function DashboardPage() {
           <h1 className="text-2xl font-semibold">{shop.name}</h1>
           <p className="text-sm text-zinc-500">{t('title')}</p>
         </div>
-        <form
-          action={async () => {
-            'use server'
-            await signOut({ redirectTo: '/login' })
-          }}
-        >
-          <button className="rounded-md border border-zinc-300 px-3 py-2 text-sm transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800">
-            {t('logout')}
-          </button>
-        </form>
       </div>
 
       {/* P0-6 锚点导航：订单 / 设置（提升设置区可发现性） */}
@@ -187,7 +179,7 @@ export default async function DashboardPage() {
         </div>
         <div className="rounded-xl border border-zinc-200 bg-white p-3 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
           <p className="text-2xl font-semibold text-amber-600 dark:text-amber-500">
-            {todayRevenue.toLocaleString('vi-VN')}
+            {formatPrice(todayRevenue)}
           </p>
           <p className="text-xs text-zinc-500">{t('todayRevenue')}</p>
         </div>
@@ -221,6 +213,19 @@ export default async function DashboardPage() {
       <div id="settings" className="scroll-mt-4">
         <SettingsPanel products={productsPlain} shop={shopPlain} />
       </div>
+
+      {/* 退出登录移到底部（防误碰），弱化样式 */}
+      <form
+        action={async () => {
+          'use server'
+          await signOut({ redirectTo: '/login' })
+        }}
+        className="flex justify-center pt-2"
+      >
+        <button className="rounded-md border border-zinc-300 px-4 py-2 text-sm text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-700 dark:border-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-300">
+          {t('logout')}
+        </button>
+      </form>
     </main>
   )
 }

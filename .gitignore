@@ -44,3 +44,10 @@ next-env.d.ts
 /generated/
 
 /app/generated/prisma
+
+# 用户上传的菜品图片（不进 git，种子图片除外）
+/public/uploads/
+
+# python 缓存（Playwright 验收脚本编译产物）
+__pycache__/
+*.pyc

@@ -1,0 +1,17 @@
+{
+  "name": "shop-engine",
+  "short_name": "Shop",
+  "description": "轻量开单引擎 · 一家店一个租户",
+  "start_url": "/vi",
+  "display": "standalone",
+  "background_color": "#18181b",
+  "theme_color": "#18181b",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

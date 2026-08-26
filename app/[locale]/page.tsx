@@ -1,7 +1,8 @@
 import { useTranslations } from 'next-intl'
 import { LocaleSwitcher } from '@/components/locale-switcher'
+import { Link } from '@/i18n/navigation'
 
-// 落地页（骨架阶段）：验证三语路由 + 语言切换
+// 落地页：入口（下单界面 + 老板后台）+ 三语切换
 export default function HomePage() {
   const t = useTranslations('home')
 
@@ -14,6 +15,20 @@ export default function HomePage() {
       <p className="max-w-md text-sm text-zinc-500 dark:text-zinc-500">
         {t('tagline')}
       </p>
+      <div className="flex gap-3">
+        <Link
+          href="/s/demo-pho"
+          className="rounded-md bg-amber-500 px-4 py-2 text-sm text-white transition-colors hover:bg-amber-600 dark:bg-amber-500 dark:text-white"
+        >
+          {t('shopDemo')}
+        </Link>
+        <Link
+          href="/login"
+          className="rounded-md border border-zinc-300 px-4 py-2 text-sm transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
+        >
+          {t('bossLogin')}
+        </Link>
+      </div>
       <LocaleSwitcher />
     </main>
   )

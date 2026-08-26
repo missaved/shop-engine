@@ -13,7 +13,11 @@ export async function getShopBySlug(slug: string) {
   return shop
 }
 
-// 校验某行确属当前租户，防止越权读他人店铺数据
-export function assertShopOwned(shopId: string, row: { shopId: string } | null): void {
+// 校验某行确属当前租户，防止越权读他人店铺数据；通过则返回非空行（供调用侧收窄类型）
+export function assertShopOwned<T extends { shopId: string }>(
+  shopId: string,
+  row: T | null,
+): T {
   if (!row || row.shopId !== shopId) notFound()
+  return row
 }

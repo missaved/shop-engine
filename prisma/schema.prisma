@@ -1,0 +1,113 @@
+// shop-engine 数据模型（阶段 1 骨架）
+// 设计依据：plans/01-engine.md D 节（极简通用模型）+ DIRECTION.md 优先级 1
+// 约定：垂直差异一律进 jsonb（config），加类目 = 加配置，不重写表
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// 垂直赛道：开店时选一个（一家店一个赛道）
+enum Vertical {
+  FOOD // 咖啡/餐饮（阶段 1 客户菜单页）
+  MOTO // 摩托维修（引擎原型）
+  SALON // 美容/美甲/美睫
+  PET // 宠物店
+  LAUNDRY // 洗衣/洗鞋
+}
+
+// 订单状态流：各垂直可在 config 里扩展，此处为基础公共状态
+enum OrderStatus {
+  PENDING // 已下单 / 待处理
+  IN_PROGRESS // 服务中 / 制作中
+  READY // 待取 / 待接走
+  COMPLETED // 已结单 / 已取
+  CANCELLED // 已取消
+}
+
+enum ReminderStatus {
+  PENDING // 待触发（到点冒泡）
+  SENT // 已发送
+  DISMISSED // 已忽略
+}
+
+// 店铺 = 租户（一次部署 + shopId 隔离）
+model Shop {
+  id        String   @id @default(cuid())
+  slug      String   @unique // 对外访问的短标识，如 demo-pho
+  name      String
+  vertical  Vertical
+  phone     String? // Zalo 号码
+  address   String?
+  open      Boolean  @default(true) // 营业开关（老板侧一页后台可切换）
+  config    Json? // 垂直配置：营业时间 / 起送价 / 提醒模板 / 预设大按钮等
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  products  Product[]
+  orders    Order[]
+  reminders Reminder[]
+}
+
+// 商品 / 服务项（快捷开单大按钮即预置 product）
+model Product {
+  id        String  @id @default(cuid())
+  shopId    String
+  shop      Shop    @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  name      String // 主文案（一般取越南语），多语可放 config.nameI18n
+  price     Decimal @db.Decimal(12, 2)
+  unit      String? // 份 / 次 / 公斤 / 件
+  category  String? // 分类（用于菜单分组）
+  sortOrder Int     @default(0)
+  active    Boolean @default(true) // 下架 = false
+  config    Json? // 垂直专属：周期(21天) / 时长 / 图片URL等
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([shopId, active])
+}
+
+// 订单（统一模型，items/状态/垂直字段都在这里）
+model Order {
+  id        String      @id @default(cuid())
+  orderNo   Int // 店内自增展示号（人工可读）
+  shopId    String
+  shop      Shop        @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  status    OrderStatus @default(PENDING)
+  items     Json // [{productId?, name, qty, price}] 开单时快照，防改价后追溯失真
+  total     Decimal     @db.Decimal(12, 2)
+  paid      Boolean     @default(false)
+  customerName  String?
+  customerPhone String?
+  note      String?
+  config    Json? // 垂直专属：预约时间 / 寄养天数 / 公斤数 / 标签码 / 次卡扣减等
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  reminders Reminder[]
+
+  @@unique([shopId, orderNo])
+  @@index([shopId, createdAt])
+}
+
+// 半自动到点提醒（到点冒泡，老板一键复制发 Zalo，0 API）
+model Reminder {
+  id          String         @id @default(cuid())
+  shopId      String
+  shop        Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  orderId     String?
+  order       Order?         @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  templateKey String // 如 FOOD_READY / SALON_BOOKING_2H / PET_DONE / LAUNDRY_READY
+  dueAt       DateTime
+  status      ReminderStatus @default(PENDING)
+  sentVia     String? // 预留：zalomsg / whatsapp / line
+  payload     Json? // 模板变量（客户名/宠物名/订单号等）
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([shopId, dueAt, status])
+}

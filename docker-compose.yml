@@ -1,0 +1,21 @@
+# shop-engine 开发数据库（独立实例，不复用 medusa-db）
+# 用法：docker-compose up -d  → 起在宿主 127.0.0.1:5433
+version: "3.3"
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: shop-engine-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: shop_engine
+      POSTGRES_PASSWORD: shop_engine_dev
+      POSTGRES_DB: shop_engine
+    ports:
+      # 宿主 5433 → 容器 5432（本机已有 postgres 占用 5432，故用 5433）
+      - "127.0.0.1:5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

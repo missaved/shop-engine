@@ -49,6 +49,7 @@
     "extrasHint": "One per line: Name + price (e.g. Extra beef 20000)",
     "optionGroups": "Option groups (spicy, herbs...)",
     "optionGroupsHint": "One group per line: Name*: Opt 1, Opt 2|price (e.g. Spicy*: No spicy, Mild)",
+    "preview": "Preview",
     "uploading": "Uploading…",
     "nameZh": "Chinese name",
     "nameEn": "English name",

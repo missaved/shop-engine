@@ -48,6 +48,48 @@ function serializeOptionGroups(
     .join('\n')
 }
 
+// 加料文本 → 预览数组（与 actions.ts parseExtras 同规则，客户端预览用）
+function previewExtras(text: string): { name: string; price: number }[] {
+  return text
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const m = line.match(/^(.*?)\s+(\d+)$/)
+      return m ? { name: m[1].trim(), price: Number(m[2]) } : { name: line, price: 0 }
+    })
+    .filter((e) => e.name)
+}
+
+// 预置单位 / 分类 / 图标选项（下拉建议，仍可自由输入自定义值）
+const UNIT_OPTIONS = ['tô', 'ly', 'phần', 'đĩa', 'chai', 'hộp', 'xiên', 'cái', 'ổ', 'kg']
+const CATEGORY_OPTIONS = [
+  'Phở',
+  'Đồ uống',
+  'Cơm',
+  'Bún',
+  'Món chính',
+  'Khai vị',
+  'Tráng miệng',
+  'Ăn vặt',
+]
+const EMOJI_OPTIONS = [
+  '🍜',
+  '🍚',
+  '🍲',
+  '🍛',
+  '🍹',
+  '☕',
+  '🥤',
+  '🍺',
+  '🍗',
+  '🥩',
+  '🍤',
+  '🥗',
+  '🍰',
+  '🍮',
+]
+
 export type ProductPlain = {
   id: string
   name: string
@@ -371,6 +413,7 @@ function AddProductForm({ onAdded }: { onAdded: () => void }) {
             value={unit}
             onChange={(e) => setUnit(e.target.value)}
             placeholder="tô / ly / ổ"
+            list="unit-options-add"
             className="rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
           />
         </label>
@@ -381,6 +424,7 @@ function AddProductForm({ onAdded }: { onAdded: () => void }) {
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             placeholder="Phở / Đồ uống"
+            list="category-options-add"
             className="rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
           />
         </label>
@@ -391,10 +435,26 @@ function AddProductForm({ onAdded }: { onAdded: () => void }) {
             value={emoji}
             onChange={(e) => setEmoji(e.target.value)}
             placeholder="🍜"
+            list="emoji-options-add"
             className="rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
           />
         </label>
       </div>
+      <datalist id="unit-options-add">
+        {UNIT_OPTIONS.map((o) => (
+          <option key={o} value={o} />
+        ))}
+      </datalist>
+      <datalist id="category-options-add">
+        {CATEGORY_OPTIONS.map((o) => (
+          <option key={o} value={o} />
+        ))}
+      </datalist>
+      <datalist id="emoji-options-add">
+        {EMOJI_OPTIONS.map((o) => (
+          <option key={o} value={o} />
+        ))}
+      </datalist>
       <label className="flex flex-col gap-1 text-sm">
         <span className="text-zinc-600 dark:text-zinc-400">{t('desc')}</span>
         <input
@@ -446,6 +506,45 @@ function AddProductForm({ onAdded }: { onAdded: () => void }) {
           className="rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
         />
       </label>
+
+      {/* 预览：客户视角的商品卡片（填写名称后实时显示，保存前确认效果） */}
+      {name.trim() && (
+        <div className="rounded-lg border border-dashed border-amber-300 bg-amber-50/50 p-3 dark:border-amber-800 dark:bg-amber-950/20">
+          <p className="mb-2 text-xs font-semibold text-zinc-500">{t('preview')}</p>
+          <div className="flex items-center gap-3">
+            {image ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={image} alt="" className="h-14 w-14 rounded-lg object-cover" />
+            ) : (
+              <span className="flex h-14 w-14 items-center justify-center rounded-lg bg-zinc-100 text-2xl dark:bg-zinc-800">
+                {emoji || '🍽️'}
+              </span>
+            )}
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-medium">{name}</div>
+              {desc && <p className="line-clamp-1 text-xs text-zinc-500">{desc}</p>}
+              <div className="text-sm font-semibold text-amber-600 dark:text-amber-500">
+                {formatPrice(Number(price) || 0)}đ
+                {unit ? ` / ${unit}` : ''}
+              </div>
+            </div>
+          </div>
+          {previewExtras(extrasText).length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {previewExtras(extrasText).map((ex, i) => (
+                <span
+                  key={i}
+                  className="rounded-full border border-zinc-200 bg-white px-2 py-0.5 text-xs dark:border-zinc-700 dark:bg-zinc-900"
+                >
+                  {ex.name}
+                  {ex.price > 0 ? ` +${formatPrice(ex.price)}đ` : ''}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       <button
         type="submit"
         disabled={pending}
@@ -558,6 +657,7 @@ function EditProductForm({
             type="text"
             value={unit}
             onChange={(e) => setUnit(e.target.value)}
+            list="unit-options-edit"
             className="rounded-md border border-zinc-300 px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-800"
           />
         </label>
@@ -568,6 +668,7 @@ function EditProductForm({
             value={category}
             onChange={(e) => setCategory(e.target.value)}
             placeholder="Phở / Đồ uống"
+            list="category-options-edit"
             className="rounded-md border border-zinc-300 px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-800"
           />
         </label>
@@ -577,10 +678,26 @@ function EditProductForm({
             type="text"
             value={emoji}
             onChange={(e) => setEmoji(e.target.value)}
+            list="emoji-options-edit"
             className="rounded-md border border-zinc-300 px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-800"
           />
         </label>
       </div>
+      <datalist id="unit-options-edit">
+        {UNIT_OPTIONS.map((o) => (
+          <option key={o} value={o} />
+        ))}
+      </datalist>
+      <datalist id="category-options-edit">
+        {CATEGORY_OPTIONS.map((o) => (
+          <option key={o} value={o} />
+        ))}
+      </datalist>
+      <datalist id="emoji-options-edit">
+        {EMOJI_OPTIONS.map((o) => (
+          <option key={o} value={o} />
+        ))}
+      </datalist>
       <label className="flex flex-col gap-1 text-xs">
         <span className="text-zinc-500">{t('image')}</span>
         <input
@@ -677,6 +794,43 @@ function EditProductForm({
           className="rounded-md border border-zinc-300 px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-800"
         />
       </label>
+
+      {/* 预览：客户视角的商品卡片（保存前确认效果） */}
+      <div className="rounded-lg border border-dashed border-amber-300 bg-amber-50/50 p-2 dark:border-amber-800 dark:bg-amber-950/20">
+        <p className="mb-1.5 text-xs font-semibold text-zinc-500">{t('preview')}</p>
+        <div className="flex items-center gap-2">
+          {image ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={image} alt="" className="h-12 w-12 rounded-lg object-cover" />
+          ) : (
+            <span className="flex h-12 w-12 items-center justify-center rounded-lg bg-zinc-100 text-xl dark:bg-zinc-800">
+              {emoji || '🍽️'}
+            </span>
+          )}
+          <div className="min-w-0 flex-1">
+            <div className="text-sm font-medium">{name}</div>
+            {descVi && <p className="line-clamp-1 text-xs text-zinc-500">{descVi}</p>}
+            <div className="text-sm font-semibold text-amber-600 dark:text-amber-500">
+              {formatPrice(Number(price) || 0)}đ
+              {unit ? ` / ${unit}` : ''}
+            </div>
+          </div>
+        </div>
+        {previewExtras(extrasText).length > 0 && (
+          <div className="mt-1.5 flex flex-wrap gap-1">
+            {previewExtras(extrasText).map((ex, i) => (
+              <span
+                key={i}
+                className="rounded-full border border-zinc-200 bg-white px-2 py-0.5 text-xs dark:border-zinc-700 dark:bg-zinc-900"
+              >
+                {ex.name}
+                {ex.price > 0 ? ` +${formatPrice(ex.price)}đ` : ''}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="flex gap-2">
         <button
           type="submit"

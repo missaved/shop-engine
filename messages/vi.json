@@ -49,6 +49,7 @@
     "extrasHint": "Mỗi dòng một món: Tên + giá (vd: Thêm bò 20000)",
     "optionGroups": "Nhóm tùy chọn (cay, hành ngò...)",
     "optionGroupsHint": "Mỗi dòng một nhóm: Tên*: Chọn 1, Chọn 2|giá (vd: Cay*: Không cay, Ít cay)",
+    "preview": "Xem trước",
     "uploading": "Đang tải lên…",
     "nameZh": "Tên tiếng Trung",
     "nameEn": "Tên tiếng Anh",

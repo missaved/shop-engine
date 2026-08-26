@@ -151,10 +151,23 @@ export function OrderList({
     maxRef.current,
   )
 
+  // 持久化 AudioContext：移动端 H5 需在用户手势后 resume 才能播提示音
+  const audioCtxRef = useRef<AudioContext | null>(null)
+
+  function unlockAudio() {
+    try {
+      if (!audioCtxRef.current) audioCtxRef.current = new AudioContext()
+      void audioCtxRef.current.resume()
+    } catch {
+      // 不支持 Web Audio 时静默
+    }
+  }
+
   function playBeep() {
     try {
-      const ctx = new AudioContext()
-      void ctx.resume()
+      unlockAudio()
+      const ctx = audioCtxRef.current
+      if (!ctx) return
       const osc = ctx.createOscillator()
       const gain = ctx.createGain()
       osc.type = 'sine'
@@ -163,9 +176,8 @@ export function OrderList({
       osc.connect(gain).connect(ctx.destination)
       osc.start()
       osc.stop(ctx.currentTime + 0.25)
-      osc.onended = () => void ctx.close()
     } catch {
-      // 音频不可用（如无用户手势/不支持）时静默，不影响刷新
+      // 音频不可用时静默，不影响刷新
     }
   }
 
@@ -184,6 +196,17 @@ export function OrderList({
     }, 20000)
     return () => clearInterval(id)
   }, [router])
+
+  // 移动端 H5：首次触摸/点击解锁音频，之后轮询发现新单才能播提示音
+  useEffect(() => {
+    const unlock = () => unlockAudio()
+    document.addEventListener('pointerdown', unlock, { once: true })
+    document.addEventListener('touchstart', unlock, { once: true })
+    return () => {
+      document.removeEventListener('pointerdown', unlock)
+      document.removeEventListener('touchstart', unlock)
+    }
+  }, [])
 
   // 生成发给客户的订单摘要（三语模板 + items 拼接）
   function buildSummary(order: OrderPlain): string {

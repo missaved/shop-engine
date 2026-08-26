@@ -35,6 +35,13 @@ function genIdempotencyKey(): string {
     : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
 }
 
+// 读取客户手机号 cookie（下单后记住，下次访问自动预填，免手动输入）
+function readPhoneCookie(): string {
+  if (typeof document === 'undefined') return ''
+  const m = document.cookie.match(/(?:^|;\s*)customer_phone=([^;]*)/)
+  return m ? decodeURIComponent(m[1]) : ''
+}
+
 // 客户侧点单表单：逐项加减数量 + 加料 + 点单类型 + 手机号 + 一键下单
 export function MenuOrder({
   slug,
@@ -57,7 +64,7 @@ export function MenuOrder({
   const [orderType, setOrderType] = useState<OrderType>('dine_in')
   const [tableNo, setTableNo] = useState('')
   const [address, setAddress] = useState('')
-  const [phone, setPhone] = useState('')
+  const [phone, setPhone] = useState(() => readPhoneCookie())
   const [note, setNote] = useState('')
   const [done, setDone] = useState<{ orderNo: number; displayNo: string } | null>(
     null,
@@ -181,6 +188,10 @@ export function MenuOrder({
           note,
           idempotencyKey,
         })
+        // 记住手机号 cookie（客户下次访问菜单/查单自动预填）
+        if (phone.trim()) {
+          document.cookie = `customer_phone=${encodeURIComponent(phone.trim())}; max-age=31536000; path=/; SameSite=Lax`
+        }
         setDone(res)
         setIdempotencyKey(genIdempotencyKey()) // 下一单换新键
       } catch (err) {
@@ -264,14 +275,21 @@ export function MenuOrder({
                       <img
                         src={p.image}
                         alt={p.name}
-                        className="h-20 w-20 shrink-0 rounded-xl object-cover"
+                        onClick={() => setActiveProduct(p)}
+                        className="h-20 w-20 shrink-0 cursor-pointer rounded-xl object-cover"
                       />
                     ) : (
-                      <span className="flex h-20 w-20 shrink-0 items-center justify-center rounded-xl bg-zinc-100 text-3xl dark:bg-zinc-800">
+                      <span
+                        onClick={() => setActiveProduct(p)}
+                        className="flex h-20 w-20 shrink-0 cursor-pointer items-center justify-center rounded-xl bg-zinc-100 text-3xl dark:bg-zinc-800"
+                      >
                         {p.emoji}
                       </span>
                     )}
-                    <div className="min-w-0 flex-1">
+                    <div
+                      onClick={() => setActiveProduct(p)}
+                      className="min-w-0 flex-1 cursor-pointer"
+                    >
                       <div className="text-sm font-medium">{p.name}</div>
                       {p.desc && (
                         <p className="mt-0.5 line-clamp-2 text-xs text-zinc-500">{p.desc}</p>

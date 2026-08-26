@@ -49,6 +49,7 @@
     "extrasHint": "每行一项：名称 + 价格（如：加肉 20000）",
     "optionGroups": "规格组（辣度/葱花香菜…）",
     "optionGroupsHint": "每行一组：组名*: 选项1, 选项2|加价（如：辣度*: 不辣, 微辣）",
+    "preview": "预览",
     "uploading": "上传中…",
     "nameZh": "中文名",
     "nameEn": "英文名",

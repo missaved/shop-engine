@@ -68,6 +68,14 @@ export default async function TrackOrderPage({
     else if (paid >= total) payState = 'paid'
   }
 
+  // 订单类型/桌号/地址（存 order.config，展示用）
+  const orderCfg = (order?.config as {
+    orderType?: string
+    tableNo?: string
+    address?: string
+  } | null) ?? {}
+  const orderType = orderCfg.orderType ?? 'dine_in'
+
   return (
     <main className="mx-auto flex w-full max-w-md flex-col gap-4 px-6 py-8">
       <h1 className="text-2xl font-semibold">{t('title')}</h1>
@@ -117,27 +125,52 @@ export default async function TrackOrderPage({
             </span>
           </div>
 
+          {/* 订单类型徽章 + 桌号（堂食）/ 地址（外送） */}
+          <div className="flex flex-wrap items-center gap-2 text-sm">
+            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+              {orderType === 'dine_in' ? '🪑 ' : orderType === 'takeaway' ? '🛍️ ' : '🛵 '}
+              {t(orderType === 'dine_in' ? 'dineIn' : orderType === 'takeaway' ? 'takeaway' : 'delivery')}
+            </span>
+            {orderType === 'dine_in' && orderCfg.tableNo && (
+              <span className="text-zinc-600 dark:text-zinc-400">
+                {t('tableNo')}: {orderCfg.tableNo}
+              </span>
+            )}
+            {orderType === 'delivery' && orderCfg.address && (
+              <span className="text-zinc-600 dark:text-zinc-400">
+                {t('address')}: {orderCfg.address}
+              </span>
+            )}
+          </div>
+
           <ul className="text-sm text-zinc-600 dark:text-zinc-400">
             {(order.items as unknown as {
               name: string
               qty: number
+              price: number
               extras?: { name: string; price: number | string }[]
               options?: { group: string; name: string; price: number | string }[]
-            }[]).map((it, idx) => (
-              <li key={idx} className="flex justify-between">
-                <span className="flex flex-col">
-                  <span>{it.name} ×{it.qty}</span>
-                  {((it.options?.length ?? 0) > 0 || (it.extras?.length ?? 0) > 0) && (
-                    <span className="text-xs text-zinc-400 dark:text-zinc-500">
-                      {[
-                        ...(it.options ?? []).map((o) => o.name),
-                        ...(it.extras ?? []).map((e) => e.name),
-                      ].join(' · ')}
-                    </span>
-                  )}
-                </span>
-              </li>
-            ))}
+            }[]).map((it, idx) => {
+              const extrasSum = (it.extras ?? []).reduce((s, e) => s + Number(e.price ?? 0), 0)
+              const optionsSum = (it.options ?? []).reduce((s, o) => s + Number(o.price ?? 0), 0)
+              const lineTotal = (Number(it.price ?? 0) + extrasSum + optionsSum) * it.qty
+              return (
+                <li key={idx} className="flex justify-between gap-3">
+                  <span className="flex flex-col">
+                    <span>{it.name} ×{it.qty}</span>
+                    {((it.options?.length ?? 0) > 0 || (it.extras?.length ?? 0) > 0) && (
+                      <span className="text-xs text-zinc-400 dark:text-zinc-500">
+                        {[
+                          ...(it.options ?? []).map((o) => o.name),
+                          ...(it.extras ?? []).map((e) => e.name),
+                        ].join(' · ')}
+                      </span>
+                    )}
+                  </span>
+                  <span className="text-zinc-700 dark:text-zinc-300">{formatPrice(lineTotal)}đ</span>
+                </li>
+              )
+            })}
           </ul>
 
           <div className="flex items-center justify-between border-t border-zinc-200 pt-2 dark:border-zinc-700">

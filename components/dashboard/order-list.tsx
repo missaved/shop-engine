@@ -4,9 +4,12 @@ import { useEffect, useRef, useState, useTransition } from 'react'
 import { useTranslations } from 'next-intl'
 import { useRouter } from '@/i18n/navigation'
 import {
+  addItemsToOrder,
   advanceOrderStatus,
   cancelOrder,
   getLatestOrderNo,
+  getLatestCallTs,
+  removeItemFromOrder,
   setOrderPaidAmount,
 } from '@/lib/actions'
 import { useToast, ToastView } from './use-toast'
@@ -32,6 +35,7 @@ export type OrderPlain = {
   note: string | null
   orderType: string | null
   tableNo: string | null
+  address: string | null
   createdAt: string
   items: OrderItem[]
 }
@@ -40,7 +44,20 @@ export type ShopPlain = {
   name: string
   phone: string | null
   open: boolean
-  config: { openHours?: string; minOrderAmount?: number; deliveryFee?: number } | null
+  config: {
+    openHours?: string
+    minOrderAmount?: number
+    deliveryFee?: number
+    packingFee?: number
+    deliveryArea?: string
+  } | null
+}
+// 加菜面板可选商品（id/name/price/active 够用，ProductPlain 满足此结构）
+export type AddableProduct = {
+  id: string
+  name: string
+  price: string
+  active: boolean
 }
 
 // 支付三态：0=未付，0<实收<total=部分付，≥total=已付
@@ -125,9 +142,11 @@ function formatTime(iso: string): string {
 export function OrderList({
   orders,
   shop,
+  products,
 }: {
   orders: OrderPlain[]
   shop: ShopPlain
+  products: AddableProduct[]
 }) {
   const t = useTranslations('dashboard')
   const ts = useTranslations('orderSummary')
@@ -137,6 +156,10 @@ export function OrderList({
   const [pending, startTransition] = useTransition()
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
   const [query, setQuery] = useState('')
+  // 加菜面板状态（一次只展开一个订单；商品/数量全局共享，展开时重置）
+  const [addOpenId, setAddOpenId] = useState<string | null>(null)
+  const [addProductId, setAddProductId] = useState('')
+  const [addQty, setAddQty] = useState('1')
   const { msg, show } = useToast()
 
   // 已完成订单默认折叠（仅显示订单号+价格+时间），点展开看全貌
@@ -150,6 +173,8 @@ export function OrderList({
     (m, o) => Math.max(m, o.orderNo),
     maxRef.current,
   )
+  // 呼叫服务员实时性：记最新 CALL_WAITER 提醒时间戳（轮询发现变化则刷新 + 提示音）
+  const callTsRef = useRef(0)
 
   // 持久化 AudioContext：移动端 H5 需在用户手势后 resume 才能播提示音
   const audioCtxRef = useRef<AudioContext | null>(null)
@@ -187,6 +212,12 @@ export function OrderList({
         const latest = await getLatestOrderNo()
         if (latest > maxRef.current) {
           maxRef.current = latest
+          playBeep()
+          router.refresh()
+        }
+        const latestCall = await getLatestCallTs()
+        if (latestCall > callTsRef.current) {
+          callTsRef.current = latestCall
           playBeep()
           router.refresh()
         }
@@ -405,6 +436,12 @@ export function OrderList({
               </p>
             ) : null}
 
+            {order.orderType === 'delivery' && order.address ? (
+              <p className="mb-1 text-sm text-zinc-600 dark:text-zinc-400">
+                🛵 {t('address')}: {order.address}
+              </p>
+            ) : null}
+
             <ul className="mb-2 text-sm">
               {order.items.map((item, idx) => (
                 <li
@@ -527,6 +564,18 @@ export function OrderList({
                   {t('cancelOrder')}
                 </button>
               )}
+              {!['COMPLETED', 'CANCELLED'].includes(order.status) && (
+                <button
+                  onClick={() => {
+                    setAddOpenId(addOpenId === order.id ? null : order.id)
+                    setAddProductId('')
+                    setAddQty('1')
+                  }}
+                  className="flex-1 rounded-md border border-amber-300 px-3 py-2 text-sm text-amber-700 transition-colors hover:bg-amber-50 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-950"
+                >
+                  {addOpenId === order.id ? '×' : t('addItem')}
+                </button>
+              )}
               <button
                 onClick={() => copySummary(order)}
                 className="flex-1 rounded-md border border-zinc-300 px-3 py-2 text-sm transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
@@ -540,6 +589,89 @@ export function OrderList({
                 {t('sendZalo')}
               </button>
             </div>
+
+            {/* 第 3 批-12 加菜面板：当前商品（可删）+ 选商品加菜 */}
+            {addOpenId === order.id && (
+              <div className="mt-3 flex flex-col gap-2 rounded-lg border border-dashed border-amber-300 bg-amber-50/50 p-3 dark:border-amber-700 dark:bg-amber-950/20">
+                <div className="text-xs font-semibold text-zinc-500">
+                  {t('items')}
+                </div>
+                {order.items.length === 0 && (
+                  <p className="text-xs text-zinc-400">{t('empty')}</p>
+                )}
+                {order.items.map((item, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center justify-between text-sm"
+                  >
+                    <span className="text-zinc-600 dark:text-zinc-400">
+                      {item.name} ×{item.qty}
+                    </span>
+                    <button
+                      onClick={() =>
+                        run(
+                          () =>
+                            removeItemFromOrder({
+                              orderId: order.id,
+                              index: idx,
+                            }),
+                          t('toastUpdated'),
+                        )
+                      }
+                      disabled={pending}
+                      className="rounded-md border border-zinc-300 px-2 py-0.5 text-xs text-zinc-500 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                    >
+                      {t('removeItem')}
+                    </button>
+                  </div>
+                ))}
+                <div className="mt-1 flex items-center gap-2">
+                  <select
+                    value={addProductId}
+                    onChange={(e) => setAddProductId(e.target.value)}
+                    className="min-w-0 flex-1 rounded-md border border-zinc-300 px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-800"
+                  >
+                    <option value="">{t('addItem')}…</option>
+                    {products
+                      .filter((p) => p.active)
+                      .map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name} · {formatPrice(Number(p.price))}đ
+                        </option>
+                      ))}
+                  </select>
+                  <input
+                    type="number"
+                    min={1}
+                    value={addQty}
+                    onChange={(e) => setAddQty(e.target.value)}
+                    className="w-16 rounded-md border border-zinc-300 px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-800"
+                  />
+                  <button
+                    onClick={() => {
+                      if (!addProductId) return
+                      run(
+                        () =>
+                          addItemsToOrder({
+                            orderId: order.id,
+                            items: [
+                              {
+                                productId: addProductId,
+                                qty: Number(addQty) || 1,
+                              },
+                            ],
+                          }),
+                        t('toastUpdated'),
+                      )
+                    }}
+                    disabled={pending || !addProductId}
+                    className="rounded-md bg-amber-500 px-3 py-1.5 text-sm text-white transition-colors hover:bg-amber-600 disabled:opacity-60 dark:bg-amber-500 dark:text-white"
+                  >
+                    {t('add')}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )
       })}

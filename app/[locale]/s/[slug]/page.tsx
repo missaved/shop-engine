@@ -30,6 +30,7 @@ export default async function ShopMenuPage({
         required?: boolean
         options: { name: string; price?: number }[]
       }[]
+      bestseller?: boolean
     } | null
     return {
       id: p.id,
@@ -52,6 +53,7 @@ export default async function ShopMenuPage({
           price: (o.price ?? 0).toString(),
         })),
       })),
+      bestseller: cfg?.bestseller ?? false,
     }
   })
 
@@ -61,6 +63,11 @@ export default async function ShopMenuPage({
   const deliveryFee = Number(
     (shop.config as { deliveryFee?: number } | null)?.deliveryFee ?? 0,
   )
+  const packingFee = Number(
+    (shop.config as { packingFee?: number } | null)?.packingFee ?? 0,
+  )
+  const deliveryArea =
+    (shop.config as { deliveryArea?: string } | null)?.deliveryArea ?? ''
   return (
     <MenuOrder
       slug={slug}
@@ -68,6 +75,8 @@ export default async function ShopMenuPage({
       open={shop.open}
       minOrderAmount={minOrderAmount}
       deliveryFee={deliveryFee}
+      packingFee={packingFee}
+      deliveryArea={deliveryArea}
       products={plain}
     />
   )

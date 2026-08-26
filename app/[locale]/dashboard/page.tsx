@@ -7,6 +7,7 @@ import { OrderList } from '@/components/dashboard/order-list'
 import type { OrderPlain, ShopPlain } from '@/components/dashboard/order-list'
 import { SettingsPanel } from '@/components/dashboard/settings-panel'
 import type { ProductPlain } from '@/components/dashboard/settings-panel'
+import { RevenueCard } from '@/components/dashboard/revenue-card'
 import { ReminderList } from '@/components/dashboard/reminder-list'
 import type { ReminderPlain } from '@/components/dashboard/reminder-list'
 
@@ -62,6 +63,7 @@ export default async function DashboardPage() {
     note: o.note,
     orderType: (o.config as { orderType?: string } | null)?.orderType ?? null,
     tableNo: (o.config as { tableNo?: string } | null)?.tableNo ?? null,
+    address: (o.config as { address?: string } | null)?.address ?? null,
     createdAt: o.createdAt.toISOString(),
     items: o.items as unknown as OrderPlain['items'],
   }))
@@ -78,6 +80,7 @@ export default async function DashboardPage() {
         required?: boolean
         options: { name: string; price?: number }[]
       }[]
+      bestseller?: boolean
     } | null
     return {
       id: p.id,
@@ -105,6 +108,7 @@ export default async function DashboardPage() {
           price: (o.price ?? 0).toString(),
         })),
       })),
+      bestseller: cfg?.bestseller ?? false,
     }
   })
 
@@ -114,6 +118,15 @@ export default async function DashboardPage() {
   const todayOrders = orders.filter((o) => o.createdAt >= startOfDay)
   const todayCount = todayOrders.length
   const todayRevenue = todayOrders.reduce((s, o) => s + Number(o.total), 0)
+  // 营业额多档统计（1 天 = 今日，3/7/30 天 = 滚动窗口，供 RevenueCard 切换）
+  const dayMs = 24 * 60 * 60 * 1000
+  const revenueRange = (days: number) =>
+    orders
+      .filter((o) => o.createdAt >= new Date(Date.now() - days * dayMs))
+      .reduce((s, o) => s + Number(o.total), 0)
+  const revenue3d = revenueRange(3)
+  const revenue7d = revenueRange(7)
+  const revenue30d = revenueRange(30)
   const openCount = orders.filter(
     (o) => !['COMPLETED', 'CANCELLED'].includes(o.status),
   ).length
@@ -134,6 +147,7 @@ export default async function DashboardPage() {
       displayNo?: string
       customerName?: string | null
       customerPhone?: string | null
+      tableNo?: string | null
       total?: number
     } | null
     return {
@@ -142,6 +156,7 @@ export default async function DashboardPage() {
       displayNo: p?.displayNo ?? '',
       customerPhone: p?.customerPhone ?? null,
       customerName: p?.customerName ?? null,
+      tableNo: p?.tableNo ?? null,
       total: p?.total != null ? p.total.toString() : '',
     }
   })
@@ -177,12 +192,7 @@ export default async function DashboardPage() {
           <p className="text-2xl font-semibold text-amber-600 dark:text-amber-500">{todayCount}</p>
           <p className="text-xs text-zinc-500">{t('todayOrders')}</p>
         </div>
-        <div className="rounded-xl border border-zinc-200 bg-white p-3 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <p className="text-2xl font-semibold text-amber-600 dark:text-amber-500">
-            {formatPrice(todayRevenue)}
-          </p>
-          <p className="text-xs text-zinc-500">{t('todayRevenue')}</p>
-        </div>
+        <RevenueCard day1={todayRevenue} day3={revenue3d} day7={revenue7d} day30={revenue30d} />
         <div className="rounded-xl border border-zinc-200 bg-white p-3 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
           <p className="text-2xl font-semibold text-amber-600 dark:text-amber-500">{openCount}</p>
           <p className="text-xs text-zinc-500">{t('openOrders')}</p>
@@ -208,7 +218,7 @@ export default async function DashboardPage() {
 
       <ReminderList reminders={remindersPlain} shopName={shop.name} />
       <div id="orders" className="scroll-mt-4">
-        <OrderList orders={ordersPlain} shop={shopPlain} />
+        <OrderList orders={ordersPlain} shop={shopPlain} products={productsPlain} />
       </div>
       <div id="settings" className="scroll-mt-4">
         <SettingsPanel products={productsPlain} shop={shopPlain} />

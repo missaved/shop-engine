@@ -110,6 +110,7 @@ export type ProductPlain = {
     required: boolean
     options: { name: string; price: string }[]
   }[]
+  bestseller: boolean
 }
 
 // 老板侧设置：营业开关 / 商品售罄 / 营业时间 / 起送价
@@ -129,6 +130,12 @@ export function SettingsPanel({
   )
   const [deliveryFee, setDeliveryFee] = useState<number>(
     shop.config?.deliveryFee ?? 0,
+  )
+  const [packingFee, setPackingFee] = useState<number>(
+    shop.config?.packingFee ?? 0,
+  )
+  const [deliveryArea, setDeliveryArea] = useState<string>(
+    shop.config?.deliveryArea ?? '',
   )
   const [saved, setSaved] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -162,6 +169,8 @@ export function SettingsPanel({
       openHours,
       minOrderAmount: Number(minOrderAmount),
       deliveryFee: Number(deliveryFee),
+      packingFee: Number(packingFee),
+      deliveryArea,
     })
     setSaved(true)
     setTimeout(() => setSaved(false), 1500)
@@ -305,6 +314,31 @@ export function SettingsPanel({
           />
         </label>
 
+        <label className="flex flex-col gap-1 text-sm">
+          <span className="text-zinc-600 dark:text-zinc-400">
+            {t('packingFee')}
+          </span>
+          <input
+            type="number"
+            value={packingFee}
+            onChange={(e) => setPackingFee(Number(e.target.value))}
+            className="rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
+          />
+        </label>
+
+        <label className="flex flex-col gap-1 text-sm">
+          <span className="text-zinc-600 dark:text-zinc-400">
+            {t('deliveryArea')}
+          </span>
+          <input
+            type="text"
+            value={deliveryArea}
+            onChange={(e) => setDeliveryArea(e.target.value)}
+            placeholder="Q.1, Q.3, 5km 内"
+            className="rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
+          />
+        </label>
+
         <button
           type="submit"
           disabled={pending}
@@ -331,6 +365,7 @@ function AddProductForm({ onAdded }: { onAdded: () => void }) {
   const [image, setImage] = useState('')
   const [extrasText, setExtrasText] = useState('')
   const [optionGroupsText, setOptionGroupsText] = useState('')
+  const [bestseller, setBestseller] = useState(false)
   const [uploading, setUploading] = useState(false)
 
   // 选本地图/拍照 → 上传 → 回填 URL
@@ -362,11 +397,13 @@ function AddProductForm({ onAdded }: { onAdded: () => void }) {
           image: image || undefined,
           extrasText,
           optionGroupsText,
+          bestseller,
         })
         setName('')
         setCategory('')
         setExtrasText('')
         setOptionGroupsText('')
+        setBestseller(false)
         setPrice('')
         setUnit('')
         setEmoji('')
@@ -507,6 +544,15 @@ function AddProductForm({ onAdded }: { onAdded: () => void }) {
         />
       </label>
 
+      <label className="flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={bestseller}
+          onChange={(e) => setBestseller(e.target.checked)}
+        />
+        <span className="text-zinc-600 dark:text-zinc-400">🔥 {t('bestseller')}</span>
+      </label>
+
       {/* 预览：客户视角的商品卡片（填写名称后实时显示，保存前确认效果） */}
       {name.trim() && (
         <div className="rounded-lg border border-dashed border-amber-300 bg-amber-50/50 p-3 dark:border-amber-800 dark:bg-amber-950/20">
@@ -582,6 +628,7 @@ function EditProductForm({
   const [optionGroupsText, setOptionGroupsText] = useState(
     serializeOptionGroups(product.optionGroups),
   )
+  const [bestseller, setBestseller] = useState(product.bestseller)
 
   // 选本地图/拍照 → 上传 → 回填 URL
   async function onPickImage(e: React.ChangeEvent<HTMLInputElement>) {
@@ -617,6 +664,7 @@ function EditProductForm({
           descEn: descEn || undefined,
           extrasText,
           optionGroupsText,
+          bestseller,
         })
         onDone()
       } catch (err) {
@@ -793,6 +841,15 @@ function EditProductForm({
           placeholder={t('optionGroupsHint')}
           className="rounded-md border border-zinc-300 px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-800"
         />
+      </label>
+
+      <label className="flex items-center gap-2 text-xs">
+        <input
+          type="checkbox"
+          checked={bestseller}
+          onChange={(e) => setBestseller(e.target.checked)}
+        />
+        <span className="text-zinc-500">🔥 {t('bestseller')}</span>
       </label>
 
       {/* 预览：客户视角的商品卡片（保存前确认效果） */}

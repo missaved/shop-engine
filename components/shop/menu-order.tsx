@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
-import { createOrder } from '@/lib/shop-actions'
+import { createOrder, callWaiter } from '@/lib/shop-actions'
 import { formatPrice } from '@/lib/format'
 import { LocaleSwitcher } from '@/components/locale-switcher'
 
@@ -24,6 +24,7 @@ export type MenuProduct = {
     required: boolean
     options: { name: string; price: string }[]
   }[]
+  bestseller: boolean
 }
 
 type OrderType = 'dine_in' | 'takeaway' | 'delivery'
@@ -49,6 +50,8 @@ export function MenuOrder({
   open,
   minOrderAmount,
   deliveryFee,
+  packingFee,
+  deliveryArea,
   products,
 }: {
   slug: string
@@ -56,6 +59,8 @@ export function MenuOrder({
   open: boolean
   minOrderAmount: number
   deliveryFee: number
+  packingFee: number
+  deliveryArea: string
   products: MenuProduct[]
 }) {
   const t = useTranslations('menu')
@@ -64,6 +69,8 @@ export function MenuOrder({
   const [orderType, setOrderType] = useState<OrderType>('dine_in')
   const [tableNo, setTableNo] = useState('')
   const [address, setAddress] = useState('')
+  const [packing, setPacking] = useState(false) // 堂食打包（收打包费）
+  const [pickup, setPickup] = useState(false) // 外送自取（免配送费）
   const [phone, setPhone] = useState(() => readPhoneCookie())
   const [note, setNote] = useState('')
   const [done, setDone] = useState<{ orderNo: number; displayNo: string } | null>(
@@ -71,6 +78,7 @@ export function MenuOrder({
   )
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [callSent, setCallSent] = useState(false) // 呼叫服务员成功提示
   const [cartOpen, setCartOpen] = useState(false)
   // 规格选择：productId -> { 规格组名 -> 选中选项名 }（单选）
   const [options, setOptions] = useState<Record<string, Record<string, string>>>({})
@@ -97,9 +105,10 @@ export function MenuOrder({
     }, 0)
     return sum + (Number(p.price) + extrasSum + optsSum) * n
   }, 0)
-  // 外送配送费：仅外送模式计入应付（起送价仍按商品小计判断）
-  const fee = orderType === 'delivery' ? deliveryFee : 0
-  // 应付合计 = 商品小计 + 配送费
+  // 配送费：仅外送（非自取）；打包费：堂食打包。应付合计 = 商品小计 + 费用
+  const deliveryCharge = orderType === 'delivery' && !pickup ? deliveryFee : 0
+  const packingCharge = orderType === 'dine_in' && packing ? packingFee : 0
+  const fee = deliveryCharge + packingCharge
   const total = subtotal + fee
   // 购物车明细：已选商品列表 + 总件数（问题 2 明细预览）
   const cartItems = products.filter((p) => (qty[p.id] ?? 0) > 0)
@@ -187,6 +196,8 @@ export function MenuOrder({
           address,
           note,
           idempotencyKey,
+          packing,
+          pickup,
         })
         // 记住手机号 cookie（客户下次访问菜单/查单自动预填）
         if (phone.trim()) {
@@ -199,6 +210,23 @@ export function MenuOrder({
         const msg = err instanceof Error ? err.message : ''
         const isNetwork = /fetch|network|failed to connect|ECONN|ERR_/i.test(msg)
         setError(isNetwork ? t('error') : msg || t('error'))
+      }
+    })
+  }
+
+  // 呼叫服务员：找服务员买水/买单/其他需求（传当前桌号/手机号，可为空）
+  function onCallWaiter() {
+    startTransition(async () => {
+      try {
+        await callWaiter({
+          slug,
+          tableNo: orderType === 'dine_in' ? tableNo : undefined,
+          phone,
+        })
+        setCallSent(true)
+        setTimeout(() => setCallSent(false), 3000)
+      } catch {
+        setError(t('error'))
       }
     })
   }
@@ -237,6 +265,10 @@ export function MenuOrder({
     if (g) g.items.push(p)
     else groups.push({ name: p.category ?? null, items: [p] })
   }
+  // 热卖商品在各自分类内置顶（sort 稳定，其余保持录入顺序）
+  for (const g of groups) {
+    g.items.sort((a, b) => (b.bestseller ? 1 : 0) - (a.bestseller ? 1 : 0))
+  }
 
   if (products.length === 0) {
     return <p className="px-6 py-16 text-center text-zinc-500">{t('empty')}</p>
@@ -254,6 +286,21 @@ export function MenuOrder({
           )}
         </div>
       </div>
+
+      {/* 呼叫服务员：客户随时找服务员（买水/买单/其他需求），老板端冒泡 + 声音 */}
+      {open && (
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onCallWaiter}
+            disabled={pending}
+            className="flex-1 rounded-md border border-amber-300 px-3 py-2 text-sm text-amber-700 transition-colors hover:bg-amber-50 disabled:opacity-60 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-950"
+          >
+            🔔 {t('callWaiter')}
+          </button>
+          {callSent && <span className="text-xs text-green-600 dark:text-green-400">{t('callWaiterSent')}</span>}
+        </div>
+      )}
 
       {/* 商品列表（按分类分组） */}
       {groups.map((g) => (
@@ -290,7 +337,14 @@ export function MenuOrder({
                       onClick={() => setActiveProduct(p)}
                       className="min-w-0 flex-1 cursor-pointer"
                     >
-                      <div className="text-sm font-medium">{p.name}</div>
+                      <div className="flex items-center gap-1.5 text-sm font-medium">
+                        <span>{p.name}</span>
+                        {p.bestseller && (
+                          <span className="rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-600 dark:bg-red-900/40 dark:text-red-300">
+                            🔥 {t('bestseller')}
+                          </span>
+                        )}
+                      </div>
                       {p.desc && (
                         <p className="mt-0.5 line-clamp-2 text-xs text-zinc-500">{p.desc}</p>
                       )}
@@ -524,34 +578,66 @@ export function MenuOrder({
               </div>
 
               {orderType === 'dine_in' && (
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="text-zinc-600 dark:text-zinc-400">{t('tableNo')}</span>
-                  <input
-                    type="text"
-                    value={tableNo}
-                    onChange={(e) => setTableNo(e.target.value)}
-                    placeholder="Bàn 5"
-                    className="rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
-                  />
-                </label>
+                <>
+                  <label className="flex flex-col gap-1 text-sm">
+                    <span className="text-zinc-600 dark:text-zinc-400">{t('tableNo')}</span>
+                    <input
+                      type="text"
+                      value={tableNo}
+                      onChange={(e) => setTableNo(e.target.value)}
+                      placeholder="Bàn 5"
+                      className="rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
+                    />
+                  </label>
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={packing}
+                      onChange={(e) => setPacking(e.target.checked)}
+                    />
+                    <span className="text-zinc-600 dark:text-zinc-400">
+                      {t('packing')}
+                      {packingFee > 0 ? ` (+${formatPrice(packingFee)}đ)` : ''}
+                    </span>
+                  </label>
+                </>
               )}
               {orderType === 'delivery' && (
-                <label className="flex flex-col gap-1 text-sm">
-                  <span className="text-zinc-600 dark:text-zinc-400">{t('address')}</span>
-                  <input
-                    type="text"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    placeholder="12 Nguyễn Huệ, P.5"
-                    className="rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
-                  />
-                </label>
+                <>
+                  {deliveryArea && (
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                      📍 {t('deliveryArea')}: {deliveryArea}
+                    </p>
+                  )}
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={pickup}
+                      onChange={(e) => setPickup(e.target.checked)}
+                    />
+                    <span className="text-zinc-600 dark:text-zinc-400">
+                      {t('pickup')} ({t('noDeliveryFee')})
+                    </span>
+                  </label>
+                  {!pickup && (
+                    <label className="flex flex-col gap-1 text-sm">
+                      <span className="text-zinc-600 dark:text-zinc-400">{t('address')}</span>
+                      <input
+                        type="text"
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        placeholder="12 Nguyễn Huệ, P.5"
+                        className="rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
+                      />
+                    </label>
+                  )}
+                </>
               )}
 
               <label className="flex flex-col gap-1 text-sm">
                 <span className="text-zinc-600 dark:text-zinc-400">
                   {t('phone')}
-                  {orderType === 'delivery' ? (
+                  {orderType === 'delivery' && !pickup ? (
                     <span className="text-red-500"> *</span>
                   ) : (
                     <span className="text-zinc-400"> ({t('optional')})</span>
@@ -562,7 +648,7 @@ export function MenuOrder({
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder={t('phonePlaceholder')}
-                  required={orderType === 'delivery'}
+                  required={orderType === 'delivery' && !pickup}
                   className="rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
                 />
               </label>
@@ -583,12 +669,17 @@ export function MenuOrder({
               <div className="flex items-center justify-between">
                 <span className="text-sm text-zinc-600 dark:text-zinc-400">
                   {t('total')}: {formatPrice(total)}đ
-                  {fee > 0 && (
+                  {deliveryCharge > 0 && (
                     <span className="text-zinc-400 dark:text-zinc-500">
-                      {' '}({t('deliveryFee')} {formatPrice(fee)}đ)
+                      {' '}({t('deliveryFee')} {formatPrice(deliveryCharge)}đ)
                     </span>
                   )}
-                  {orderType === 'delivery' && minOrderAmount > 0 && subtotal < minOrderAmount
+                  {packingCharge > 0 && (
+                    <span className="text-zinc-400 dark:text-zinc-500">
+                      {' '}({t('packingFee')} {formatPrice(packingCharge)}đ)
+                    </span>
+                  )}
+                  {orderType === 'delivery' && !pickup && minOrderAmount > 0 && subtotal < minOrderAmount
                     ? ` · ${t('minOrderHint', {
                         amount: formatPrice(minOrderAmount - subtotal),
                       })}`
@@ -600,7 +691,7 @@ export function MenuOrder({
                     !open ||
                     pending ||
                     subtotal === 0 ||
-                    (orderType === 'delivery' && minOrderAmount > 0 && subtotal < minOrderAmount)
+                    (orderType === 'delivery' && !pickup && minOrderAmount > 0 && subtotal < minOrderAmount)
                   }
                   className="rounded-md bg-amber-500 px-5 py-2 text-sm text-white transition-colors hover:bg-amber-600 disabled:opacity-50 dark:bg-amber-500 dark:text-white"
                 >

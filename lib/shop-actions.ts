@@ -49,6 +49,8 @@ export async function createOrder(input: {
   address?: string
   note?: string
   idempotencyKey?: string
+  packing?: boolean
+  pickup?: boolean
 }): Promise<{ orderNo: number; displayNo: string }> {
   const shop = await getShopBySlug(input.slug)
   if (!shop.open) throw new Error('店铺已打烊')
@@ -61,15 +63,18 @@ export async function createOrder(input: {
   const orderType = input.orderType ?? 'dine_in'
   const tableNo = input.tableNo?.trim() || undefined
   const address = input.address?.trim() || undefined
-  if (orderType === 'delivery' && !address) throw new Error('外送请填写地址')
+  // 堂食打包（收打包费）；外送自取（到店取，免配送费、地址/手机号非必填）
+  const packing = input.packing === true
+  const pickup = input.pickup === true
+  if (orderType === 'delivery' && !pickup && !address) throw new Error('外送请填写地址')
 
-  // 手机号：仅外送强制（联系收货 + 查进度）；堂食/外带可选（现场点单/取餐无需手机）
+  // 手机号：仅外送（非自取）强制；自取/堂食/外带可选（现场点单/取餐无需手机）
   const phone = input.customerPhone?.trim() || undefined
-  if (orderType === 'delivery') {
+  if (orderType === 'delivery' && !pickup) {
     if (!phone) throw new Error('外送请填写手机号')
     if (!PHONE_RE.test(phone)) throw new Error('手机号格式不正确')
   } else if (phone && !PHONE_RE.test(phone)) {
-    // 堂食/外带若填了手机号，仍校验格式（避免脏数据）
+    // 若填了手机号，仍校验格式（避免脏数据）
     throw new Error('手机号格式不正确')
   }
 
@@ -136,16 +141,17 @@ export async function createOrder(input: {
       return sum + (it.price + extrasSum + optionsSum) * it.qty
     }, 0)
 
-    // 外送配送费：仅外送模式计入应付（起送价仍按商品小计判断，运费另算）
-    const deliveryFee = orderType === 'delivery' ? Number(shopCfg.deliveryFee ?? 0) : 0
-    const total = subtotal + deliveryFee
+    // 配送费：仅外送（非自取）；打包费：堂食打包。起送价仍按商品小计判断，运费另算
+    const deliveryFee = orderType === 'delivery' && !pickup ? Number(shopCfg.deliveryFee ?? 0) : 0
+    const packingFee = orderType === 'dine_in' && packing ? Number(shopCfg.packingFee ?? 0) : 0
+    const total = subtotal + deliveryFee + packingFee
 
     // 金额上限校验（P0-3，防伪造巨款/数值溢出）
     if (total > MAX_ORDER_AMOUNT) throw new Error('订单金额超出上限')
 
     // 起送价校验（A9）：仅外送模式生效（堂食/外带不卡起送），按商品小计判断
     const minOrderAmount = Number(shopCfg.minOrderAmount ?? 0)
-    if (orderType === 'delivery' && minOrderAmount > 0 && subtotal < minOrderAmount) {
+    if (orderType === 'delivery' && !pickup && minOrderAmount > 0 && subtotal < minOrderAmount) {
       throw new Error(`未达起送价 ${minOrderAmount.toLocaleString('vi-VN')}đ`)
     }
 
@@ -185,6 +191,8 @@ export async function createOrder(input: {
             orderType,
             ...(tableNo ? { tableNo } : {}),
             ...(address ? { address } : {}),
+            ...(packing ? { packing: true } : {}),
+            ...(pickup ? { pickup: true } : {}),
           },
         },
       })
@@ -257,5 +265,33 @@ export async function deleteMyData(input: {
         payload: { ...p, customerPhone: null, customerName: null } as Prisma.InputJsonValue,
       },
     })
+  }
+}
+
+// 客户呼叫服务员（找服务员买水/买单/其他需求）：创建 CALL_WAITER 提醒，老板端冒泡 + 声音
+export async function callWaiter(input: {
+  slug: string
+  tableNo?: string
+  phone?: string
+}): Promise<void> {
+  const shop = await getShopBySlug(input.slug)
+  try {
+    await prisma.reminder.create({
+      data: {
+        shopId: shop.id,
+        orderId: null,
+        templateKey: 'CALL_WAITER',
+        dueAt: new Date(),
+        status: 'PENDING',
+        payload: {
+          tableNo: input.tableNo?.trim() || null,
+          customerPhone: input.phone?.trim() || null,
+        },
+      },
+    })
+    revalidatePath('/[locale]/dashboard', 'page')
+  } catch (e) {
+    console.error('呼叫服务员失败（slug=%s）:', input.slug, e)
+    throw e
   }
 }

@@ -187,6 +187,8 @@ export async function updateShopSettings(input: {
   openHours?: string
   minOrderAmount?: number
   deliveryFee?: number
+  packingFee?: number
+  deliveryArea?: string
 }): Promise<void> {
   const user = await requireUser()
   try {
@@ -198,6 +200,8 @@ export async function updateShopSettings(input: {
     if (input.openHours !== undefined) config.openHours = input.openHours
     if (input.minOrderAmount !== undefined) config.minOrderAmount = input.minOrderAmount
     if (input.deliveryFee !== undefined) config.deliveryFee = input.deliveryFee
+    if (input.packingFee !== undefined) config.packingFee = input.packingFee
+    if (input.deliveryArea !== undefined) config.deliveryArea = input.deliveryArea
 
     await prisma.shop.update({
       where: { id: user.shopId },
@@ -270,6 +274,7 @@ export async function createProduct(input: {
   image?: string
   extrasText?: string
   optionGroupsText?: string
+  bestseller?: boolean
 }): Promise<void> {
   const user = await requireUser()
   try {
@@ -286,6 +291,7 @@ export async function createProduct(input: {
       descI18n: { zh: desc, en: desc, vi: desc }, // 三语先同值，B8 再翻译
       extras: parseExtras(input.extrasText),
       optionGroups: parseOptionGroups(input.optionGroupsText),
+      bestseller: input.bestseller ?? false,
     }
 
     // 新商品排末尾：sortOrder = 当前最大 + 1（避免与已排序商品冲突）
@@ -330,6 +336,7 @@ export async function updateProduct(input: {
   descEn?: string
   extrasText?: string
   optionGroupsText?: string
+  bestseller?: boolean
 }): Promise<void> {
   const user = await requireUser()
   try {
@@ -363,6 +370,7 @@ export async function updateProduct(input: {
       descI18n,
       extras: parseExtras(input.extrasText),
       optionGroups: parseOptionGroups(input.optionGroupsText),
+      bestseller: input.bestseller ?? (oldCfg.bestseller as boolean) ?? false,
     }
 
     await prisma.product.update({
@@ -430,4 +438,130 @@ export async function getLatestOrderNo(): Promise<number> {
     _max: { orderNo: true },
   })
   return max._max.orderNo ?? 0
+}
+
+// 呼叫服务员实时性：返回最新 CALL_WAITER 提醒的创建时间戳（轮询判断有无新呼叫）
+export async function getLatestCallTs(): Promise<number> {
+  const user = await requireUser()
+  const latest = await prisma.reminder.findFirst({
+    where: { shopId: user.shopId, templateKey: 'CALL_WAITER' },
+    orderBy: { createdAt: 'desc' },
+    select: { createdAt: true },
+  })
+  return latest ? latest.createdAt.getTime() : 0
+}
+
+// 订单 items 快照结构（含价格/加料/规格，服务端计价后落库）
+type StoredOrderItem = {
+  productId?: string
+  name: string
+  qty: number
+  price: number | string
+  extras?: { name: string; price: number | string }[]
+  options?: { group: string; name: string; price: number | string }[]
+}
+
+// 单行商品小计：商品价 + 加料价 + 规格价，乘以数量
+function itemSubtotal(it: StoredOrderItem): number {
+  const extrasSum = (it.extras ?? []).reduce((s, e) => s + Number(e.price), 0)
+  const optionsSum = (it.options ?? []).reduce((s, o) => s + Number(o.price), 0)
+  return (Number(it.price) + extrasSum + optionsSum) * Number(it.qty)
+}
+
+// 第 3 批-12：老板端对已建订单加菜（服务端重算新商品价，费用守恒）
+export async function addItemsToOrder(input: {
+  orderId: string
+  items: { productId: string; qty: number }[]
+}): Promise<void> {
+  const user = await requireUser()
+  try {
+    const order = assertShopOwned(
+      user.shopId,
+      await prisma.order.findUnique({ where: { id: input.orderId } }),
+    )
+    if (['COMPLETED', 'CANCELLED'].includes(order.status)) {
+      throw new Error('订单已结束，不可加菜')
+    }
+
+    // 聚合新增数量，过滤无效项（qty 上限 99，对齐下单安全上限）
+    const qtyMap = new Map<string, number>()
+    for (const it of input.items ?? []) {
+      const q = Math.trunc(Number(it.qty))
+      if (!Number.isFinite(q) || q <= 0 || q > 99) continue
+      qtyMap.set(it.productId, (qtyMap.get(it.productId) ?? 0) + q)
+    }
+    if (qtyMap.size === 0) throw new Error('请选择要加的商品')
+
+    // 服务端计价：从商品表查价，不信任客户端传价
+    const products = await prisma.product.findMany({
+      where: { id: { in: [...qtyMap.keys()] }, shopId: user.shopId, active: true },
+    })
+    if (products.length !== qtyMap.size) throw new Error('部分商品已售罄或不存在')
+
+    const addItems: StoredOrderItem[] = products.map((p) => ({
+      productId: p.id,
+      name: p.name,
+      qty: qtyMap.get(p.id)!,
+      price: Number(p.price),
+      extras: [],
+      options: [],
+    }))
+    const addSubtotal = addItems.reduce((s, it) => s + itemSubtotal(it), 0)
+
+    // 费用守恒：fee = 旧 total − 旧 subtotal，加菜只加 subtotal
+    const oldItems = (order.items as unknown as StoredOrderItem[]) ?? []
+    const oldSubtotal = oldItems.reduce((s, it) => s + itemSubtotal(it), 0)
+    const fee = Number(order.total) - oldSubtotal
+    const newTotal = oldSubtotal + addSubtotal + fee
+
+    await prisma.order.update({
+      where: { id: order.id },
+      data: {
+        items: [...oldItems, ...addItems] as Prisma.InputJsonValue,
+        total: newTotal,
+      },
+    })
+    revalidatePath('/[locale]/dashboard', 'page')
+  } catch (e) {
+    console.error('订单加菜失败（orderId=%s）:', input.orderId, e)
+    throw e
+  }
+}
+
+// 第 3 批-12：老板端删除已建订单的某行商品，重算 total
+export async function removeItemFromOrder(input: {
+  orderId: string
+  index: number
+}): Promise<void> {
+  const user = await requireUser()
+  try {
+    const order = assertShopOwned(
+      user.shopId,
+      await prisma.order.findUnique({ where: { id: input.orderId } }),
+    )
+    if (['COMPLETED', 'CANCELLED'].includes(order.status)) {
+      throw new Error('订单已结束，不可删菜')
+    }
+
+    const oldItems = (order.items as unknown as StoredOrderItem[]) ?? []
+    const idx = Math.trunc(Number(input.index))
+    if (idx < 0 || idx >= oldItems.length) throw new Error('商品不存在')
+
+    const removed = itemSubtotal(oldItems[idx])
+    const newItems = oldItems.filter((_, i) => i !== idx)
+    // 删空 items 时 total 归 0（费用一并取消，避免空单收配送费）
+    const newTotal = newItems.length === 0 ? 0 : Number(order.total) - removed
+
+    await prisma.order.update({
+      where: { id: order.id },
+      data: {
+        items: newItems as Prisma.InputJsonValue,
+        total: newTotal,
+      },
+    })
+    revalidatePath('/[locale]/dashboard', 'page')
+  } catch (e) {
+    console.error('订单删菜失败（orderId=%s）:', input.orderId, e)
+    throw e
+  }
 }

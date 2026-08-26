@@ -12,6 +12,7 @@ export type ReminderPlain = {
   displayNo: string
   customerPhone: string | null
   customerName: string | null
+  tableNo: string | null
   total: string
 }
 
@@ -20,6 +21,7 @@ const TEMPLATE_KEY: Record<string, string> = {
   FOOD_NEW_ORDER: 'newOrder',
   FOOD_READY: 'ready',
   FOOD_REPURCHASE_21D: 'repurchase21d',
+  CALL_WAITER: 'callWaiter',
 }
 
 // 待办提醒：新单冒泡 / 完成通知 / 复购提醒（一键复制发 Zalo，0 API）
@@ -86,7 +88,7 @@ export function ReminderList({
               {t(TEMPLATE_KEY[r.templateKey] ?? 'newOrder')}
             </span>
             <span className="text-xs text-zinc-500">
-              {r.displayNo}
+              {r.tableNo ? `🪑 ${r.tableNo}` : r.displayNo}
               {r.customerName ? ` · ${r.customerName}` : ''}
             </span>
           </div>

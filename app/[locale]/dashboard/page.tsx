@@ -9,6 +9,9 @@ import { SettingsPanel } from '@/components/dashboard/settings-panel'
 import type { ProductPlain } from '@/components/dashboard/settings-panel'
 import { RevenueCard } from '@/components/dashboard/revenue-card'
 import { ReminderList } from '@/components/dashboard/reminder-list'
+import { LocaleSwitcher } from '@/components/locale-switcher'
+import { SideDrawer } from '@/components/dashboard/side-drawer'
+import { BackToTop } from '@/components/dashboard/back-to-top'
 import type { ReminderPlain } from '@/components/dashboard/reminder-list'
 
 // 订单状态 → 本地化 key（dashboard 段）
@@ -45,6 +48,7 @@ export default async function DashboardPage() {
 
   const shopPlain: ShopPlain = {
     id: shop.id,
+    slug: shop.slug,
     name: shop.name,
     phone: shop.phone,
     open: shop.open,
@@ -155,104 +159,129 @@ export default async function DashboardPage() {
       customerPhone?: string | null
       tableNo?: string | null
       total?: number
+      orderType?: string | null
+      items?: { name: string; qty: number }[]
     } | null
     return {
       id: r.id,
+      orderId: r.orderId,
       templateKey: r.templateKey,
       displayNo: p?.displayNo ?? '',
       customerPhone: p?.customerPhone ?? null,
       customerName: p?.customerName ?? null,
       tableNo: p?.tableNo ?? null,
       total: p?.total != null ? p.total.toString() : '',
+      orderType: p?.orderType ?? null,
+      items: p?.items ?? [],
     }
   })
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-col gap-8 px-6 py-8">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">{shop.name}</h1>
-          <p className="text-sm text-zinc-500">{t('title')}</p>
-        </div>
-      </div>
-
-      {/* P0-6 锚点导航：订单 / 设置（提升设置区可发现性） */}
-      <nav className="flex gap-2">
-        <a
-          href="#orders"
-          className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
+    <main className="mx-auto flex w-full max-w-2xl flex-col gap-4 px-6 py-4">
+      {/* 顶栏：店名（点开抽屉）+ 语言切换 */}
+      <header className="sticky top-0 z-30 -mx-6 mb-2 flex items-center justify-between border-b border-zinc-100 bg-orange-50/90 px-6 py-3 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90">
+        <SideDrawer
+          trigger={
+            <span className="flex items-center gap-2">
+              <span className="text-lg leading-none text-zinc-400">☰</span>
+              <span className="text-lg font-semibold">{shop.name}</span>
+            </span>
+          }
+          title={<span>{shop.name}</span>}
         >
-          {t('navOrders')}
-        </a>
-        <a
-          href="#settings"
-          className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
-        >
-          {t('navSettings')}
-        </a>
-      </nav>
+          {/* 抽屉内容：概览 + 桌台 + 设置 + 退出登录 */}
+          <div className="flex flex-col gap-6">
+            {/* C1 今日概览 */}
+            <section className="grid grid-cols-3 gap-2">
+              <div className="flex flex-col items-center justify-center rounded-xl border border-zinc-200 bg-white p-3 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                <svg
+                  className="h-5 w-5 text-amber-500"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <path d="M14 2v6h6" />
+                  <path d="M8 13h8M8 17h6" />
+                </svg>
+                <p className="mt-1 text-2xl font-semibold text-amber-600 dark:text-amber-500">{todayCount}</p>
+                <p className="text-xs text-zinc-500">{t('todayOrders')}</p>
+              </div>
+              <RevenueCard
+                day1={todayRevenue}
+                day3={revenue3d}
+                day7={revenue7d}
+                day30={revenue30d}
+                count1={count1}
+                count3={count3}
+                count7={count7}
+                count30={count30}
+              />
+              <div className="flex flex-col items-center justify-center rounded-xl border border-zinc-200 bg-white p-3 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+                <svg
+                  className="h-5 w-5 text-amber-500"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+                  <path d="M21 3v6h-6" />
+                </svg>
+                <p className="mt-1 text-2xl font-semibold text-amber-600 dark:text-amber-500">{openCount}</p>
+                <p className="text-xs text-zinc-500">{t('openOrders')}</p>
+              </div>
+            </section>
 
-      {/* C1 今日概览 */}
-      <section className="grid grid-cols-3 gap-2">
-        <div className="flex flex-col items-center justify-center rounded-xl border border-zinc-200 bg-white p-3 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <span className="text-lg leading-none">🧾</span>
-          <p className="mt-1 text-2xl font-semibold text-amber-600 dark:text-amber-500">{todayCount}</p>
-          <p className="text-xs text-zinc-500">{t('todayOrders')}</p>
-        </div>
-        <RevenueCard
-          day1={todayRevenue}
-          day3={revenue3d}
-          day7={revenue7d}
-          day30={revenue30d}
-          count1={count1}
-          count3={count3}
-          count7={count7}
-          count30={count30}
-        />
-        <div className="flex flex-col items-center justify-center rounded-xl border border-zinc-200 bg-white p-3 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <span className="text-lg leading-none">🔄</span>
-          <p className="mt-1 text-2xl font-semibold text-amber-600 dark:text-amber-500">{openCount}</p>
-          <p className="text-xs text-zinc-500">{t('openOrders')}</p>
-        </div>
-      </section>
+            {/* C3 桌台简表 */}
+            {tables.length > 0 && (
+              <section className="flex flex-col gap-2">
+                <h2 className="text-lg font-medium">{t('tables')}</h2>
+                <div className="flex flex-wrap gap-2">
+                  {tables.map((tb, idx) => (
+                    <span
+                      key={idx}
+                      className="rounded-lg border border-zinc-200 px-3 py-1.5 text-sm dark:border-zinc-700"
+                    >
+                      {tb.tableNo} · {t(STATUS_KEY[tb.status] ?? 'statusPending')}
+                    </span>
+                  ))}
+                </div>
+              </section>
+            )}
 
-      {/* C3 桌台简表 */}
-      {tables.length > 0 && (
-        <section className="flex flex-col gap-2">
-          <h2 className="text-lg font-medium">{t('tables')}</h2>
-          <div className="flex flex-wrap gap-2">
-            {tables.map((tb, idx) => (
-              <span
-                key={idx}
-                className="rounded-lg border border-zinc-200 px-3 py-1.5 text-sm dark:border-zinc-700"
-              >
-                {tb.tableNo} · {t(STATUS_KEY[tb.status] ?? 'statusPending')}
-              </span>
-            ))}
+            {/* 设置 + 商品管理 */}
+            <SettingsPanel products={productsPlain} shop={shopPlain} />
+
+            {/* 退出登录（抽屉底部，防误碰） */}
+            <form
+              action={async () => {
+                'use server'
+                await signOut({ redirectTo: '/login' })
+              }}
+              className="flex justify-center pt-2"
+            >
+              <button className="rounded-md border border-zinc-300 px-4 py-2 text-sm text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-700 dark:border-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-300">
+                {t('logout')}
+              </button>
+            </form>
           </div>
-        </section>
-      )}
+        </SideDrawer>
 
+        <LocaleSwitcher />
+      </header>
+
+      {/* 主页：待办提醒 + 订单列表（核心） */}
       <ReminderList reminders={remindersPlain} shopName={shop.name} />
-      <div id="orders" className="scroll-mt-4">
-        <OrderList orders={ordersPlain} shop={shopPlain} products={productsPlain} />
-      </div>
-      <div id="settings" className="scroll-mt-4">
-        <SettingsPanel products={productsPlain} shop={shopPlain} />
-      </div>
+      <OrderList orders={ordersPlain} shop={shopPlain} products={productsPlain} />
 
-      {/* 退出登录移到底部（防误碰），弱化样式 */}
-      <form
-        action={async () => {
-          'use server'
-          await signOut({ redirectTo: '/login' })
-        }}
-        className="flex justify-center pt-2"
-      >
-        <button className="rounded-md border border-zinc-300 px-4 py-2 text-sm text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-700 dark:border-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-300">
-          {t('logout')}
-        </button>
-      </form>
+      {/* 回到顶部浮动按钮 */}
+      <BackToTop />
     </main>
   )
 }

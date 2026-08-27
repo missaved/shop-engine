@@ -121,13 +121,16 @@
     "addItem": "Thêm món",
     "removeItem": "Xóa",
     "items": "Món",
-    "toastUpdated": "Đã cập nhật"
+    "toastUpdated": "Đã cập nhật",
+    "tableQr": "QR bàn / mã cửa",
+    "downloadQr": "Tải mã QR",
+    "tableNoPh": "Số bàn (tùy chọn)"
   },
   "orderSummary": {
-    "header": "🏪 {shopName}",
+    "header": "{shopName}",
     "orderNo": "Đơn #{orderNo}",
     "total": "Tổng: {total}đ",
-    "thanks": "Cảm ơn quý khách! 🙏",
+    "thanks": "Cảm ơn quý khách!",
     "note": "Ghi chú"
   },
   "menu": {
@@ -198,5 +201,12 @@
     "deleteConfirm": "Xóa dữ liệu cá nhân của đơn này (SĐT, tên, ghi chú)? Sau khi xóa không thể tra cứu đơn này.",
     "deleted": "Đã xóa",
     "error": "Thao tác thất bại, vui lòng thử lại"
+  },
+  "common": {
+    "installApp": "Thêm vào màn hình",
+    "installDesc": "Mở nhanh, dùng như App",
+    "installBtn": "Cài đặt",
+    "installIos": "Trong Safari, chọn Chia sẻ → Thêm vào màn hình chính",
+    "dismiss": "Đóng"
   }
 }

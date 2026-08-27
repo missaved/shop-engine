@@ -1,6 +1,6 @@
 'use client'
 
-import { useTransition } from 'react'
+import { useEffect, useTransition } from 'react'
 import { useTranslations } from 'next-intl'
 import { useRouter } from '@/i18n/navigation'
 import { dismissReminder, markReminderSent } from '@/lib/actions'
@@ -8,12 +8,15 @@ import { useToast, ToastView } from './use-toast'
 
 export type ReminderPlain = {
   id: string
+  orderId: string | null
   templateKey: string
   displayNo: string
   customerPhone: string | null
   customerName: string | null
   tableNo: string | null
   total: string
+  orderType: string | null
+  items: { name: string; qty: number }[]
 }
 
 // 提醒模板 → 本地化 key（dashboard 段）
@@ -22,6 +25,13 @@ const TEMPLATE_KEY: Record<string, string> = {
   FOOD_READY: 'ready',
   FOOD_REPURCHASE_21D: 'repurchase21d',
   CALL_WAITER: 'callWaiter',
+}
+
+// 订单类型 → 本地化 key（复用订单列表的 orderTypeDineIn/Takeaway/Delivery）
+const TYPE_KEY: Record<string, string> = {
+  dine_in: 'orderTypeDineIn',
+  takeaway: 'orderTypeTakeaway',
+  delivery: 'orderTypeDelivery',
 }
 
 // 提醒模板 → 配色（新单 amber / 出餐完成 green / 复购 blue / 呼叫服务员 red）
@@ -66,7 +76,7 @@ export function ReminderList({
 
   function buildText(r: ReminderPlain): string {
     return [
-      `🏪 ${shopName}`,
+      `${shopName}`,
       t(TEMPLATE_KEY[r.templateKey] ?? 'newOrder'),
       r.displayNo,
       r.customerName ?? '',
@@ -100,6 +110,38 @@ export function ReminderList({
     })
   }
 
+  // 点击待办 → 滚动到对应订单卡片并高亮闪烁（免去主动翻单）
+  function jumpToOrder(orderId: string | null) {
+    if (!orderId) return
+    const el = document.getElementById(`order-${orderId}`)
+    if (!el) return
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    el.style.boxShadow = '0 0 0 3px rgba(245, 158, 11, 0.9)'
+    el.style.transition = 'box-shadow 0.3s ease'
+    window.setTimeout(() => {
+      el.style.boxShadow = ''
+    }, 2500)
+  }
+
+  // 呼叫服务员是店内即时事件，5 秒后自动消失（不一直卡在待办里影响体验）
+  useEffect(() => {
+    const callIds = reminders
+      .filter((r) => r.templateKey === 'CALL_WAITER')
+      .map((r) => r.id)
+    if (callIds.length === 0) return
+    const timers = callIds.map((id) =>
+      setTimeout(() => {
+        startTransition(async () => {
+          await dismissReminder(id)
+          router.refresh()
+        })
+      }, 5000),
+    )
+    return () => timers.forEach(clearTimeout)
+    // reminders 变化时重建计时器；startTransition/router 稳定
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reminders])
+
   if (reminders.length === 0) return null
 
   return (
@@ -107,23 +149,59 @@ export function ReminderList({
       <h2 className="text-lg font-medium">{t('reminders')}</h2>
       {reminders.map((r) => {
         const style = REMINDER_STYLE[r.templateKey] ?? REMINDER_STYLE.FOOD_NEW_ORDER
+        const itemsText = (r.items ?? []).map((i) => `${i.name} ×${i.qty}`).join('  ·  ')
+        const typeLabel = r.orderType ? t(TYPE_KEY[r.orderType] ?? 'orderTypeDineIn') : ''
+        // 菜品过长才跑马灯（短文本静态显示，避免无意义滚动）
+        const needMarquee = itemsText.length > 28
         return (
           <div
             key={r.id}
-            className={`flex items-center justify-between rounded-xl border p-3 shadow-sm ${style.border} ${style.bg}`}
+            className={`rounded-xl border p-3 shadow-sm ${style.border} ${style.bg}`}
           >
-            <div className="flex flex-col">
-              <span
-                className={`self-start rounded-full px-2 py-0.5 text-xs font-medium ${style.badge}`}
-              >
-                {t(TEMPLATE_KEY[r.templateKey] ?? 'newOrder')}
-              </span>
-              <span className="mt-1 text-xs text-zinc-500">
-                {r.tableNo ? `🪑 ${r.tableNo}` : r.displayNo}
-                {r.customerName ? ` · ${r.customerName}` : ''}
-              </span>
+            {/* 主体：点击跳单（仅新单有 orderId，按钮区在其下独立） */}
+            <div
+              onClick={() => jumpToOrder(r.orderId)}
+              className={r.orderId ? 'cursor-pointer' : ''}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${style.badge}`}
+                  >
+                    {t(TEMPLATE_KEY[r.templateKey] ?? 'newOrder')}
+                  </span>
+                  {typeLabel && (
+                    <span className="rounded-full bg-white/70 px-2 py-0.5 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+                      {typeLabel}
+                    </span>
+                  )}
+                </div>
+                <span className="shrink-0 text-xs font-medium text-zinc-500">
+                  {r.displayNo}
+                </span>
+              </div>
+
+              <div className="mt-1.5 text-xs text-zinc-600 dark:text-zinc-400">
+                {r.tableNo ? `${t('tableNo')} ${r.tableNo}` : ''}
+                {r.tableNo && r.customerName ? ' · ' : ''}
+                {r.customerName ?? ''}
+              </div>
+
+              {itemsText &&
+                (needMarquee ? (
+                  <div className="mt-1.5 overflow-hidden whitespace-nowrap text-xs text-zinc-500 dark:text-zinc-400">
+                    <span className="inline-block animate-marquee will-change-transform">
+                      {itemsText}  ·  {itemsText}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="mt-1.5 truncate text-xs text-zinc-500 dark:text-zinc-400">
+                    {itemsText}
+                  </div>
+                ))}
             </div>
-            <div className="flex gap-2">
+
+            <div className="mt-2 flex justify-end gap-2">
               {/* 呼叫服务员无需发 Zalo（顾客在店内，只需处理/忽略） */}
               {r.templateKey !== 'CALL_WAITER' && (
                 <button

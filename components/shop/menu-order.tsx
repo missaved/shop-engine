@@ -154,7 +154,7 @@ export function MenuOrder({
   // 客户侧订单摘要（复制用）
   function buildSummary(displayNo: string): string {
     const lines = [
-      `🏪 ${shopName}`,
+      `${shopName}`,
       `${t('orderNo')} ${displayNo}`,
       ...products
         .filter((p) => (qty[p.id] ?? 0) > 0)
@@ -276,17 +276,30 @@ export function MenuOrder({
   if (!selected) {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-6 py-10">
-        <div className="flex items-center justify-between">
-          <h1 className="text-xl font-semibold">{shopName}</h1>
-          <div className="flex items-center gap-3">
-            <LocaleSwitcher />
-            {!open && (
-              <span className="text-sm text-red-600 dark:text-red-400">{t('closed')}</span>
-            )}
-          </div>
+        {/* 开屏 hero 图（MiniMax 生成，越南河粉店风格） */}
+        <div className="relative -mx-6 -mt-10 h-52 overflow-hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/hero/hero.jpg"
+            alt={shopName}
+            className="h-full w-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+          <h1 className="absolute bottom-3 left-6 text-2xl font-semibold text-white drop-shadow">
+            {shopName}
+          </h1>
         </div>
 
-        <h2 className="mt-8 text-2xl font-semibold">{t('welcome')}</h2>
+        <div className="mt-4 flex items-center justify-between">
+          {!open ? (
+            <span className="text-sm text-red-600 dark:text-red-400">{t('closed')}</span>
+          ) : (
+            <span />
+          )}
+          <LocaleSwitcher />
+        </div>
+
+        <h2 className="mt-6 text-2xl font-semibold">{t('welcome')}</h2>
         {shopDesc && (
           <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
             {shopDesc}
@@ -299,11 +312,11 @@ export function MenuOrder({
         <div className="mt-3 flex flex-col gap-3">
           {(
             [
-              ['dine_in', 'dineIn', '🍽️'],
-              ['takeaway', 'takeaway', '🥡'],
-              ['delivery', 'delivery', '🛵'],
+              ['dine_in', 'dineIn', '/hero/dine-in.jpg'],
+              ['takeaway', 'takeaway', '/hero/takeaway.jpg'],
+              ['delivery', 'delivery', '/hero/delivery.jpg'],
             ] as const
-          ).map(([value, key, emoji]) => (
+          ).map(([value, key, img]) => (
             <button
               key={value}
               type="button"
@@ -311,9 +324,14 @@ export function MenuOrder({
                 setOrderType(value)
                 setSelected(true)
               }}
-              className="flex items-center gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-4 text-left shadow-sm transition-transform active:scale-[0.99] dark:border-zinc-800 dark:bg-zinc-900"
+              className="flex items-center gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-3 text-left shadow-sm transition-transform active:scale-[0.99] dark:border-zinc-800 dark:bg-zinc-900"
             >
-              <span className="text-2xl">{emoji}</span>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={img}
+                alt=""
+                className="h-11 w-11 shrink-0 rounded-lg object-cover"
+              />
               <span className="flex-1 text-base font-medium">{t(key)}</span>
               <span className="text-zinc-300 dark:text-zinc-600">›</span>
             </button>
@@ -358,7 +376,18 @@ export function MenuOrder({
         onClick={() => setSelected(false)}
         className="mb-1 flex items-center gap-1 self-start rounded-full border border-zinc-200 px-3 py-1 text-xs text-zinc-600 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
       >
-        ↩ {t(orderType === 'dine_in' ? 'dineIn' : orderType === 'takeaway' ? 'takeaway' : 'delivery')}
+        <svg
+          className="h-3 w-3"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M19 12H5M12 19l-7-7 7-7" />
+        </svg>
+        {t(orderType === 'dine_in' ? 'dineIn' : orderType === 'takeaway' ? 'takeaway' : 'delivery')}
       </button>
 
       {/* 呼叫服务员：客户随时找服务员（买水/买单/其他需求），老板端冒泡 + 声音 */}
@@ -368,9 +397,21 @@ export function MenuOrder({
             type="button"
             onClick={onCallWaiter}
             disabled={pending}
-            className="flex-1 rounded-md border border-amber-300 px-3 py-2 text-sm text-amber-700 transition-colors hover:bg-amber-50 disabled:opacity-60 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-950"
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-amber-300 px-3 py-2 text-sm text-amber-700 transition-colors hover:bg-amber-50 disabled:opacity-60 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-950"
           >
-            🔔 {t('callWaiter')}
+            <svg
+              className="h-3.5 w-3.5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
+              <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
+            </svg>
+            {t('callWaiter')}
           </button>
           {callSent && <span className="text-xs text-green-600 dark:text-green-400">{t('callWaiterSent')}</span>}
         </div>
@@ -414,7 +455,11 @@ export function MenuOrder({
                         <span className="line-clamp-2 text-sm font-medium leading-snug">
                           {p.name}
                         </span>
-                        {p.bestseller && <span className="shrink-0 text-[10px]">🔥</span>}
+                        {p.bestseller && (
+                          <span className="shrink-0 rounded bg-red-50 px-1 py-0.5 text-[10px] font-medium leading-none text-red-600 dark:bg-red-950 dark:text-red-400">
+                            {t('bestseller')}
+                          </span>
+                        )}
                       </div>
                       <div className="mt-auto pt-1 text-sm font-semibold text-amber-600 dark:text-amber-500">
                         {formatPrice(Number(p.price))}đ
@@ -598,7 +643,7 @@ export function MenuOrder({
                 <>
                   {deliveryArea && (
                     <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                      📍 {t('deliveryArea')}: {deliveryArea}
+                      {t('deliveryArea')}: {deliveryArea}
                     </p>
                   )}
                   <label className="flex items-center gap-2 text-sm">

@@ -121,13 +121,16 @@
     "addItem": "Add item",
     "removeItem": "Remove",
     "items": "Items",
-    "toastUpdated": "Updated"
+    "toastUpdated": "Updated",
+    "tableQr": "Table QR / Door code",
+    "downloadQr": "Download QR",
+    "tableNoPh": "Table no. (optional)"
   },
   "orderSummary": {
-    "header": "🏪 {shopName}",
+    "header": "{shopName}",
     "orderNo": "Order #{orderNo}",
     "total": "Total: {total}đ",
-    "thanks": "Thank you! 🙏",
+    "thanks": "Thank you!",
     "note": "Note"
   },
   "menu": {
@@ -198,5 +201,12 @@
     "deleteConfirm": "Delete your personal data (phone, name, note) for this order? You won't be able to look it up afterwards.",
     "deleted": "Deleted",
     "error": "Failed, please retry"
+  },
+  "common": {
+    "installApp": "Add to Home Screen",
+    "installDesc": "Open fast, like an app",
+    "installBtn": "Install",
+    "installIos": "In Safari, tap Share → Add to Home Screen",
+    "dismiss": "Dismiss"
   }
 }

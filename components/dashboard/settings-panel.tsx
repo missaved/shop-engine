@@ -13,6 +13,7 @@ import {
 } from '@/lib/actions'
 import type { ShopPlain } from './order-list'
 import { useToast, ToastView } from './use-toast'
+import { TableQrGenerator } from './table-qr-generator'
 import { formatPrice } from '@/lib/format'
 
 // 上传本地图片到 /api/upload（multipart），返回可直访的静态 URL（/uploads/xxx）
@@ -296,6 +297,14 @@ export function SettingsPanel({
       </div>
 
       <AddProductForm onAdded={() => router.refresh()} />
+
+      {/* 桌号引导图 / 门头二维码：老板输入桌号预览，下载二维码打印贴桌 */}
+      <div className="flex flex-col gap-2">
+        <h2 className="text-lg font-medium">{t('tableQr')}</h2>
+        <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <TableQrGenerator slug={shop.slug} shopName={shop.name} />
+        </div>
+      </div>
 
       {/* 营业时间 / 起送价 */}
       <form
@@ -601,7 +610,7 @@ function AddProductForm({ onAdded }: { onAdded: () => void }) {
           checked={bestseller}
           onChange={(e) => setBestseller(e.target.checked)}
         />
-        <span className="text-zinc-600 dark:text-zinc-400">🔥 {t('bestseller')}</span>
+        <span className="text-zinc-600 dark:text-zinc-400">{t('bestseller')}</span>
       </label>
 
       {/* 预览：客户视角的商品卡片（填写名称后实时显示，保存前确认效果） */}
@@ -912,7 +921,7 @@ function EditProductForm({
           checked={bestseller}
           onChange={(e) => setBestseller(e.target.checked)}
         />
-        <span className="text-zinc-500">🔥 {t('bestseller')}</span>
+        <span className="text-zinc-500">{t('bestseller')}</span>
       </label>
 
       {/* 预览：客户视角的商品卡片（保存前确认效果） */}

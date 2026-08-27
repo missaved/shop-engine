@@ -39,7 +39,17 @@ export function RevenueCard({
   return (
     <div className="rounded-xl border border-zinc-200 bg-white text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
       <button onClick={() => setExpanded((v) => !v)} className="w-full p-3" title={t('revenue')}>
-        <span className="text-lg leading-none">💰</span>
+        <svg
+          className="mx-auto h-5 w-5 text-amber-500"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+        </svg>
         <p className="text-2xl font-semibold text-amber-600 dark:text-amber-500">
           {formatPrice(day1)}đ
         </p>

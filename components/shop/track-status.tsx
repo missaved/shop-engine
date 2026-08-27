@@ -67,8 +67,20 @@ export function TrackStatus({
 
   return (
     <div className="rounded-xl border border-green-200 bg-green-50 p-4 text-center dark:border-green-800 dark:bg-green-950">
-      <p className="text-sm font-medium text-green-700 dark:text-green-300">
-        ✅ {t('statusReadyHint')}
+      <p className="flex items-center justify-center gap-1.5 text-sm font-medium text-green-700 dark:text-green-300">
+        <svg
+          className="h-4 w-4"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <circle cx="12" cy="12" r="9" />
+          <path d="m8 12 3 3 5-6" />
+        </svg>
+        {t('statusReadyHint')}
       </p>
     </div>
   )

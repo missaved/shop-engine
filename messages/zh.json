@@ -121,13 +121,16 @@
     "addItem": "加菜",
     "removeItem": "删除",
     "items": "商品",
-    "toastUpdated": "已更新"
+    "toastUpdated": "已更新",
+    "tableQr": "桌号引导图 / 门头二维码",
+    "downloadQr": "下载二维码",
+    "tableNoPh": "桌号（可选）"
   },
   "orderSummary": {
-    "header": "🏪 {shopName}",
+    "header": "{shopName}",
     "orderNo": "订单 #{orderNo}",
     "total": "合计：{total}đ",
-    "thanks": "谢谢惠顾！🙏",
+    "thanks": "谢谢惠顾！",
     "note": "备注"
   },
   "menu": {
@@ -198,5 +201,12 @@
     "deleteConfirm": "确定删除本单的个人数据（手机号、姓名、备注）？删除后无法再查询此订单。",
     "deleted": "已删除",
     "error": "操作失败，请重试"
+  },
+  "common": {
+    "installApp": "添加到桌面",
+    "installDesc": "快速打开，像 App 一样使用",
+    "installBtn": "安装",
+    "installIos": "在 Safari 分享菜单点「添加到主屏幕」",
+    "dismiss": "关闭"
   }
 }

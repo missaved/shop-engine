@@ -175,10 +175,16 @@ export async function createOrder(input: {
         _max: { orderNo: true },
       })
       const orderNo = (max._max.orderNo ?? 0) + 1
-      const todayCount = await tx.order.count({
+      // 当日序号取「当日最大 displayNo 序号 + 1」，而非 count+1（订单有空洞/删除时会撞号 P2002）
+      const lastOrder = await tx.order.findFirst({
         where: { shopId: shop.id, displayNo: { startsWith: `CP-${dayPrefix}-` } },
+        orderBy: { displayNo: 'desc' },
+        select: { displayNo: true },
       })
-      const displayNo = `CP-${dayPrefix}-${String(todayCount + 1).padStart(3, '0')}`
+      const lastSeq = lastOrder?.displayNo
+        ? Number(lastOrder.displayNo.split('-').pop() ?? '0')
+        : 0
+      const displayNo = `CP-${dayPrefix}-${String(lastSeq + 1).padStart(3, '0')}`
       // 游客标识：guestKey（cookie）+ guestIp（下单网络），供查单锁定本人订单（免填订单号）
       const h = await headers()
       const fwd = h.get('x-forwarded-for')
@@ -212,6 +218,8 @@ export async function createOrder(input: {
     })
 
     // D1 新单冒泡：创建到点提醒（老板一键复制发 Zalo）
+    // payload 附带订单类型/桌号/菜品摘要，供待办一目了然 + 点击跳单
+    const itemsSummary = orderItems.map((it) => ({ name: it.name, qty: it.qty }))
     await prisma.reminder.create({
       data: {
         shopId: shop.id,
@@ -224,6 +232,9 @@ export async function createOrder(input: {
           customerName: input.customerName?.trim() || null,
           customerPhone: phone ?? null,
           total,
+          orderType,
+          tableNo: tableNo ?? null,
+          items: itemsSummary,
         },
       },
     })

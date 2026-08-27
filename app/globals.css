@@ -34,8 +34,14 @@ body {
   from { opacity: 0; }
   to { opacity: 1; }
 }
+/* 待办菜品明细跑马灯：内容复制两份，平移 -50% 循环，超长时无缝滚动 */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
 
 @layer utilities {
   .animate-slide-up { animation: slide-up 0.25s ease-out; }
   .animate-fade-in { animation: fade-in 0.2s ease-out; }
+  .animate-marquee { animation: marquee 10s linear infinite; }
 }

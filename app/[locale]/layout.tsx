@@ -3,6 +3,8 @@ import { NextIntlClientProvider, hasLocale } from 'next-intl'
 import { getMessages } from 'next-intl/server'
 import { notFound } from 'next/navigation'
 import { routing } from '@/i18n/routing'
+import { AudioUnlocker } from '@/components/audio-unlocker'
+import { InstallPWA } from '@/components/install-pwa'
 import '../globals.css'
 
 export const metadata = {
@@ -29,7 +31,11 @@ export default async function LocaleLayout({
       <body className="flex min-h-full flex-col bg-orange-50/40 text-zinc-900 dark:bg-black dark:text-zinc-50">
         <NextIntlClientProvider messages={messages}>
           {children}
+          {/* PWA 保存桌面提示：前后端共用（Android 一键安装 / iOS 引导添加到主屏幕），须在 provider 内用 useTranslations */}
+          <InstallPWA />
         </NextIntlClientProvider>
+        {/* 全局音频解锁：登录页首次手势即可解锁，老板端挂机收单也能响提示音 */}
+        <AudioUnlocker />
         {/* P1-2 PWA：注册 service worker（断网可离线打开菜单页） */}
         <script
           dangerouslySetInnerHTML={{

@@ -1,8 +1,9 @@
 'use client'
 
 import { useEffect, useRef, useState, useTransition } from 'react'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import { useRouter } from '@/i18n/navigation'
+import { routing } from '@/i18n/routing'
 import {
   addItemsToOrder,
   advanceOrderStatus,
@@ -14,6 +15,7 @@ import {
 } from '@/lib/actions'
 import { useToast, ToastView } from './use-toast'
 import { formatPrice } from '@/lib/format'
+import { playVoice, preloadVoices } from '@/lib/audio'
 
 // 订单与店铺的序列化类型（server component 已把 Decimal/Date 转成基础类型）
 export type OrderItem = {
@@ -42,6 +44,7 @@ export type OrderPlain = {
 }
 export type ShopPlain = {
   id: string
+  slug: string
   name: string
   phone: string | null
   open: boolean
@@ -105,19 +108,16 @@ const STATUS_STYLE: Record<string, { badge: string; bar: string }> = {
 }
 
 // 订单类型 → 徽章样式（外送用醒目 amber，提醒老板优先处理）
-const ORDER_TYPE_STYLE: Record<string, { icon: string; key: string; badge: string }> = {
+const ORDER_TYPE_STYLE: Record<string, { key: string; badge: string }> = {
   dine_in: {
-    icon: '🪑',
     key: 'orderTypeDineIn',
     badge: 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300',
   },
   takeaway: {
-    icon: '🛍️',
     key: 'orderTypeTakeaway',
     badge: 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300',
   },
   delivery: {
-    icon: '🛵',
     key: 'orderTypeDelivery',
     badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
   },
@@ -153,6 +153,7 @@ export function OrderList({
   const t = useTranslations('dashboard')
   const ts = useTranslations('orderSummary')
   const router = useRouter()
+  const locale = useLocale()
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [paidInput, setPaidInput] = useState<Record<string, string>>({})
   // 支付方式（现金/扫码/其他），按订单存，默认现金
@@ -189,41 +190,6 @@ export function OrderList({
   // 呼叫服务员实时性：记最新 CALL_WAITER 提醒时间戳（轮询发现变化则刷新 + 提示音）
   const callTsRef = useRef(0)
 
-  // 持久化 AudioContext：移动端 H5 需在用户手势后 resume 才能播提示音
-  const audioCtxRef = useRef<AudioContext | null>(null)
-
-  function unlockAudio() {
-    try {
-      if (!audioCtxRef.current) audioCtxRef.current = new AudioContext()
-      void audioCtxRef.current.resume()
-    } catch {
-      // 不支持 Web Audio 时静默
-    }
-  }
-
-  async function playBeep() {
-    try {
-      if (!audioCtxRef.current) audioCtxRef.current = new AudioContext()
-      const ctx = audioCtxRef.current
-      // 关键：AudioContext 可能 suspended（浏览器 autoplay 政策），先 await resume 再播，否则首次无声
-      if (ctx.state === 'suspended') await ctx.resume()
-      const now = ctx.currentTime
-      // 双音提示（880→1100Hz），比单音更醒目
-      ;[880, 1100].forEach((freq, i) => {
-        const osc = ctx.createOscillator()
-        const gain = ctx.createGain()
-        osc.type = 'sine'
-        osc.frequency.value = freq
-        gain.gain.value = 0.2
-        osc.connect(gain).connect(ctx.destination)
-        osc.start(now + i * 0.18)
-        osc.stop(now + i * 0.18 + 0.16)
-      })
-    } catch {
-      // 音频不可用时静默，不影响刷新
-    }
-  }
-
   useEffect(() => {
     let firstCall = true // 首次轮询只初始化 callTsRef，避免误报历史呼叫
     const id = setInterval(async () => {
@@ -231,7 +197,7 @@ export function OrderList({
         const latest = await getLatestOrderNo()
         if (latest > maxRef.current) {
           maxRef.current = latest
-          void playBeep()
+          void playVoice(`/sounds/new-order.${locale}.mp3`)
           show(t('newOrderAlert'))
           router.refresh()
         }
@@ -241,26 +207,24 @@ export function OrderList({
           firstCall = false
         } else if (latestCall > callTsRef.current) {
           callTsRef.current = latestCall
-          void playBeep()
+          void playVoice(`/sounds/call-waiter.${locale}.mp3`)
           show(t('callWaiterAlert'))
           router.refresh()
         }
       } catch {
         // 轮询失败静默，下一轮重试
       }
-    }, 5000)
+    }, 2000)
     return () => clearInterval(id)
-  }, [router, show, t])
+  }, [router, show, t, locale])
 
-  // 移动端 H5：首次触摸/点击解锁音频，之后轮询发现新单才能播提示音
+  // 预加载全部三语提示语音，播放时零延迟（首次 fetch+decode 的延迟被前置）
   useEffect(() => {
-    const unlock = () => unlockAudio()
-    document.addEventListener('pointerdown', unlock, { once: true })
-    document.addEventListener('touchstart', unlock, { once: true })
-    return () => {
-      document.removeEventListener('pointerdown', unlock)
-      document.removeEventListener('touchstart', unlock)
+    const urls: string[] = []
+    for (const loc of routing.locales) {
+      urls.push(`/sounds/new-order.${loc}.mp3`, `/sounds/call-waiter.${loc}.mp3`)
     }
+    void preloadVoices(urls)
   }, [])
 
   // 屏幕常亮（Wake Lock）：老板端挂机收单时防熄屏；不支持的浏览器/非 secure 上下文静默降级
@@ -428,6 +392,7 @@ export function OrderList({
           return (
             <div
               key={order.id}
+              id={`order-${order.id}`}
               onClick={() => expandOrder(order.id)}
               className="flex cursor-pointer items-center justify-between rounded-xl border border-zinc-200 bg-white px-4 py-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
             >
@@ -448,6 +413,7 @@ export function OrderList({
         return (
           <div
             key={order.id}
+            id={`order-${order.id}`}
             className={`rounded-xl border border-l-4 border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 ${STATUS_STYLE[order.status]?.bar ?? 'border-l-zinc-300'}`}
           >
             <div className="mb-2 flex items-center justify-between">
@@ -468,7 +434,7 @@ export function OrderList({
                   <span
                     className={`rounded-full px-2 py-0.5 text-xs font-medium ${typeStyle.badge}`}
                   >
-                    {typeStyle.icon} {typeLabel}
+                    {typeLabel}
                   </span>
                 )}
               </div>
@@ -489,7 +455,7 @@ export function OrderList({
 
             {order.orderType === 'delivery' && order.address ? (
               <p className="mb-1 text-sm text-zinc-600 dark:text-zinc-400">
-                🛵 {t('address')}: {order.address}
+                {t('address')}: {order.address}
               </p>
             ) : null}
 

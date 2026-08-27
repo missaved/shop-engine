@@ -51,6 +51,7 @@ export type ShopPlain = {
     deliveryFee?: number
     packingFee?: number
     deliveryArea?: string
+    description?: string
   } | null
 }
 // 加菜面板可选商品（id/name/price/active 够用，ProductPlain 满足此结构）
@@ -154,6 +155,8 @@ export function OrderList({
   const router = useRouter()
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [paidInput, setPaidInput] = useState<Record<string, string>>({})
+  // 支付方式（现金/扫码/其他），按订单存，默认现金
+  const [paymentMethod, setPaymentMethod] = useState<Record<string, string>>({})
   const [pending, startTransition] = useTransition()
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
   const [query, setQuery] = useState('')
@@ -167,6 +170,15 @@ export function OrderList({
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
   const isFolded = (order: OrderPlain) =>
     order.status === 'COMPLETED' && (collapsed[order.id] ?? true)
+  // 展开后 5 秒自动收缩（点开看一眼即可，无需手动折叠）
+  const collapseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  function expandOrder(id: string) {
+    setCollapsed((prev) => ({ ...prev, [id]: false }))
+    if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current)
+    collapseTimerRef.current = setTimeout(() => {
+      setCollapsed((prev) => ({ ...prev, [id]: true }))
+    }, 5000)
+  }
 
   // P1-1 新订单实时性：记当前最大 orderNo，轮询发现更大则刷新 + 提示音
   const maxRef = useRef(0)
@@ -189,45 +201,56 @@ export function OrderList({
     }
   }
 
-  function playBeep() {
+  async function playBeep() {
     try {
-      unlockAudio()
+      if (!audioCtxRef.current) audioCtxRef.current = new AudioContext()
       const ctx = audioCtxRef.current
-      if (!ctx) return
-      const osc = ctx.createOscillator()
-      const gain = ctx.createGain()
-      osc.type = 'sine'
-      osc.frequency.value = 880
-      gain.gain.value = 0.15
-      osc.connect(gain).connect(ctx.destination)
-      osc.start()
-      osc.stop(ctx.currentTime + 0.25)
+      // 关键：AudioContext 可能 suspended（浏览器 autoplay 政策），先 await resume 再播，否则首次无声
+      if (ctx.state === 'suspended') await ctx.resume()
+      const now = ctx.currentTime
+      // 双音提示（880→1100Hz），比单音更醒目
+      ;[880, 1100].forEach((freq, i) => {
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.type = 'sine'
+        osc.frequency.value = freq
+        gain.gain.value = 0.2
+        osc.connect(gain).connect(ctx.destination)
+        osc.start(now + i * 0.18)
+        osc.stop(now + i * 0.18 + 0.16)
+      })
     } catch {
       // 音频不可用时静默，不影响刷新
     }
   }
 
   useEffect(() => {
+    let firstCall = true // 首次轮询只初始化 callTsRef，避免误报历史呼叫
     const id = setInterval(async () => {
       try {
         const latest = await getLatestOrderNo()
         if (latest > maxRef.current) {
           maxRef.current = latest
-          playBeep()
+          void playBeep()
+          show(t('newOrderAlert'))
           router.refresh()
         }
         const latestCall = await getLatestCallTs()
-        if (latestCall > callTsRef.current) {
+        if (firstCall) {
           callTsRef.current = latestCall
-          playBeep()
+          firstCall = false
+        } else if (latestCall > callTsRef.current) {
+          callTsRef.current = latestCall
+          void playBeep()
+          show(t('callWaiterAlert'))
           router.refresh()
         }
       } catch {
         // 轮询失败静默，下一轮重试
       }
-    }, 20000)
+    }, 5000)
     return () => clearInterval(id)
-  }, [router])
+  }, [router, show, t])
 
   // 移动端 H5：首次触摸/点击解锁音频，之后轮询发现新单才能播提示音
   useEffect(() => {
@@ -237,6 +260,32 @@ export function OrderList({
     return () => {
       document.removeEventListener('pointerdown', unlock)
       document.removeEventListener('touchstart', unlock)
+    }
+  }, [])
+
+  // 屏幕常亮（Wake Lock）：老板端挂机收单时防熄屏；不支持的浏览器/非 secure 上下文静默降级
+  useEffect(() => {
+    const nav = navigator as Navigator & {
+      wakeLock?: {
+        request: (type: string) => Promise<{ release: () => Promise<void> }>
+      }
+    }
+    let sentinel: { release: () => Promise<void> } | null = null
+    const request = async () => {
+      try {
+        sentinel = (await nav.wakeLock?.request('screen')) ?? null
+      } catch {
+        // 不支持或权限拒绝时静默
+      }
+    }
+    void request()
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void request()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      void sentinel?.release()
     }
   }, [])
 
@@ -298,7 +347,8 @@ export function OrderList({
         router.refresh()
       } catch (e) {
         console.error('操作失败:', e)
-        show(t('toastError'))
+        // 推进到完毕但未收款：给明确的业务提示，其余用通用失败提示
+        show(e instanceof Error && e.message === 'PAY_FIRST' ? t('payFirst') : t('toastError'))
       }
     })
   }
@@ -378,20 +428,16 @@ export function OrderList({
           return (
             <div
               key={order.id}
-              className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white px-4 py-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+              onClick={() => expandOrder(order.id)}
+              className="flex cursor-pointer items-center justify-between rounded-xl border border-zinc-200 bg-white px-4 py-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
             >
-              <button
-                onClick={() =>
-                  setCollapsed((prev) => ({ ...prev, [order.id]: false }))
-                }
-                className="flex items-center gap-2 text-left"
-              >
+              <div className="flex items-center gap-2 text-left">
                 <span className="text-xs text-zinc-400">▸</span>
                 <span className="font-medium">{order.displayNo}</span>
                 <span className="text-xs text-zinc-400">
                   {formatTime(order.createdAt)}
                 </span>
-              </button>
+              </div>
               <span className="font-medium">
                 {formatPrice(Number(order.total))}đ
               </span>
@@ -503,48 +549,82 @@ export function OrderList({
               </span>
             </div>
 
-            {/* 实收设置 + 收全款快捷 */}
-            <div className="mb-3 flex items-center gap-2">
-              <input
-                type="number"
-                value={paidInput[order.id] ?? order.paidAmount}
-                onChange={(e) =>
-                  setPaidInput((prev) => ({
-                    ...prev,
-                    [order.id]: e.target.value,
-                  }))
-                }
-                placeholder={t('paidAmount')}
-                className="w-28 rounded-md border border-zinc-300 px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-800"
-              />
-              <button
-                onClick={() =>
-                  run(
-                    () =>
-                      setOrderPaidAmount(
-                        order.id,
-                        Number(paidInput[order.id] ?? order.paidAmount),
-                      ),
-                    t('toastPaid'),
-                  )
-                }
-                disabled={pending}
-                className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
-              >
-                {t('save')}
-              </button>
-              <button
-                onClick={() =>
-                  run(
-                    () => setOrderPaidAmount(order.id, Number(order.total)),
-                    t('toastPaid'),
-                  )
-                }
-                disabled={pending}
-                className="rounded-md border border-zinc-300 px-3 py-1.5 text-xs transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
-              >
-                {t('collectFull')}
-              </button>
+            {/* 收款：支付方式 3 选 + 实收金额 + 快捷收全款 */}
+            <div className="mb-3">
+              <div className="mb-2 flex gap-1">
+                {(['cash', 'qr', 'other'] as const).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() =>
+                      setPaymentMethod((prev) => ({ ...prev, [order.id]: m }))
+                    }
+                    className={`rounded-md border px-2.5 py-1 text-xs transition-colors ${
+                      (paymentMethod[order.id] ?? 'cash') === m
+                        ? 'border-amber-500 bg-amber-500 text-white'
+                        : 'border-zinc-300 text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800'
+                    }`}
+                  >
+                    {t(m === 'cash' ? 'payCash' : m === 'qr' ? 'payQr' : 'payOther')}
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  value={paidInput[order.id] ?? order.paidAmount}
+                  onChange={(e) =>
+                    setPaidInput((prev) => ({
+                      ...prev,
+                      [order.id]: e.target.value,
+                    }))
+                  }
+                  placeholder={t('paidAmount')}
+                  className="w-28 rounded-md border border-zinc-300 px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-800"
+                />
+                <button
+                  onClick={() =>
+                    run(
+                      () =>
+                        setOrderPaidAmount(
+                          order.id,
+                          Number(paidInput[order.id] ?? order.paidAmount),
+                          (paymentMethod[order.id] as
+                            | 'cash'
+                            | 'qr'
+                            | 'other'
+                            | undefined) ?? 'cash',
+                        ),
+                      t('toastPaid'),
+                    )
+                  }
+                  disabled={pending}
+                  className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                >
+                  {t('collect')}
+                </button>
+                <button
+                  onClick={() =>
+                    run(
+                      () =>
+                        setOrderPaidAmount(
+                          order.id,
+                          Number(order.total),
+                          (paymentMethod[order.id] as
+                            | 'cash'
+                            | 'qr'
+                            | 'other'
+                            | undefined) ?? 'cash',
+                        ),
+                      t('toastPaid'),
+                    )
+                  }
+                  disabled={pending}
+                  className="rounded-md border border-zinc-300 px-3 py-1.5 text-xs transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                >
+                  {t('collectFull')}
+                </button>
+              </div>
             </div>
 
             <div className="flex gap-2">

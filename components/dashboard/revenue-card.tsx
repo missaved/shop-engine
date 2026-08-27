@@ -1,6 +1,6 @@
 'use client'
 
-// 营业额卡片：默认隐藏数值，点击 1/3/7/30 天切换显示，再点同档隐藏
+// 营业额卡片：默认显示今日营业额，点击展开 1/3/7/30 天明细二级菜单
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { formatPrice } from '@/lib/format'
@@ -17,39 +17,59 @@ export function RevenueCard({
   day3,
   day7,
   day30,
+  count1,
+  count3,
+  count7,
+  count30,
 }: {
   day1: number
   day3: number
   day7: number
   day30: number
+  count1: number
+  count3: number
+  count7: number
+  count30: number
 }) {
   const t = useTranslations('dashboard')
-  const [selected, setSelected] = useState<number | null>(null) // null = 隐藏数值
+  const [expanded, setExpanded] = useState(false)
   const values: Record<number, number> = { 1: day1, 3: day3, 7: day7, 30: day30 }
+  const counts: Record<number, number> = { 1: count1, 3: count3, 7: count7, 30: count30 }
 
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-3 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-      <button onClick={() => setSelected(null)} className="w-full" title={t('hideRevenue')}>
+    <div className="rounded-xl border border-zinc-200 bg-white text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+      <button onClick={() => setExpanded((v) => !v)} className="w-full p-3" title={t('revenue')}>
+        <span className="text-lg leading-none">💰</span>
         <p className="text-2xl font-semibold text-amber-600 dark:text-amber-500">
-          {selected === null ? '•••••' : `${formatPrice(values[selected])}đ`}
+          {formatPrice(day1)}đ
         </p>
-        <p className="text-xs text-zinc-500">{t('revenue')}</p>
-      </button>
-      <div className="mt-2 flex justify-center gap-1">
-        {RANGES.map((r) => (
-          <button
-            key={r.days}
-            onClick={() => setSelected(selected === r.days ? null : r.days)}
-            className={`rounded-full px-2 py-0.5 text-xs font-medium transition-colors ${
-              selected === r.days
-                ? 'bg-amber-500 text-white'
-                : 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-400'
-            }`}
+        <p className="mt-0.5 flex items-center justify-center gap-1 text-xs text-zinc-500">
+          {t('revenue')}
+          <span
+            className={`text-[10px] transition-transform ${expanded ? 'rotate-180' : ''}`}
           >
-            {t(r.key)}
-          </button>
-        ))}
-      </div>
+            ▾
+          </span>
+        </p>
+      </button>
+      {expanded && (
+        <div className="border-t border-zinc-100 px-2 py-1.5 text-left dark:border-zinc-800">
+          {RANGES.map((r) => (
+            <div
+              key={r.days}
+              className="flex items-center justify-between gap-2 rounded-md px-2 py-1.5 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+            >
+              <span className="text-xs text-zinc-500">{t(r.key)}</span>
+              <span className="text-xs text-zinc-400">
+                {t('ordersCount', { n: counts[r.days] })}
+              </span>
+              <span className="text-sm font-semibold text-amber-600 dark:text-amber-500">
+                {formatPrice(values[r.days])}đ
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

@@ -4,19 +4,49 @@
 
 import { revalidatePath } from 'next/cache'
 import { notFound } from 'next/navigation'
+import { headers } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
 import { requireUser } from '@/lib/dal'
-import { assertShopOwned } from '@/lib/tenant'
+import { assertShopOwned, getShopBySlug } from '@/lib/tenant'
+import { isRateLimited, recordFailure } from '@/lib/rate-limit'
+
+// 完结订单：建复购提醒（21 天后）+ dismiss 过时提醒（新单/出餐）。
+// 收全款自动完结 / 手动推进到 COMPLETED 共用，避免重复建提醒
+async function finalizeOrder(
+  order: { id: string; displayNo: string; customerPhone: string | null },
+  shopId: string,
+): Promise<void> {
+  await prisma.reminder.create({
+    data: {
+      shopId,
+      orderId: order.id,
+      templateKey: 'FOOD_REPURCHASE_21D',
+      dueAt: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000),
+      status: 'PENDING',
+      payload: { displayNo: order.displayNo, customerPhone: order.customerPhone },
+    },
+  })
+  await prisma.reminder.updateMany({
+    where: {
+      orderId: order.id,
+      templateKey: { in: ['FOOD_NEW_ORDER', 'FOOD_READY'] },
+      status: 'PENDING',
+    },
+    data: { status: 'DISMISSED' },
+  })
+}
 
 // 设置实收（E2 支付三态：0=未付，0<实收<total=部分付，≥total=已付；欠款=total-实收）
+// paymentMethod：支付方式（现金/扫码/其他），写 order.config.paymentMethod；收全款自动完结订单
 export async function setOrderPaidAmount(
   orderId: string,
   paidAmount: number,
+  paymentMethod?: 'cash' | 'qr' | 'other',
 ): Promise<void> {
   const user = await requireUser()
   try {
-    assertShopOwned(
+    const order = assertShopOwned(
       user.shopId,
       await prisma.order.findUnique({ where: { id: orderId } }),
     )
@@ -24,10 +54,23 @@ export async function setOrderPaidAmount(
     const amount = Number(paidAmount)
     if (!Number.isFinite(amount) || amount < 0) throw new Error('实收金额无效')
 
+    const total = Number(order.total)
+    const oldCfg = (order.config as Record<string, unknown> | null) ?? {}
+    // 收全款（实收 ≥ total）→ 自动完结，无需再手动推进
+    const willComplete = amount >= total && order.status !== 'COMPLETED'
+
     await prisma.order.update({
       where: { id: orderId },
-      data: { paidAmount: amount },
+      data: {
+        paidAmount: amount,
+        ...(willComplete ? { status: 'COMPLETED' as const } : {}),
+        config: {
+          ...oldCfg,
+          ...(paymentMethod ? { paymentMethod } : {}),
+        } as Prisma.InputJsonValue,
+      },
     })
+    if (willComplete) await finalizeOrder(order, user.shopId)
     revalidatePath('/[locale]/dashboard', 'page')
   } catch (e) {
     console.error('设置实收失败（orderId=%s）:', orderId, e)
@@ -52,6 +95,11 @@ export async function advanceOrderStatus(orderId: string): Promise<void> {
     const target = next[order.status as keyof typeof next]
     if (!target) throw new Error('当前状态无法推进')
 
+    // 推进到「完毕」前必须先收全款（收全款本身会自动完结，此处拦截未收款的手动推进）
+    if (target === 'COMPLETED' && Number(order.paidAmount) < Number(order.total)) {
+      throw new Error('PAY_FIRST')
+    }
+
     await prisma.order.update({
       where: { id: orderId },
       data: { status: target },
@@ -72,20 +120,13 @@ export async function advanceOrderStatus(orderId: string): Promise<void> {
           },
         },
       })
-    } else if (target === 'COMPLETED') {
-      await prisma.reminder.create({
-        data: {
-          shopId: user.shopId,
-          orderId,
-          templateKey: 'FOOD_REPURCHASE_21D',
-          dueAt: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000),
-          status: 'PENDING',
-          payload: {
-            displayNo: order.displayNo,
-            customerPhone: order.customerPhone,
-          },
-        },
+      // 新单提醒已过时（已出餐），dismiss 掉不再冒泡
+      await prisma.reminder.updateMany({
+        where: { orderId, templateKey: 'FOOD_NEW_ORDER', status: 'PENDING' },
+        data: { status: 'DISMISSED' },
       })
+    } else if (target === 'COMPLETED') {
+      await finalizeOrder(order, user.shopId)
     }
     revalidatePath('/[locale]/dashboard', 'page')
   } catch (e) {
@@ -189,6 +230,7 @@ export async function updateShopSettings(input: {
   deliveryFee?: number
   packingFee?: number
   deliveryArea?: string
+  description?: string
 }): Promise<void> {
   const user = await requireUser()
   try {
@@ -202,6 +244,7 @@ export async function updateShopSettings(input: {
     if (input.deliveryFee !== undefined) config.deliveryFee = input.deliveryFee
     if (input.packingFee !== undefined) config.packingFee = input.packingFee
     if (input.deliveryArea !== undefined) config.deliveryArea = input.deliveryArea
+    if (input.description !== undefined) config.description = input.description
 
     await prisma.shop.update({
       where: { id: user.shopId },
@@ -467,6 +510,41 @@ export async function getLatestCallTs(): Promise<number> {
     select: { createdAt: true },
   })
   return latest ? latest.createdAt.getTime() : 0
+}
+
+// 客户端查单轮询：按 slug+对外订单号+凭证返回订单状态（供 track 页实时刷新出餐状态）。
+// 凭证：游客用 guestKey（可能无手机号），否则用手机号；复用 track 查单限流（IP+凭证双 key）防枚举
+export async function getTrackStatus(
+  slug: string,
+  orderNo: string,
+  phone: string,
+  guestKey?: string,
+): Promise<string | null> {
+  const shop = await getShopBySlug(slug)
+  const no = orderNo.trim()
+  const gk = guestKey?.trim() ?? ''
+  const p = phone.trim()
+  if (!no || (!gk && !p)) return null
+
+  const h = await headers()
+  const fwd = h.get('x-forwarded-for')
+  const ip = (fwd ? fwd.split(',')[0].trim() : h.get('x-real-ip')?.trim()) || 'unknown'
+  const keyIp = `track:ip:${ip}`
+  const keyCred = gk ? `track:gk:${gk}` : `track:phone:${p}`
+  if (isRateLimited(keyIp) || isRateLimited(keyCred)) return null
+
+  const order = await prisma.order.findFirst({
+    where: gk
+      ? { shopId: shop.id, displayNo: no, config: { path: ['guestKey'], equals: gk } }
+      : { shopId: shop.id, displayNo: no, customerPhone: p },
+    select: { status: true },
+  })
+  if (!order) {
+    recordFailure(keyIp)
+    recordFailure(keyCred)
+    return null
+  }
+  return order.status
 }
 
 // 订单 items 快照结构（含价格/加料/规格，服务端计价后落库）

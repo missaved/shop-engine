@@ -158,6 +158,9 @@ export function SettingsPanel({
   const [deliveryArea, setDeliveryArea] = useState<string>(
     shop.config?.deliveryArea ?? '',
   )
+  const [description, setDescription] = useState<string>(
+    shop.config?.description ?? '',
+  )
   const [saved, setSaved] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const { msg, show } = useToast()
@@ -192,6 +195,7 @@ export function SettingsPanel({
       deliveryFee: Number(deliveryFee),
       packingFee: Number(packingFee),
       deliveryArea,
+      description,
     })
     setSaved(true)
     setTimeout(() => setSaved(false), 1500)
@@ -356,6 +360,19 @@ export function SettingsPanel({
             value={deliveryArea}
             onChange={(e) => setDeliveryArea(e.target.value)}
             placeholder="Q.1, Q.3, 5km 内"
+            className="rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
+          />
+        </label>
+
+        <label className="flex flex-col gap-1 text-sm">
+          <span className="text-zinc-600 dark:text-zinc-400">
+            {t('shopDescription')}
+          </span>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={3}
+            placeholder="Phở bò truyền thống, nước dùng hầm xương 12 tiếng…"
             className="rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
           />
         </label>

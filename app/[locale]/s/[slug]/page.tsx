@@ -70,10 +70,13 @@ export default async function ShopMenuPage({
   )
   const deliveryArea =
     (shop.config as { deliveryArea?: string } | null)?.deliveryArea ?? ''
+  const shopDesc =
+    (shop.config as { description?: string } | null)?.description ?? shop.address ?? ''
   return (
     <MenuOrder
       slug={slug}
       shopName={shop.name}
+      shopDesc={shopDesc}
       open={shop.open}
       minOrderAmount={minOrderAmount}
       deliveryFee={deliveryFee}

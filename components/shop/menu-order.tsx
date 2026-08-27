@@ -44,10 +44,24 @@ function readPhoneCookie(): string {
   return m ? decodeURIComponent(m[1]) : ''
 }
 
+// 游客标识：读取或生成 guestKey（存 cookie，1 年），下单/查单用它锁定本人订单（免填订单号）
+function ensureGuestKey(): string {
+  if (typeof document === 'undefined') return ''
+  const m = document.cookie.match(/(?:^|;\s*)guest_key=([^;]*)/)
+  if (m) return decodeURIComponent(m[1])
+  const key =
+    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
+  document.cookie = `guest_key=${encodeURIComponent(key)}; max-age=31536000; path=/; SameSite=Lax`
+  return key
+}
+
 // 客户侧点单表单：逐项加减数量 + 加料 + 点单类型 + 手机号 + 一键下单
 export function MenuOrder({
   slug,
   shopName,
+  shopDesc,
   open,
   minOrderAmount,
   deliveryFee,
@@ -57,6 +71,7 @@ export function MenuOrder({
 }: {
   slug: string
   shopName: string
+  shopDesc: string
   open: boolean
   minOrderAmount: number
   deliveryFee: number
@@ -68,6 +83,8 @@ export function MenuOrder({
   const [qty, setQty] = useState<Record<string, number>>({})
   const [extras, setExtras] = useState<Record<string, string[]>>({})
   const [orderType, setOrderType] = useState<OrderType>('dine_in')
+  // 欢迎页：首次打开先选用餐方式 + 看店面介绍，选完才进菜单
+  const [selected, setSelected] = useState(false)
   const [tableNo, setTableNo] = useState('')
   const [address, setAddress] = useState('')
   const [packing, setPacking] = useState(false) // 堂食打包（收打包费）
@@ -90,6 +107,8 @@ export function MenuOrder({
   const [idempotencyKey, setIdempotencyKey] = useState<string>(() =>
     genIdempotencyKey(),
   )
+  // 游客标识（cookie）：下单/查单凭证，锁定本人订单
+  const [guestKey] = useState<string>(() => ensureGuestKey())
 
   // 商品小计：商品价 + 加料价 + 规格价（按份计）
   const subtotal = products.reduce((sum, p) => {
@@ -117,16 +136,6 @@ export function MenuOrder({
 
   function setQ(id: string, n: number) {
     setQty((prev) => ({ ...prev, [id]: Math.max(0, n) }))
-  }
-
-  function toggleExtra(id: string, name: string) {
-    setExtras((prev) => {
-      const cur = prev[id] ?? []
-      const next = cur.includes(name)
-        ? cur.filter((x) => x !== name)
-        : [...cur, name]
-      return { ...prev, [id]: next }
-    })
   }
 
   // 加购抽屉「加入购物车」回调：累加数量 + 覆盖该商品规格/加料
@@ -202,6 +211,7 @@ export function MenuOrder({
           idempotencyKey,
           packing,
           pickup,
+          guestKey,
         })
         // 记住手机号 cookie（客户下次访问菜单/查单自动预填）
         if (phone.trim()) {
@@ -262,6 +272,57 @@ export function MenuOrder({
     )
   }
 
+  // 欢迎页：先选用餐方式（堂食/外带/外送）+ 店面介绍，选完进入菜单
+  if (!selected) {
+    return (
+      <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-6 py-10">
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-semibold">{shopName}</h1>
+          <div className="flex items-center gap-3">
+            <LocaleSwitcher />
+            {!open && (
+              <span className="text-sm text-red-600 dark:text-red-400">{t('closed')}</span>
+            )}
+          </div>
+        </div>
+
+        <h2 className="mt-8 text-2xl font-semibold">{t('welcome')}</h2>
+        {shopDesc && (
+          <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+            {shopDesc}
+          </p>
+        )}
+
+        <p className="mt-8 text-sm font-medium text-zinc-500 dark:text-zinc-400">
+          {t('chooseType')}
+        </p>
+        <div className="mt-3 flex flex-col gap-3">
+          {(
+            [
+              ['dine_in', 'dineIn', '🍽️'],
+              ['takeaway', 'takeaway', '🥡'],
+              ['delivery', 'delivery', '🛵'],
+            ] as const
+          ).map(([value, key, emoji]) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => {
+                setOrderType(value)
+                setSelected(true)
+              }}
+              className="flex items-center gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-4 text-left shadow-sm transition-transform active:scale-[0.99] dark:border-zinc-800 dark:bg-zinc-900"
+            >
+              <span className="text-2xl">{emoji}</span>
+              <span className="flex-1 text-base font-medium">{t(key)}</span>
+              <span className="text-zinc-300 dark:text-zinc-600">›</span>
+            </button>
+          ))}
+        </div>
+      </main>
+    )
+  }
+
   // 按分类分组（同分类归组、无分类归「其他」；分类按首次出现顺序排列）
   const groups: { name: string | null; items: MenuProduct[] }[] = []
   for (const p of products) {
@@ -291,6 +352,17 @@ export function MenuOrder({
         </div>
       </div>
 
+      {/* 当前用餐方式：点按返回欢迎页重选 */}
+      {open && (
+        <button
+          type="button"
+          onClick={() => setSelected(false)}
+          className="mb-1 flex items-center gap-1 self-start rounded-full border border-zinc-200 px-3 py-1 text-xs text-zinc-600 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
+        >
+          ↩ {t(orderType === 'dine_in' ? 'dineIn' : orderType === 'takeaway' ? 'takeaway' : 'delivery')}
+        </button>
+      )}
+
       {/* 呼叫服务员：客户随时找服务员（买水/买单/其他需求），老板端冒泡 + 声音 */}
       {open && (
         <div className="flex items-center gap-2">
@@ -312,105 +384,48 @@ export function MenuOrder({
           <h2 className="mt-4 mb-2 text-sm font-semibold text-zinc-500">
             {g.name ?? t('othersCategory')}
           </h2>
-          <ul className="flex flex-col">
+          <ul className="grid grid-cols-2 gap-3">
             {g.items.map((p) => {
               const n = qty[p.id] ?? 0
               return (
-                <li
-                  key={p.id}
-                  className="flex flex-col gap-2 border-b border-zinc-100 py-3 last:border-b-0 dark:border-zinc-800"
-                >
-                  <div className="flex items-center gap-3">
+                <li key={p.id}>
+                  <button
+                    type="button"
+                    onClick={() => setActiveProduct(p)}
+                    className="relative flex w-full flex-col overflow-hidden rounded-xl border border-zinc-100 bg-white text-left shadow-sm transition-transform active:scale-[0.98] dark:border-zinc-800 dark:bg-zinc-900"
+                  >
                     {p.image ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={p.image}
                         alt={p.name}
-                        onClick={() => setActiveProduct(p)}
-                        className="h-20 w-20 shrink-0 cursor-pointer rounded-xl object-cover"
+                        className="h-24 w-full object-cover"
                       />
                     ) : (
-                      <span
-                        onClick={() => setActiveProduct(p)}
-                        className="flex h-20 w-20 shrink-0 cursor-pointer items-center justify-center rounded-xl bg-zinc-100 text-3xl dark:bg-zinc-800"
-                      >
+                      <span className="flex h-24 w-full items-center justify-center bg-zinc-50 text-4xl dark:bg-zinc-800">
                         {p.emoji}
                       </span>
                     )}
-                    <div
-                      onClick={() => setActiveProduct(p)}
-                      className="min-w-0 flex-1 cursor-pointer"
-                    >
-                      <div className="flex items-center gap-1.5 text-sm font-medium">
-                        <span>{p.name}</span>
-                        {p.bestseller && (
-                          <span className="rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-600 dark:bg-red-900/40 dark:text-red-300">
-                            🔥 {t('bestseller')}
-                          </span>
-                        )}
+                    {n > 0 && (
+                      <span className="absolute right-1.5 top-1.5 flex h-6 min-w-6 items-center justify-center rounded-full bg-amber-500 px-1 text-xs font-semibold text-white">
+                        {n}
+                      </span>
+                    )}
+                    <div className="flex flex-1 flex-col p-2.5">
+                      <div className="flex items-start gap-1">
+                        <span className="line-clamp-2 text-sm font-medium leading-snug">
+                          {p.name}
+                        </span>
+                        {p.bestseller && <span className="shrink-0 text-[10px]">🔥</span>}
                       </div>
-                      {p.desc && (
-                        <p className="mt-0.5 line-clamp-2 text-xs text-zinc-500">{p.desc}</p>
-                      )}
-                      <div className="mt-1 text-sm font-semibold text-amber-600 dark:text-amber-500">
+                      <div className="mt-auto pt-1 text-sm font-semibold text-amber-600 dark:text-amber-500">
                         {formatPrice(Number(p.price))}đ
-                        {p.unit ? ` / ${p.unit}` : ''}
+                        {p.unit ? (
+                          <span className="text-xs font-normal text-zinc-400"> / {p.unit}</span>
+                        ) : null}
                       </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      {n > 0 && (
-                        <>
-                          <button
-                            type="button"
-                            onClick={() => setQ(p.id, n - 1)}
-                            className="h-8 w-8 rounded-full border border-zinc-300 text-sm dark:border-zinc-700"
-                          >
-                            −
-                          </button>
-                          <span className="w-6 text-center text-sm tabular-nums">{n}</span>
-                        </>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          // 有规格/加料/套餐组成的商品 → 打开加购抽屉选规格看组成；否则 → 直接加数量
-                          if (
-                            p.optionGroups.length > 0 ||
-                            p.extras.length > 0 ||
-                            p.combo.length > 0
-                          )
-                            setActiveProduct(p)
-                          else setQ(p.id, n + 1)
-                        }}
-                        className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500 text-lg text-white dark:bg-amber-500 dark:text-white"
-                      >
-                        +
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* 加料选项（A7）：已选数量时展示 */}
-                  {n > 0 && p.extras.length > 0 && (
-                    <div className="flex flex-wrap gap-2 pl-19">
-                      {p.extras.map((ex) => {
-                        const active = (extras[p.id] ?? []).includes(ex.name)
-                        return (
-                          <button
-                            key={ex.name}
-                            type="button"
-                            onClick={() => toggleExtra(p.id, ex.name)}
-                            className={
-                              active
-                                ? 'rounded-full bg-amber-500 px-2 py-1 text-xs text-white dark:bg-amber-500 dark:text-white'
-                                : 'rounded-full border border-zinc-300 px-2 py-1 text-xs dark:border-zinc-700'
-                            }
-                          >
-                            {ex.name} +{formatPrice(Number(ex.price))}đ
-                          </button>
-                        )
-                      })}
-                    </div>
-                  )}
+                  </button>
                 </li>
               )
             })}
@@ -556,43 +571,6 @@ export function MenuOrder({
               onSubmit={onSubmit}
               className="flex flex-col gap-3 border-t border-zinc-100 px-5 py-4 dark:border-zinc-800"
             >
-              {/* 点单类型（A2 堂食桌号 / A3 外带 / A4 外送地址） */}
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setOrderType('dine_in')}
-                  className={
-                    orderType === 'dine_in'
-                      ? 'flex-1 rounded-md bg-amber-500 px-3 py-2 text-sm text-white dark:bg-amber-500 dark:text-white'
-                      : 'flex-1 rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700'
-                  }
-                >
-                  {t('dineIn')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setOrderType('takeaway')}
-                  className={
-                    orderType === 'takeaway'
-                      ? 'flex-1 rounded-md bg-amber-500 px-3 py-2 text-sm text-white dark:bg-amber-500 dark:text-white'
-                      : 'flex-1 rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700'
-                  }
-                >
-                  {t('takeaway')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setOrderType('delivery')}
-                  className={
-                    orderType === 'delivery'
-                      ? 'flex-1 rounded-md bg-amber-500 px-3 py-2 text-sm text-white dark:bg-amber-500 dark:text-white'
-                      : 'flex-1 rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700'
-                  }
-                >
-                  {t('delivery')}
-                </button>
-              </div>
-
               {orderType === 'dine_in' && (
                 <>
                   <label className="flex flex-col gap-1 text-sm">

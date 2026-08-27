@@ -3,6 +3,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { headers } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
 import { getShopBySlug } from '@/lib/tenant'
@@ -51,6 +52,7 @@ export async function createOrder(input: {
   idempotencyKey?: string
   packing?: boolean
   pickup?: boolean
+  guestKey?: string
 }): Promise<{ orderNo: number; displayNo: string }> {
   const shop = await getShopBySlug(input.slug)
   if (!shop.open) throw new Error('店铺已打烊')
@@ -92,6 +94,7 @@ export async function createOrder(input: {
   if (qtyMap.size === 0) throw new Error('请至少选择一件商品')
 
   const idempotencyKey = input.idempotencyKey?.trim() || null
+  const guestKey = input.guestKey?.trim() || undefined
 
   try {
     // P0-7 幂等去重：同一键的重复提交直接返回已建订单（防双击/请求重放）
@@ -176,6 +179,12 @@ export async function createOrder(input: {
         where: { shopId: shop.id, displayNo: { startsWith: `CP-${dayPrefix}-` } },
       })
       const displayNo = `CP-${dayPrefix}-${String(todayCount + 1).padStart(3, '0')}`
+      // 游客标识：guestKey（cookie）+ guestIp（下单网络），供查单锁定本人订单（免填订单号）
+      const h = await headers()
+      const fwd = h.get('x-forwarded-for')
+      const guestIp =
+        (fwd ? fwd.split(',')[0].trim() : h.get('x-real-ip')?.trim()) || undefined
+
       return tx.order.create({
         data: {
           orderNo,
@@ -195,6 +204,8 @@ export async function createOrder(input: {
             ...(address ? { address } : {}),
             ...(packing ? { packing: true } : {}),
             ...(pickup ? { pickup: true } : {}),
+            ...(guestKey ? { guestKey } : {}),
+            ...(guestIp ? { guestIp } : {}),
           },
         },
       })

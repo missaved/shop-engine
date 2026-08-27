@@ -120,15 +120,19 @@ export default async function DashboardPage() {
   const todayOrders = orders.filter((o) => o.createdAt >= startOfDay)
   const todayCount = todayOrders.length
   const todayRevenue = todayOrders.reduce((s, o) => s + Number(o.total), 0)
-  // 营业额多档统计（1 天 = 今日，3/7/30 天 = 滚动窗口，供 RevenueCard 切换）
+  // 营业额多档统计（1 天 = 今日，3/7/30 天 = 滚动窗口，供 RevenueCard 二级明细）
   const dayMs = 24 * 60 * 60 * 1000
+  const inRange = (days: number) =>
+    orders.filter((o) => o.createdAt >= new Date(Date.now() - days * dayMs))
   const revenueRange = (days: number) =>
-    orders
-      .filter((o) => o.createdAt >= new Date(Date.now() - days * dayMs))
-      .reduce((s, o) => s + Number(o.total), 0)
+    inRange(days).reduce((s, o) => s + Number(o.total), 0)
   const revenue3d = revenueRange(3)
   const revenue7d = revenueRange(7)
   const revenue30d = revenueRange(30)
+  const count1 = todayCount
+  const count3 = inRange(3).length
+  const count7 = inRange(7).length
+  const count30 = inRange(30).length
   const openCount = orders.filter(
     (o) => !['COMPLETED', 'CANCELLED'].includes(o.status),
   ).length
@@ -190,13 +194,24 @@ export default async function DashboardPage() {
 
       {/* C1 今日概览 */}
       <section className="grid grid-cols-3 gap-2">
-        <div className="rounded-xl border border-zinc-200 bg-white p-3 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <p className="text-2xl font-semibold text-amber-600 dark:text-amber-500">{todayCount}</p>
+        <div className="flex flex-col items-center justify-center rounded-xl border border-zinc-200 bg-white p-3 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <span className="text-lg leading-none">🧾</span>
+          <p className="mt-1 text-2xl font-semibold text-amber-600 dark:text-amber-500">{todayCount}</p>
           <p className="text-xs text-zinc-500">{t('todayOrders')}</p>
         </div>
-        <RevenueCard day1={todayRevenue} day3={revenue3d} day7={revenue7d} day30={revenue30d} />
-        <div className="rounded-xl border border-zinc-200 bg-white p-3 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <p className="text-2xl font-semibold text-amber-600 dark:text-amber-500">{openCount}</p>
+        <RevenueCard
+          day1={todayRevenue}
+          day3={revenue3d}
+          day7={revenue7d}
+          day30={revenue30d}
+          count1={count1}
+          count3={count3}
+          count7={count7}
+          count30={count30}
+        />
+        <div className="flex flex-col items-center justify-center rounded-xl border border-zinc-200 bg-white p-3 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <span className="text-lg leading-none">🔄</span>
+          <p className="mt-1 text-2xl font-semibold text-amber-600 dark:text-amber-500">{openCount}</p>
           <p className="text-xs text-zinc-500">{t('openOrders')}</p>
         </div>
       </section>

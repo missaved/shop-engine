@@ -6,6 +6,7 @@ import { getShopBySlug } from '@/lib/tenant'
 import { isRateLimited, recordFailure } from '@/lib/rate-limit'
 import { Link } from '@/i18n/navigation'
 import { DeleteMyData } from '@/components/shop/delete-my-data'
+import { TrackStatus } from '@/components/shop/track-status'
 import { formatPrice } from '@/lib/format'
 
 // 订单状态 → 本地化 key（track 段）
@@ -34,13 +35,18 @@ export default async function TrackOrderPage({
   let notFound = false
   let rateLimited = false
 
+  // 游客自动查单：读 cookie guest_key（下单时写入），免填订单号锁定本人订单
+  const reqHeaders = await headers()
+  const cookieStr = reqHeaders.get('cookie') ?? ''
+  const guestKeyRaw = cookieStr.match(/(?:^|;\s*)guest_key=([^;]*)/)?.[1]?.trim() ?? ''
+  const guestKey = guestKeyRaw ? decodeURIComponent(guestKeyRaw) : ''
+
   // 查单：对外订单号 displayNo（CP-YYMMDD-NNN）+ 手机号
   const no = orderNoStr?.trim()
   if (no && phone) {
     // P0-4 查单限流：IP + 手机号双维度，防枚举（复用登录限流同一套计数，5 次失败/60s）
-    const h = await headers()
-    const fwd = h.get('x-forwarded-for')
-    const ip = (fwd ? fwd.split(',')[0].trim() : h.get('x-real-ip')?.trim()) || 'unknown'
+    const fwd = reqHeaders.get('x-forwarded-for')
+    const ip = (fwd ? fwd.split(',')[0].trim() : reqHeaders.get('x-real-ip')?.trim()) || 'unknown'
     const keyIp = `track:ip:${ip}`
     const keyPhone = `track:phone:${phone.trim()}`
     if (isRateLimited(keyIp) || isRateLimited(keyPhone)) {
@@ -57,6 +63,12 @@ export default async function TrackOrderPage({
         recordFailure(keyPhone)
       }
     }
+  } else if (guestKey) {
+    // 游客免填：按 guestKey 匹配最新一单（无 cookie 或换设备则回退手动表单）
+    order = await prisma.order.findFirst({
+      where: { shopId: shop.id, config: { path: ['guestKey'], equals: guestKey } },
+      orderBy: { createdAt: 'desc' },
+    })
   }
 
   // 支付三态（由实收推导）：0=未付，0<实收<total=部分付，≥total=已付
@@ -67,6 +79,9 @@ export default async function TrackOrderPage({
     if (paid > 0 && paid < total) payState = 'partial'
     else if (paid >= total) payState = 'paid'
   }
+
+  // 有效手机号：游客自动匹配用订单里的手机号（可能为空），手动查询用 URL 参数
+  const trackPhone = order?.customerPhone ?? phone?.trim() ?? ''
 
   // 订单类型/桌号/地址（存 order.config，展示用）
   const orderCfg = (order?.config as {
@@ -124,6 +139,15 @@ export default async function TrackOrderPage({
               {t(STATUS_KEY[order.status] ?? 'statusPending')}
             </span>
           </div>
+
+          {/* 实时状态：出餐(READY)时语音 + 横幅提示（客户端打开接收提醒） */}
+          <TrackStatus
+            slug={slug}
+            orderNo={order.displayNo}
+            phone={trackPhone}
+            guestKey={guestKey}
+            initialStatus={order.status}
+          />
 
           {/* 订单类型徽章 + 桌号（堂食）/ 地址（外送） */}
           <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -200,7 +224,7 @@ export default async function TrackOrderPage({
           <DeleteMyData
             slug={slug}
             orderNo={order.displayNo}
-            phone={phone?.trim() ?? ''}
+            phone={trackPhone}
           />
         </div>
       )}

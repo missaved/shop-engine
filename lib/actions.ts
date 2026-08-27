@@ -152,6 +152,15 @@ export async function cancelOrder(orderId: string): Promise<void> {
       where: { id: orderId },
       data: { status: 'CANCELLED' },
     })
+    // 取消订单：清理关联的待办提醒（新单/出餐），避免已取消订单仍冒泡
+    await prisma.reminder.updateMany({
+      where: {
+        orderId,
+        templateKey: { in: ['FOOD_NEW_ORDER', 'FOOD_READY'] },
+        status: 'PENDING',
+      },
+      data: { status: 'DISMISSED' },
+    })
     revalidatePath('/[locale]/dashboard', 'page')
   } catch (e) {
     console.error('取消订单失败（orderId=%s）:', orderId, e)

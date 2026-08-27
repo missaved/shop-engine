@@ -154,6 +154,20 @@ async function main() {
   } else {
     console.log(`已有 ${orderCount} 个订单，跳过创建`)
   }
+
+  // 平台运营账号（ADMIN，不绑店；生产环境请改强密码）
+  const admin = await prisma.user.upsert({
+    where: { phone: '0900000000' },
+    update: {},
+    create: {
+      shopId: null,
+      phone: '0900000000',
+      passwordHash: await hash('demo1234', 10),
+      name: '平台运营',
+      role: 'ADMIN',
+    },
+  })
+  console.log(`平台运营账号就绪：${admin.phone} / demo1234（ADMIN）`)
 }
 
 main()

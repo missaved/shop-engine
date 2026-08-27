@@ -7,7 +7,7 @@ import { notFound } from 'next/navigation'
 import { headers } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
-import { requireUser } from '@/lib/dal'
+import { requireOwner } from '@/lib/dal'
 import { assertShopOwned, getShopBySlug } from '@/lib/tenant'
 import { isRateLimited, recordFailure } from '@/lib/rate-limit'
 
@@ -44,7 +44,7 @@ export async function setOrderPaidAmount(
   paidAmount: number,
   paymentMethod?: 'cash' | 'qr' | 'other',
 ): Promise<void> {
-  const user = await requireUser()
+  const user = await requireOwner()
   try {
     const order = assertShopOwned(
       user.shopId,
@@ -80,7 +80,7 @@ export async function setOrderPaidAmount(
 
 // 推进订单状态（B10：PENDING→IN_PROGRESS→READY→COMPLETED）
 export async function advanceOrderStatus(orderId: string): Promise<void> {
-  const user = await requireUser()
+  const user = await requireOwner()
   try {
     const order = assertShopOwned(
       user.shopId,
@@ -137,7 +137,7 @@ export async function advanceOrderStatus(orderId: string): Promise<void> {
 
 // 取消订单（B10：已结单/已取消不可再取消）
 export async function cancelOrder(orderId: string): Promise<void> {
-  const user = await requireUser()
+  const user = await requireOwner()
   try {
     const order = assertShopOwned(
       user.shopId,
@@ -170,7 +170,7 @@ export async function cancelOrder(orderId: string): Promise<void> {
 
 // 售罄 / 上架（active 翻转）
 export async function toggleProductActive(productId: string): Promise<void> {
-  const user = await requireUser()
+  const user = await requireOwner()
   try {
     const product = assertShopOwned(
       user.shopId,
@@ -192,7 +192,7 @@ export async function toggleProductActive(productId: string): Promise<void> {
 export async function reorderProducts(input: {
   productIds: string[]
 }): Promise<void> {
-  const user = await requireUser()
+  const user = await requireOwner()
   try {
     // 校验归属：只保留属于当前店的商品 id（防越权）
     const owned = await prisma.product.findMany({
@@ -216,7 +216,7 @@ export async function reorderProducts(input: {
 
 // 营业 / 打烊（open 翻转）
 export async function toggleShopOpen(): Promise<void> {
-  const user = await requireUser()
+  const user = await requireOwner()
   try {
     const shop = await prisma.shop.findUnique({ where: { id: user.shopId } })
     if (!shop) notFound()
@@ -242,7 +242,7 @@ export async function updateShopSettings(input: {
   description?: string
   theme?: 'warm' | 'clean' | 'layered'
 }): Promise<void> {
-  const user = await requireUser()
+  const user = await requireOwner()
   try {
     const shop = await prisma.shop.findUnique({ where: { id: user.shopId } })
     if (!shop) notFound()
@@ -345,7 +345,7 @@ export async function createProduct(input: {
   comboText?: string
   bestseller?: boolean
 }): Promise<void> {
-  const user = await requireUser()
+  const user = await requireOwner()
   try {
     const name = input.name?.trim()
     const price = Number(input.price)
@@ -409,7 +409,7 @@ export async function updateProduct(input: {
   comboText?: string
   bestseller?: boolean
 }): Promise<void> {
-  const user = await requireUser()
+  const user = await requireOwner()
   try {
     const product = assertShopOwned(
       user.shopId,
@@ -464,7 +464,7 @@ export async function updateProduct(input: {
 
 // 标记提醒已发送（老板一键复制发 Zalo 后）
 export async function markReminderSent(reminderId: string): Promise<void> {
-  const user = await requireUser()
+  const user = await requireOwner()
   try {
     assertShopOwned(
       user.shopId,
@@ -484,7 +484,7 @@ export async function markReminderSent(reminderId: string): Promise<void> {
 
 // 忽略提醒（DISMISSED）
 export async function dismissReminder(reminderId: string): Promise<void> {
-  const user = await requireUser()
+  const user = await requireOwner()
   try {
     assertShopOwned(
       user.shopId,
@@ -504,7 +504,7 @@ export async function dismissReminder(reminderId: string): Promise<void> {
 
 // P1-1 新订单实时性：返回本店当前最大 orderNo（轮询判断有无新单，不返回订单内容）
 export async function getLatestOrderNo(): Promise<number> {
-  const user = await requireUser()
+  const user = await requireOwner()
   const max = await prisma.order.aggregate({
     where: { shopId: user.shopId },
     _max: { orderNo: true },
@@ -514,7 +514,7 @@ export async function getLatestOrderNo(): Promise<number> {
 
 // 呼叫服务员实时性：返回最新 CALL_WAITER 提醒的创建时间戳（轮询判断有无新呼叫）
 export async function getLatestCallTs(): Promise<number> {
-  const user = await requireUser()
+  const user = await requireOwner()
   const latest = await prisma.reminder.findFirst({
     where: { shopId: user.shopId, templateKey: 'CALL_WAITER' },
     orderBy: { createdAt: 'desc' },
@@ -580,7 +580,7 @@ export async function addItemsToOrder(input: {
   orderId: string
   items: { productId: string; qty: number }[]
 }): Promise<void> {
-  const user = await requireUser()
+  const user = await requireOwner()
   try {
     const order = assertShopOwned(
       user.shopId,
@@ -640,7 +640,7 @@ export async function removeItemFromOrder(input: {
   orderId: string
   index: number
 }): Promise<void> {
-  const user = await requireUser()
+  const user = await requireOwner()
   try {
     const order = assertShopOwned(
       user.shopId,

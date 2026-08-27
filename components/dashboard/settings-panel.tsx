@@ -249,7 +249,7 @@ export function SettingsPanel({
                 <span className="text-lg">{p.emoji}</span>
                 <span className="text-sm font-medium">{p.name}</span>
                 <span className="text-sm text-zinc-500">
-                  {formatPrice(Number(p.price))}đ
+                  {formatPrice(Number(p.price), shop.currency)}
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -293,6 +293,7 @@ export function SettingsPanel({
                 <EditProductForm
                   product={p}
                   onDone={() => setEditingId(null)}
+                  currency={shop.currency}
                 />
               </div>
             )}
@@ -300,7 +301,7 @@ export function SettingsPanel({
         ))}
       </div>
 
-      <AddProductForm onAdded={() => router.refresh()} />
+      <AddProductForm currency={shop.currency} onAdded={() => router.refresh()} />
 
       {/* 桌号引导图 / 门头二维码：老板输入桌号预览，下载二维码打印贴桌 */}
       <div className="flex flex-col gap-2">
@@ -427,7 +428,7 @@ export function SettingsPanel({
 }
 
 // 新增商品表单：名称/价格/单位/图标/介绍（图片 URL 与三语名翻译留 B8）
-function AddProductForm({ onAdded }: { onAdded: () => void }) {
+function AddProductForm({ onAdded, currency }: { onAdded: () => void; currency: string }) {
   const t = useTranslations('dashboard')
   const [pending, startTransition] = useTransition()
   const [name, setName] = useState('')
@@ -657,7 +658,7 @@ function AddProductForm({ onAdded }: { onAdded: () => void }) {
               <div className="text-sm font-medium">{name}</div>
               {desc && <p className="line-clamp-1 text-xs text-zinc-500">{desc}</p>}
               <div className="text-sm font-semibold text-amber-600 dark:text-amber-500">
-                {formatPrice(Number(price) || 0)}đ
+                {formatPrice(Number(price) || 0, currency)}
                 {unit ? ` / ${unit}` : ''}
               </div>
             </div>
@@ -670,7 +671,7 @@ function AddProductForm({ onAdded }: { onAdded: () => void }) {
                   className="rounded-full border border-zinc-200 bg-white px-2 py-0.5 text-xs dark:border-zinc-700 dark:bg-zinc-900"
                 >
                   {ex.name}
-                  {ex.price > 0 ? ` +${formatPrice(ex.price)}đ` : ''}
+                  {ex.price > 0 ? ` +${formatPrice(ex.price, currency)}` : ''}
                 </span>
               ))}
             </div>
@@ -693,9 +694,11 @@ function AddProductForm({ onAdded }: { onAdded: () => void }) {
 function EditProductForm({
   product,
   onDone,
+  currency,
 }: {
   product: ProductPlain
   onDone: () => void
+  currency: string
 }) {
   const t = useTranslations('dashboard')
   const [pending, startTransition] = useTransition()
@@ -967,7 +970,7 @@ function EditProductForm({
             <div className="text-sm font-medium">{name}</div>
             {descVi && <p className="line-clamp-1 text-xs text-zinc-500">{descVi}</p>}
             <div className="text-sm font-semibold text-amber-600 dark:text-amber-500">
-              {formatPrice(Number(price) || 0)}đ
+              {formatPrice(Number(price) || 0, currency)}
               {unit ? ` / ${unit}` : ''}
             </div>
           </div>
@@ -980,7 +983,7 @@ function EditProductForm({
                 className="rounded-full border border-zinc-200 bg-white px-2 py-0.5 text-xs dark:border-zinc-700 dark:bg-zinc-900"
               >
                 {ex.name}
-                {ex.price > 0 ? ` +${formatPrice(ex.price)}đ` : ''}
+                {ex.price > 0 ? ` +${formatPrice(ex.price, currency)}` : ''}
               </span>
             ))}
           </div>

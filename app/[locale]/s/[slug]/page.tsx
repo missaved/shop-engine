@@ -1,6 +1,7 @@
 // 客户侧菜单页：/s/[slug]，公开访问（未登录），按 slug 派生租户
 import { prisma } from '@/lib/prisma'
 import { getShopBySlug } from '@/lib/tenant'
+import { isShopExpired } from '@/lib/billing'
 import { MenuOrder } from '@/components/shop/menu-order'
 import type { MenuProduct } from '@/components/shop/menu-order'
 
@@ -75,17 +76,23 @@ export default async function ShopMenuPage({
   // 店铺主题模板（warm/clean/layered），默认 warm，客户侧按此渲染
   const theme =
     (shop.config as { theme?: 'warm' | 'clean' | 'layered' } | null)?.theme ?? 'warm'
+  // 营业三态：订阅到期 / 平台停用（老板打烊 open 已有），传给客户菜单渲染
+  const expired = isShopExpired(shop)
+  const suspended = shop.platformSuspended
   return (
     <MenuOrder
       slug={slug}
       shopName={shop.name}
       shopDesc={shopDesc}
       open={shop.open}
+      expired={expired}
+      suspended={suspended}
       minOrderAmount={minOrderAmount}
       deliveryFee={deliveryFee}
       packingFee={packingFee}
       deliveryArea={deliveryArea}
       theme={theme}
+      currency={shop.currency}
       products={plain}
     />
   )

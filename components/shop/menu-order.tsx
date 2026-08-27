@@ -63,25 +63,34 @@ export function MenuOrder({
   shopName,
   shopDesc,
   open,
+  expired,
+  suspended,
   minOrderAmount,
   deliveryFee,
   packingFee,
   deliveryArea,
   theme,
+  currency,
   products,
 }: {
   slug: string
   shopName: string
   shopDesc: string
   open: boolean
+  expired: boolean
+  suspended: boolean
   minOrderAmount: number
   deliveryFee: number
   packingFee: number
   deliveryArea: string
   theme: 'warm' | 'clean' | 'layered'
+  currency: string
   products: MenuProduct[]
 }) {
   const t = useTranslations('menu')
+  // 营业阻断三态：平台停用 > 订阅到期 > 老板打烊（优先级与 shop-list subStatus 一致）
+  const blocked = suspended ? 'suspended' : expired ? 'expired' : !open ? 'closed' : null
+  const canOrder = blocked === null
   const [qty, setQty] = useState<Record<string, number>>({})
   const [extras, setExtras] = useState<Record<string, string[]>>({})
   const [orderType, setOrderType] = useState<OrderType>('dine_in')
@@ -172,7 +181,7 @@ export function MenuOrder({
           const detail = [comboStr, optStr, extraStr].filter(Boolean).join(' ')
           return `- ${p.name} x${qty[p.id]}${detail ? ' (' + detail + ')' : ''}`
         }),
-      `${t('total')}: ${formatPrice(total)}đ`,
+      `${t('total')}: ${formatPrice(total, currency)}`,
     ]
     return lines.join('\n')
   }
@@ -294,8 +303,8 @@ export function MenuOrder({
           <h1 className="text-2xl font-bold">{shopName}</h1>
 
           <div className="flex items-center justify-between">
-            {!open ? (
-              <span className="text-sm text-red-600 dark:text-red-400">{t('closed')}</span>
+            {blocked ? (
+              <span className="text-sm text-red-600 dark:text-red-400">{t(blocked)}</span>
             ) : (
               <span />
             )}
@@ -368,8 +377,8 @@ export function MenuOrder({
         <h1 className="text-xl font-semibold">{shopName}</h1>
         <div className="flex items-center gap-3">
           <LocaleSwitcher />
-          {!open && (
-            <span className="text-sm text-red-600 dark:text-red-400">{t('closed')}</span>
+          {blocked && (
+            <span className="text-sm text-red-600 dark:text-red-400">{t(blocked)}</span>
           )}
         </div>
       </div>
@@ -395,7 +404,7 @@ export function MenuOrder({
       </button>
 
       {/* 呼叫服务员：客户随时找服务员（买水/买单/其他需求），老板端冒泡 + 声音 */}
-      {open && (
+      {canOrder && (
         <div className="flex items-center gap-2">
           <button
             type="button"
@@ -466,7 +475,7 @@ export function MenuOrder({
                         )}
                       </div>
                       <div className="mt-auto pt-1 text-sm font-semibold text-primary">
-                        {formatPrice(Number(p.price))}đ
+                        {formatPrice(Number(p.price), currency)}
                         {p.unit ? (
                           <span className="text-xs font-normal text-zinc-400"> / {p.unit}</span>
                         ) : null}
@@ -494,11 +503,11 @@ export function MenuOrder({
               {orderType === 'delivery' && minOrderAmount > 0 && subtotal < minOrderAmount ? (
                 <span className="text-[11px] opacity-80">
                   {t('minOrderHint', {
-                    amount: formatPrice(minOrderAmount - subtotal),
+                    amount: formatPrice(minOrderAmount - subtotal, currency),
                   })}
                 </span>
               ) : null}
-              <span className="font-bold">{formatPrice(total)}đ</span>
+              <span className="font-bold">{formatPrice(total, currency)}</span>
             </span>
           </button>
         </div>
@@ -587,7 +596,7 @@ export function MenuOrder({
                           </div>
                         )}
                         <div className="mt-0.5 text-sm font-semibold">
-                          {formatPrice(lineTotal)}đ
+                          {formatPrice(lineTotal, currency)}
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
@@ -638,7 +647,7 @@ export function MenuOrder({
                     />
                     <span className="text-zinc-600 dark:text-zinc-400">
                       {t('packing')}
-                      {packingFee > 0 ? ` (+${formatPrice(packingFee)}đ)` : ''}
+                      {packingFee > 0 ? ` (+${formatPrice(packingFee, currency)})` : ''}
                     </span>
                   </label>
                 </>
@@ -709,27 +718,27 @@ export function MenuOrder({
 
               <div className="flex items-center justify-between">
                 <span className="text-sm text-zinc-600 dark:text-zinc-400">
-                  {t('total')}: {formatPrice(total)}đ
+                  {t('total')}: {formatPrice(total, currency)}
                   {deliveryCharge > 0 && (
                     <span className="text-zinc-400 dark:text-zinc-500">
-                      {' '}({t('deliveryFee')} {formatPrice(deliveryCharge)}đ)
+                      {' '}({t('deliveryFee')} {formatPrice(deliveryCharge, currency)})
                     </span>
                   )}
                   {packingCharge > 0 && (
                     <span className="text-zinc-400 dark:text-zinc-500">
-                      {' '}({t('packingFee')} {formatPrice(packingCharge)}đ)
+                      {' '}({t('packingFee')} {formatPrice(packingCharge, currency)})
                     </span>
                   )}
                   {orderType === 'delivery' && !pickup && minOrderAmount > 0 && subtotal < minOrderAmount
                     ? ` · ${t('minOrderHint', {
-                        amount: formatPrice(minOrderAmount - subtotal),
+                        amount: formatPrice(minOrderAmount - subtotal, currency),
                       })}`
                     : ''}
                 </span>
                 <button
                   type="submit"
                   disabled={
-                    !open ||
+                    !canOrder ||
                     pending ||
                     subtotal === 0 ||
                     (orderType === 'delivery' && !pickup && minOrderAmount > 0 && subtotal < minOrderAmount)
@@ -747,6 +756,7 @@ export function MenuOrder({
       {/* 加购抽屉（问题 1）：选规格/加料/数量 → 加入购物车 */}
       <AddToCartSheet
         product={activeProduct}
+        currency={currency}
         onClose={() => setActiveProduct(null)}
         onAdd={addFromSheet}
       />
@@ -757,10 +767,12 @@ export function MenuOrder({
 // 加购抽屉（问题 1）：点商品弹出，选规格组（单选）/加料（多选）/数量 → 加入购物车
 function AddToCartSheet({
   product,
+  currency,
   onClose,
   onAdd,
 }: {
   product: MenuProduct | null
+  currency: string
   onClose: () => void
   onAdd: (
     productId: string,
@@ -869,7 +881,7 @@ function AddToCartSheet({
                   >
                     {o.name}
                     {Number(o.price) > 0
-                      ? ` +${formatPrice(Number(o.price))}đ`
+                      ? ` +${formatPrice(Number(o.price), currency)}`
                       : ''}
                   </button>
                 )
@@ -904,7 +916,7 @@ function AddToCartSheet({
                         : 'rounded-full border border-zinc-300 px-3 py-1.5 text-xs dark:border-zinc-700'
                     }
                   >
-                    {ex.name} +{formatPrice(Number(ex.price))}đ
+                    {ex.name} +{formatPrice(Number(ex.price), currency)}
                   </button>
                 )
               })}
@@ -933,7 +945,7 @@ function AddToCartSheet({
               +
             </button>
           </div>
-          <div className="text-lg font-bold">{formatPrice(lineTotal)}đ</div>
+          <div className="text-lg font-bold">{formatPrice(lineTotal, currency)}</div>
         </div>
 
         <button
@@ -941,7 +953,7 @@ function AddToCartSheet({
           onClick={() => onAdd(product.id, qty, selExtras, selOptions)}
           className="mt-4 w-full rounded-full bg-gradient-to-r from-primary to-primary-hover py-3 font-semibold text-white shadow-md shadow-primary/25 transition-transform hover:brightness-105 active:scale-[0.99]"
         >
-          {t('addToCart')} · {formatPrice(lineTotal)}đ
+          {t('addToCart')} · {formatPrice(lineTotal, currency)}
         </button>
       </div>
     </div>

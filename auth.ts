@@ -81,7 +81,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     session({ session, token }) {
       if (session.user) {
         session.user.id = (token.sub ?? '') as string
-        session.user.shopId = token.shopId as string
+        session.user.shopId = token.shopId as string | null
         session.user.role = token.role as UserRole
       }
       return session
@@ -94,13 +94,13 @@ declare module 'next-auth' {
   interface Session {
     user: {
       id: string
-      shopId: string
+      shopId: string | null
       role: UserRole
     } & DefaultSession['user']
   }
 
   interface User {
-    shopId?: string
+    shopId?: string | null
     role?: UserRole
     phone?: string
   }

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { signIn } from 'next-auth/react'
+import { signIn, getSession } from 'next-auth/react'
 import { useTranslations } from 'next-intl'
 import { useRouter } from '@/i18n/navigation'
 
@@ -29,7 +29,9 @@ export default function LoginPage() {
         setError(res.code === 'RATE_LIMITED' ? 'rateLimited' : 'error')
         return
       }
-      router.push('/dashboard')
+      // 按角色分流：ADMIN → /admin，OWNER → /dashboard
+      const session = await getSession()
+      router.push(session?.user?.role === 'ADMIN' ? '/admin' : '/dashboard')
       router.refresh()
     } catch (err) {
       console.error('登录失败:', err)

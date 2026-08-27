@@ -4,6 +4,7 @@ import { useEffect, useTransition } from 'react'
 import { useTranslations } from 'next-intl'
 import { useRouter } from '@/i18n/navigation'
 import { dismissReminder, markReminderSent } from '@/lib/actions'
+import { formatPrice } from '@/lib/format'
 import { useToast, ToastView } from './use-toast'
 
 export type ReminderPlain = {
@@ -65,9 +66,11 @@ const REMINDER_STYLE: Record<
 export function ReminderList({
   reminders,
   shopName,
+  currency,
 }: {
   reminders: ReminderPlain[]
   shopName: string
+  currency: string
 }) {
   const t = useTranslations('dashboard')
   const router = useRouter()
@@ -80,7 +83,7 @@ export function ReminderList({
       t(TEMPLATE_KEY[r.templateKey] ?? 'newOrder'),
       r.displayNo,
       r.customerName ?? '',
-      r.total ? `${t('total')}: ${Number(r.total).toLocaleString('vi-VN')}đ` : '',
+      r.total ? `${t('total')}: ${formatPrice(Number(r.total), currency)}` : '',
     ]
       .filter(Boolean)
       .join('\n')

@@ -48,6 +48,7 @@ export type ShopPlain = {
   name: string
   phone: string | null
   open: boolean
+  currency: string
   config: {
     openHours?: string
     minOrderAmount?: number
@@ -271,7 +272,7 @@ export function OrderList({
         return `- ${i.name} x${i.qty}${detail ? ` (${detail})` : ''}`
       }),
       ...(order.note ? [`${ts('note')}: ${order.note}`] : []),
-      ts('total', { total: formatPrice(Number(order.total)) }),
+      ts('total', { total: formatPrice(Number(order.total), shop.currency) }),
       ts('thanks'),
     ]
     return lines.join('\n')
@@ -405,7 +406,7 @@ export function OrderList({
                 </span>
               </div>
               <span className="font-medium">
-                {formatPrice(Number(order.total))}đ
+                {formatPrice(Number(order.total), shop.currency)}
               </span>
             </div>
           )
@@ -479,7 +480,7 @@ export function OrderList({
                           ...(item.options ?? []).map((o) => o.name),
                           ...(item.extras ?? []).map((e) =>
                             Number(e.price) > 0
-                              ? `${e.name} (+${formatPrice(Number(e.price))}đ)`
+                              ? `${e.name} (+${formatPrice(Number(e.price), shop.currency)})`
                               : e.name,
                           ),
                         ].join(' · ')}
@@ -498,7 +499,7 @@ export function OrderList({
 
             <div className="mb-3 flex items-center justify-between text-sm">
               <span className="font-medium">
-                {formatPrice(Number(order.total))}đ
+                {formatPrice(Number(order.total), shop.currency)}
               </span>
               <span
                 className={
@@ -511,7 +512,7 @@ export function OrderList({
               >
                 {t(state === 'paid' ? 'paid' : state === 'partial' ? 'partial' : 'unpaid')}
                 {state !== 'paid'
-                  ? ` · ${t('debt')} ${formatPrice(debt)}đ`
+                  ? ` · ${t('debt')} ${formatPrice(debt, shop.currency)}`
                   : ''}
               </span>
             </div>
@@ -699,7 +700,7 @@ export function OrderList({
                       .filter((p) => p.active)
                       .map((p) => (
                         <option key={p.id} value={p.id}>
-                          {p.name} · {formatPrice(Number(p.price))}đ
+                          {p.name} · {formatPrice(Number(p.price), shop.currency)}
                         </option>
                       ))}
                   </select>

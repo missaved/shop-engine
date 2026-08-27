@@ -23,3 +23,26 @@ export const requireUser = cache(async () => {
   }
   return user
 })
+
+// 必须为店主：断言 shopId 非空 + role=OWNER，返回 shopId 收窄为 string 的 user。
+// OWNER 单店场景统一用它（requireUser 的 shopId 已 nullable，直接拿去当 string 会 TS 报错）
+export const requireOwner = cache(async () => {
+  const user = await requireUser()
+  if (!user.shopId || user.role !== 'OWNER') {
+    const locale = await getLocale()
+    redirect({ href: '/login', locale })
+    throw new Error('unreachable: redirect did not throw')
+  }
+  return { ...user, shopId: user.shopId }
+})
+
+// 必须为平台运营：断言 role=ADMIN，否则踢回 /dashboard（OWNER 混入 /admin 时回自己后台）
+export const requireAdmin = cache(async () => {
+  const user = await requireUser()
+  if (user.role !== 'ADMIN') {
+    const locale = await getLocale()
+    redirect({ href: '/dashboard', locale })
+    throw new Error('unreachable: redirect did not throw')
+  }
+  return user
+})

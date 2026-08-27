@@ -1,8 +1,11 @@
-import { getTranslations } from 'next-intl/server'
+import { getTranslations, getLocale } from 'next-intl/server'
 import { requireUser } from '@/lib/dal'
 import { prisma } from '@/lib/prisma'
 import { signOut } from '@/auth'
 import { formatPrice } from '@/lib/format'
+import { isShopExpired } from '@/lib/billing'
+import { getShopBySlug } from '@/lib/tenant'
+import { redirect, Link } from '@/i18n/navigation'
 import { OrderList } from '@/components/dashboard/order-list'
 import type { OrderPlain, ShopPlain } from '@/components/dashboard/order-list'
 import { SettingsPanel } from '@/components/dashboard/settings-panel'
@@ -24,27 +27,57 @@ const STATUS_KEY: Record<string, string> = {
 }
 
 // 老板侧一页后台：今日概览 + 桌台简表 + 待办提醒 + 订单列表 + 设置
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ shop?: string }>
+}) {
   const user = await requireUser()
   const t = await getTranslations('dashboard')
 
+  // 授权分支：OWNER 用自身 shopId（忽略 ?shop=）；ADMIN 带 ?shop=slug 进店视角，无参数回中台
+  let shopId: string
+  let isAdminView = false
+  if (user.role === 'OWNER') {
+    if (!user.shopId) {
+      // OWNER 无店属数据异常，踢回登录（原 requireOwner 语义）
+      const locale = await getLocale()
+      redirect({ href: '/login', locale })
+      throw new Error('unreachable: redirect did not throw')
+    }
+    shopId = user.shopId
+  } else {
+    // ADMIN：?shop=slug 指定目标店，否则回中台
+    const sp = await searchParams
+    if (!sp.shop) {
+      const locale = await getLocale()
+      redirect({ href: '/admin', locale })
+      throw new Error('unreachable: redirect did not throw')
+    }
+    shopId = (await getShopBySlug(sp.shop)).id
+    isAdminView = true
+  }
+
   const [shop, orders, products, reminders] = await Promise.all([
-    prisma.shop.findUnique({ where: { id: user.shopId } }),
+    prisma.shop.findUnique({ where: { id: shopId } }),
     prisma.order.findMany({
-      where: { shopId: user.shopId },
+      where: { shopId },
       orderBy: { createdAt: 'desc' },
     }),
     prisma.product.findMany({
-      where: { shopId: user.shopId },
+      where: { shopId },
       orderBy: { sortOrder: 'asc' },
     }),
     prisma.reminder.findMany({
-      where: { shopId: user.shopId, status: 'PENDING', dueAt: { lte: new Date() } },
+      where: { shopId, status: 'PENDING', dueAt: { lte: new Date() } },
       orderBy: { dueAt: 'asc' },
     }),
   ])
 
   if (!shop) return null
+
+  // 订阅到期判断：老板后台顶部横幅提示（客户侧已同步拦截下单）
+  const subscriptionExpired = isShopExpired(shop)
 
   const shopPlain: ShopPlain = {
     id: shop.id,
@@ -52,6 +85,7 @@ export default async function DashboardPage() {
     name: shop.name,
     phone: shop.phone,
     open: shop.open,
+    currency: shop.currency,
     config: shop.config as ShopPlain['config'],
   }
 
@@ -178,6 +212,24 @@ export default async function DashboardPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-col gap-4 px-6 py-4">
+      {isAdminView && (
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-blue-300 bg-blue-50 px-4 py-3 text-sm dark:border-blue-700 dark:bg-blue-950/40">
+          <span className="font-medium text-blue-800 dark:text-blue-300">
+            {t('adminView', { name: shop.name })}
+          </span>
+          <Link
+            href="/admin"
+            className="shrink-0 rounded-md border border-blue-300 px-2 py-1 text-xs text-blue-700 transition-colors hover:bg-blue-100 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-900/40"
+          >
+            {t('backToAdmin')}
+          </Link>
+        </div>
+      )}
+      {subscriptionExpired && (
+        <div className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800 dark:border-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+          {t('subscriptionExpired')}
+        </div>
+      )}
       {/* 顶栏：店名（点开抽屉）+ 语言切换 */}
       <header className="sticky top-0 z-30 -mx-6 mb-2 flex items-center justify-between border-b border-zinc-100 bg-orange-50/90 px-6 py-3 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90">
         <SideDrawer
@@ -219,6 +271,7 @@ export default async function DashboardPage() {
                 count3={count3}
                 count7={count7}
                 count30={count30}
+                currency={shop.currency}
               />
               <div className="flex flex-col items-center justify-center rounded-xl border border-zinc-200 bg-white p-3 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
                 <svg
@@ -277,7 +330,7 @@ export default async function DashboardPage() {
       </header>
 
       {/* 主页：待办提醒 + 订单列表（核心） */}
-      <ReminderList reminders={remindersPlain} shopName={shop.name} />
+      <ReminderList reminders={remindersPlain} shopName={shop.name} currency={shop.currency} />
       <OrderList orders={ordersPlain} shop={shopPlain} products={productsPlain} />
 
       {/* 回到顶部浮动按钮 */}

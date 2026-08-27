@@ -51,6 +51,11 @@ model Shop {
   address   String?
   open      Boolean  @default(true) // 营业开关（老板侧一页后台可切换）
   config    Json? // 垂直配置：营业时间 / 起送价 / 提醒模板 / 预设大按钮等
+  plan              String    @default("TRIAL") // 套餐档位：TRIAL / BASIC / PRO（可扩展）
+  subscribedUntil   DateTime? // 当前订阅到期；null=无期限；过期 = subscribedUntil < now
+  platformSuspended Boolean   @default(false) // 平台人工停用（违规/冻结），独立于老板 open 打烊
+  featured          Boolean   @default(false) // 平台推荐位（推广曝光，聚合首页排序用）
+  currency          String    @default("VND") // ISO 4217 货币码，一店一币种（多币种基础）
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -58,6 +63,7 @@ model Shop {
   orders    Order[]
   reminders Reminder[]
   users     User[]
+  billings  Billing[]
 }
 
 // 商品 / 服务项（快捷开单大按钮即预置 product）
@@ -126,8 +132,8 @@ model Reminder {
 // 登录账号（阶段 1：一店主一店，手机号+密码）
 model User {
   id           String   @id @default(cuid())
-  shopId       String
-  shop         Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  shopId       String?
+  shop         Shop?    @relation(fields: [shopId], references: [id], onDelete: Cascade)
   phone        String   @unique
   passwordHash String
   name         String?
@@ -136,4 +142,19 @@ model User {
   updatedAt    DateTime @updatedAt
 
   @@index([shopId])
+}
+
+// 收费流水（「收费」的地基：谁 / 何时 / 续到何时 / 多少钱，避免收费无处记账）
+model Billing {
+  id        String   @id @default(cuid())
+  shopId    String
+  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  plan      String // 套餐档位：TRIAL / BASIC / PRO
+  amount    Decimal  @db.Decimal(12, 2) // 实收金额
+  months    Int? // 续费月数
+  note      String? // 备注
+  createdBy String? // 操作 ADMIN 手机号/名
+  createdAt DateTime @default(now())
+
+  @@index([shopId, createdAt])
 }

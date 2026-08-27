@@ -196,7 +196,7 @@ export default async function TrackOrderPage({
                       </span>
                     )}
                   </span>
-                  <span className="text-zinc-700 dark:text-zinc-300">{formatPrice(lineTotal)}đ</span>
+                  <span className="text-zinc-700 dark:text-zinc-300">{formatPrice(lineTotal, shop.currency)}</span>
                 </li>
               )
             })}
@@ -204,7 +204,7 @@ export default async function TrackOrderPage({
 
           <div className="flex items-center justify-between border-t border-zinc-200 pt-2 dark:border-zinc-700">
             <span className="text-sm font-medium">
-              {t('total')}: {formatPrice(Number(order.total))}đ
+              {t('total')}: {formatPrice(Number(order.total), shop.currency)}
             </span>
             <span
               className={

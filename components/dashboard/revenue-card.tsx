@@ -21,6 +21,7 @@ export function RevenueCard({
   count3,
   count7,
   count30,
+  currency,
 }: {
   day1: number
   day3: number
@@ -30,6 +31,7 @@ export function RevenueCard({
   count3: number
   count7: number
   count30: number
+  currency: string
 }) {
   const t = useTranslations('dashboard')
   const [expanded, setExpanded] = useState(false)
@@ -51,7 +53,7 @@ export function RevenueCard({
           <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
         </svg>
         <p className="mt-1 text-2xl font-semibold text-amber-600 dark:text-amber-500">
-          {formatPrice(day1)}đ
+          {formatPrice(day1, currency)}
         </p>
         <p className="text-xs text-zinc-500">{t('revenue')}</p>
       </button>
@@ -67,7 +69,7 @@ export function RevenueCard({
                 {t('ordersCount', { n: counts[r.days] })}
               </span>
               <span className="text-sm font-semibold text-amber-600 dark:text-amber-500">
-                {formatPrice(values[r.days])}đ
+                {formatPrice(values[r.days], currency)}
               </span>
             </div>
           ))}

@@ -7,6 +7,8 @@ import { headers } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
 import { getShopBySlug } from '@/lib/tenant'
+import { isShopExpired } from '@/lib/billing'
+import { formatPrice } from '@/lib/format'
 
 export type CartItem = {
   productId: string
@@ -56,6 +58,8 @@ export async function createOrder(input: {
 }): Promise<{ orderNo: number; displayNo: string }> {
   const shop = await getShopBySlug(input.slug)
   if (!shop.open) throw new Error('店铺已打烊')
+  if (shop.platformSuspended) throw new Error('店铺暂停营业')
+  if (isShopExpired(shop)) throw new Error('店铺已到期')
 
   const shopCfg = (shop.config as Record<string, unknown> | null) ?? {}
   if (!isOpenNow(shopCfg.openHours as string | undefined)) {
@@ -157,7 +161,7 @@ export async function createOrder(input: {
     // 起送价校验（A9）：仅外送模式生效（堂食/外带不卡起送），按商品小计判断
     const minOrderAmount = Number(shopCfg.minOrderAmount ?? 0)
     if (orderType === 'delivery' && !pickup && minOrderAmount > 0 && subtotal < minOrderAmount) {
-      throw new Error(`未达起送价 ${minOrderAmount.toLocaleString('vi-VN')}đ`)
+      throw new Error(`未达起送价 ${formatPrice(minOrderAmount, shop.currency)}`)
     }
 
     // 对外订单号 CP-YYMMDD-NNN（NNN 当日自增，按 displayNo 前缀统计）

@@ -124,7 +124,11 @@
     "toastUpdated": "Updated",
     "tableQr": "Table QR / Door code",
     "downloadQr": "Download QR",
-    "tableNoPh": "Table no. (optional)"
+    "tableNoPh": "Table no. (optional)",
+    "themeLabel": "Store theme",
+    "themeWarm": "Warm food",
+    "themeClean": "Minimal",
+    "themeLayered": "Layered"
   },
   "orderSummary": {
     "header": "{shopName}",

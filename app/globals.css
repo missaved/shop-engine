@@ -5,9 +5,36 @@
   --foreground: #171717;
 }
 
+/* ===== 店铺主题模板（3 套）：老板端 settings 可选，客户侧按 theme class 切换 =====
+   warm    暖色食品风（默认）：amber 主色 + 暖白背景
+   clean   极简白净风：黑主色 + 纯白背景 + 细边框
+   layered 卡片分层风：amber 主色 + 灰底 + 卡片阴影 */
+:root {
+  --theme-primary: #f59e0b;        /* amber-500 */
+  --theme-primary-hover: #d97706;  /* amber-600 */
+  --theme-primary-fg: #ffffff;
+  --theme-bg: #fff7ed;             /* amber-50 */
+}
+.theme-clean {
+  --theme-primary: #18181b;        /* zinc-900 黑 */
+  --theme-primary-hover: #27272a;  /* zinc-800 */
+  --theme-primary-fg: #ffffff;
+  --theme-bg: #ffffff;
+}
+.theme-layered {
+  --theme-primary: #f59e0b;        /* amber-500 */
+  --theme-primary-hover: #d97706;  /* amber-600 */
+  --theme-primary-fg: #ffffff;
+  --theme-bg: #fafafa;             /* zinc-50 */
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  /* 语义色 token：组件用 bg-primary / bg-primary-hover / bg-app-bg，随主题 class 切换 */
+  --color-primary: var(--theme-primary);
+  --color-primary-hover: var(--theme-primary-hover);
+  --color-app-bg: var(--theme-bg);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

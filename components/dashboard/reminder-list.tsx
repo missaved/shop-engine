@@ -207,7 +207,7 @@ export function ReminderList({
                 <button
                   onClick={() => handleSendZalo(r)}
                   disabled={pending}
-                  className="rounded-md bg-amber-500 px-3 py-1.5 text-xs text-white transition-colors hover:bg-amber-600 disabled:opacity-60 dark:bg-amber-500 dark:text-white"
+                  className="rounded-full bg-gradient-to-r from-amber-500 to-amber-600 px-3 py-1.5 text-xs font-semibold text-white shadow-sm shadow-amber-500/25 transition-transform hover:brightness-105 active:scale-[0.98] disabled:opacity-60"
                 >
                   {t('sendZalo')}
                 </button>

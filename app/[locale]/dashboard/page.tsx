@@ -52,7 +52,7 @@ export default async function DashboardPage() {
     name: shop.name,
     phone: shop.phone,
     open: shop.open,
-    config: shop.config as { openHours?: string; minOrderAmount?: number } | null,
+    config: shop.config as ShopPlain['config'],
   }
 
   const ordersPlain: OrderPlain[] = orders.map((o) => ({

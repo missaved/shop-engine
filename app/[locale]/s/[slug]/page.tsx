@@ -72,6 +72,9 @@ export default async function ShopMenuPage({
     (shop.config as { deliveryArea?: string } | null)?.deliveryArea ?? ''
   const shopDesc =
     (shop.config as { description?: string } | null)?.description ?? shop.address ?? ''
+  // 店铺主题模板（warm/clean/layered），默认 warm，客户侧按此渲染
+  const theme =
+    (shop.config as { theme?: 'warm' | 'clean' | 'layered' } | null)?.theme ?? 'warm'
   return (
     <MenuOrder
       slug={slug}
@@ -82,6 +85,7 @@ export default async function ShopMenuPage({
       deliveryFee={deliveryFee}
       packingFee={packingFee}
       deliveryArea={deliveryArea}
+      theme={theme}
       products={plain}
     />
   )

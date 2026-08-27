@@ -240,6 +240,7 @@ export async function updateShopSettings(input: {
   packingFee?: number
   deliveryArea?: string
   description?: string
+  theme?: 'warm' | 'clean' | 'layered'
 }): Promise<void> {
   const user = await requireUser()
   try {
@@ -254,6 +255,7 @@ export async function updateShopSettings(input: {
     if (input.packingFee !== undefined) config.packingFee = input.packingFee
     if (input.deliveryArea !== undefined) config.deliveryArea = input.deliveryArea
     if (input.description !== undefined) config.description = input.description
+    if (input.theme !== undefined) config.theme = input.theme
 
     await prisma.shop.update({
       where: { id: user.shopId },

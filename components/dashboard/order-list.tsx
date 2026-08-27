@@ -55,6 +55,7 @@ export type ShopPlain = {
     packingFee?: number
     deliveryArea?: string
     description?: string
+    theme?: 'warm' | 'clean' | 'layered'
   } | null
 }
 // 加菜面板可选商品（id/name/price/active 够用，ProductPlain 满足此结构）
@@ -600,7 +601,7 @@ export function OrderList({
                     run(() => advanceOrderStatus(order.id), t('toastAdvanced'))
                   }
                   disabled={pending}
-                  className="flex-1 rounded-md bg-amber-500 px-3 py-2 text-sm text-white transition-colors hover:bg-amber-600 disabled:opacity-60 dark:bg-amber-500 dark:text-white"
+                  className="flex-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 px-3 py-2 text-sm font-semibold text-white shadow-md shadow-amber-500/25 transition-transform hover:brightness-105 active:scale-[0.98] disabled:opacity-60"
                 >
                   {t('advance')}
                 </button>
@@ -727,7 +728,7 @@ export function OrderList({
                       )
                     }}
                     disabled={pending || !addProductId}
-                    className="rounded-md bg-amber-500 px-3 py-1.5 text-sm text-white transition-colors hover:bg-amber-600 disabled:opacity-60 dark:bg-amber-500 dark:text-white"
+                    className="rounded-full bg-gradient-to-r from-amber-500 to-amber-600 px-3 py-1.5 text-sm font-semibold text-white shadow-sm shadow-amber-500/25 transition-transform hover:brightness-105 active:scale-[0.98] disabled:opacity-60"
                   >
                     {t('add')}
                   </button>

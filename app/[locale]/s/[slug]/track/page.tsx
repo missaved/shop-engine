@@ -121,7 +121,7 @@ export default async function TrackOrderPage({
 
         <button
           type="submit"
-          className="rounded-md bg-amber-500 px-4 py-2 text-sm text-white transition-colors hover:bg-amber-600 dark:bg-amber-500 dark:text-white"
+          className="rounded-full bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-amber-500/25 transition-transform hover:brightness-105 active:scale-[0.98]"
         >
           {t('submit')}
         </button>

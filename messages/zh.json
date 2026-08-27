@@ -124,7 +124,11 @@
     "toastUpdated": "已更新",
     "tableQr": "桌号引导图 / 门头二维码",
     "downloadQr": "下载二维码",
-    "tableNoPh": "桌号（可选）"
+    "tableNoPh": "桌号（可选）",
+    "themeLabel": "店铺主题",
+    "themeWarm": "暖色食品",
+    "themeClean": "极简白净",
+    "themeLayered": "卡片分层"
   },
   "orderSummary": {
     "header": "{shopName}",

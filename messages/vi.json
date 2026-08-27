@@ -124,7 +124,11 @@
     "toastUpdated": "Đã cập nhật",
     "tableQr": "QR bàn / mã cửa",
     "downloadQr": "Tải mã QR",
-    "tableNoPh": "Số bàn (tùy chọn)"
+    "tableNoPh": "Số bàn (tùy chọn)",
+    "themeLabel": "Chủ đề cửa hàng",
+    "themeWarm": "Ấm áp",
+    "themeClean": "Tối giản",
+    "themeLayered": "Phân lớp"
   },
   "orderSummary": {
     "header": "{shopName}",

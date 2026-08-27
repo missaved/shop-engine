@@ -162,6 +162,9 @@ export function SettingsPanel({
   const [description, setDescription] = useState<string>(
     shop.config?.description ?? '',
   )
+  const [theme, setTheme] = useState<'warm' | 'clean' | 'layered'>(
+    shop.config?.theme ?? 'warm',
+  )
   const [saved, setSaved] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const { msg, show } = useToast()
@@ -197,6 +200,7 @@ export function SettingsPanel({
       packingFee: Number(packingFee),
       deliveryArea,
       description,
+      theme,
     })
     setSaved(true)
     setTimeout(() => setSaved(false), 1500)
@@ -386,10 +390,33 @@ export function SettingsPanel({
           />
         </label>
 
+        {/* 店铺主题模板：客户侧首页/菜单按此渲染（暖色食品 / 极简白净 / 卡片分层） */}
+        <div className="flex flex-col gap-1 text-sm">
+          <span className="text-zinc-600 dark:text-zinc-400">
+            {t('themeLabel')}
+          </span>
+          <div className="grid grid-cols-3 gap-2">
+            {(['warm', 'clean', 'layered'] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setTheme(v)}
+                className={`rounded-lg border px-2 py-2 text-xs font-medium transition-colors ${
+                  theme === v
+                    ? 'border-amber-500 bg-amber-500 text-white'
+                    : 'border-zinc-300 text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800'
+                }`}
+              >
+                {t(`theme${v.charAt(0).toUpperCase()}${v.slice(1)}`)}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <button
           type="submit"
           disabled={pending}
-          className="rounded-md bg-amber-500 px-3 py-2 text-sm text-white transition-colors hover:bg-amber-600 disabled:opacity-60 dark:bg-amber-500 dark:text-white"
+          className="rounded-full bg-gradient-to-r from-amber-500 to-amber-600 px-3 py-2 text-sm font-semibold text-white shadow-md shadow-amber-500/25 transition-transform hover:brightness-105 active:scale-[0.98] disabled:opacity-60"
         >
           {saved ? t('saved') : t('save')}
         </button>
@@ -654,7 +681,7 @@ function AddProductForm({ onAdded }: { onAdded: () => void }) {
       <button
         type="submit"
         disabled={pending}
-        className="rounded-md bg-amber-500 px-3 py-2 text-sm text-white transition-colors hover:bg-amber-600 disabled:opacity-60 dark:bg-amber-500 dark:text-white"
+        className="rounded-full bg-gradient-to-r from-amber-500 to-amber-600 px-3 py-2 text-sm font-semibold text-white shadow-md shadow-amber-500/25 transition-transform hover:brightness-105 active:scale-[0.98] disabled:opacity-60"
       >
         {t('add')}
       </button>
@@ -964,7 +991,7 @@ function EditProductForm({
         <button
           type="submit"
           disabled={pending}
-          className="rounded-md bg-amber-500 px-3 py-2 text-sm text-white transition-colors hover:bg-amber-600 disabled:opacity-60 dark:bg-amber-500 dark:text-white"
+          className="rounded-full bg-gradient-to-r from-amber-500 to-amber-600 px-3 py-2 text-sm font-semibold text-white shadow-md shadow-amber-500/25 transition-transform hover:brightness-105 active:scale-[0.98] disabled:opacity-60"
         >
           {t('save')}
         </button>

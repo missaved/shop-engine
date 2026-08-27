@@ -67,6 +67,7 @@ export function MenuOrder({
   deliveryFee,
   packingFee,
   deliveryArea,
+  theme,
   products,
 }: {
   slug: string
@@ -77,6 +78,7 @@ export function MenuOrder({
   deliveryFee: number
   packingFee: number
   deliveryArea: string
+  theme: 'warm' | 'clean' | 'layered'
   products: MenuProduct[]
 }) {
   const t = useTranslations('menu')
@@ -248,7 +250,7 @@ export function MenuOrder({
   // 下单成功：订单号 + 一键复制 + 查单入口（A10）
   if (done) {
     return (
-      <main className="mx-auto flex w-full max-w-md flex-col items-center gap-4 px-6 py-16 text-center">
+      <main className={`mx-auto flex w-full max-w-md flex-col items-center gap-4 px-6 py-16 text-center theme-${theme}`}>
         <h1 className="text-2xl font-semibold">{t('orderSuccess')}</h1>
         <p className="text-lg">
           {t('orderNo')} {done.displayNo}
@@ -258,7 +260,7 @@ export function MenuOrder({
         </p>
         <button
           onClick={() => copySummary(done.displayNo)}
-          className="rounded-md bg-amber-500 px-4 py-2 text-sm text-white transition-colors hover:bg-amber-600 dark:bg-amber-500 dark:text-white"
+          className="rounded-full bg-gradient-to-r from-primary to-primary-hover px-4 py-2 text-sm font-semibold text-white shadow-md shadow-primary/25 transition-transform hover:brightness-105 active:scale-[0.98]"
         >
           {copied ? t('copied') : t('copySummary')}
         </button>
@@ -275,67 +277,69 @@ export function MenuOrder({
   // 欢迎页：先选用餐方式（堂食/外带/外送）+ 店面介绍，选完进入菜单
   if (!selected) {
     return (
-      <main className="mx-auto flex min-h-screen w-full max-w-md flex-col px-6 py-10">
-        {/* 开屏 hero 图（MiniMax 生成，越南河粉店风格） */}
-        <div className="relative -mx-6 -mt-10 h-52 overflow-hidden">
+      <main className={`relative flex min-h-screen w-full max-w-md flex-col justify-center overflow-hidden px-5 py-8 theme-${theme}`}>
+        {/* 开屏 hero 图整页背景 + 暗化（MiniMax 生成，越南河粉店风格） */}
+        <div className="absolute inset-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/hero/hero.jpg"
-            alt={shopName}
+            alt=""
             className="h-full w-full object-cover"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
-          <h1 className="absolute bottom-3 left-6 text-2xl font-semibold text-white drop-shadow">
-            {shopName}
-          </h1>
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/35 to-black/65" />
         </div>
 
-        <div className="mt-4 flex items-center justify-between">
-          {!open ? (
-            <span className="text-sm text-red-600 dark:text-red-400">{t('closed')}</span>
-          ) : (
-            <span />
+        {/* 毛玻璃内容卡：店名 + 欢迎语 + 三选用餐方式浮于图上 */}
+        <div className="relative z-10 flex flex-col gap-4 rounded-2xl bg-white/75 p-6 shadow-2xl shadow-black/20 backdrop-blur-xl">
+          <h1 className="text-2xl font-bold">{shopName}</h1>
+
+          <div className="flex items-center justify-between">
+            {!open ? (
+              <span className="text-sm text-red-600 dark:text-red-400">{t('closed')}</span>
+            ) : (
+              <span />
+            )}
+            <LocaleSwitcher />
+          </div>
+
+          <h2 className="text-xl font-semibold">{t('welcome')}</h2>
+          {shopDesc && (
+            <p className="text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+              {shopDesc}
+            </p>
           )}
-          <LocaleSwitcher />
-        </div>
 
-        <h2 className="mt-6 text-2xl font-semibold">{t('welcome')}</h2>
-        {shopDesc && (
-          <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-            {shopDesc}
+          <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
+            {t('chooseType')}
           </p>
-        )}
-
-        <p className="mt-8 text-sm font-medium text-zinc-500 dark:text-zinc-400">
-          {t('chooseType')}
-        </p>
-        <div className="mt-3 flex flex-col gap-3">
-          {(
-            [
-              ['dine_in', 'dineIn', '/hero/dine-in.jpg'],
-              ['takeaway', 'takeaway', '/hero/takeaway.jpg'],
-              ['delivery', 'delivery', '/hero/delivery.jpg'],
-            ] as const
-          ).map(([value, key, img]) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => {
-                setOrderType(value)
-                setSelected(true)
-              }}
-              className="flex items-center gap-3 rounded-xl border border-zinc-200 bg-white px-4 py-3 text-left shadow-sm transition-transform active:scale-[0.99] dark:border-zinc-800 dark:bg-zinc-900"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={img}
-                alt=""
-                className="h-11 w-11 shrink-0 rounded-lg object-cover"
-              />
-              <span className="flex-1 text-base font-medium">{t(key)}</span>
-              <span className="text-zinc-300 dark:text-zinc-600">›</span>
-            </button>
-          ))}
+          <div className="flex flex-col gap-3">
+            {(
+              [
+                ['dine_in', 'dineIn', '/hero/dine-in.jpg'],
+                ['takeaway', 'takeaway', '/hero/takeaway.jpg'],
+                ['delivery', 'delivery', '/hero/delivery.jpg'],
+              ] as const
+            ).map(([value, key, img]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => {
+                  setOrderType(value)
+                  setSelected(true)
+                }}
+                className="flex items-center gap-3 rounded-xl border border-zinc-200 bg-white/90 px-4 py-3 text-left shadow-sm backdrop-blur transition-transform active:scale-[0.99] dark:border-zinc-700 dark:bg-zinc-900/80"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={img}
+                  alt=""
+                  className="h-11 w-11 shrink-0 rounded-lg object-cover"
+                />
+                <span className="flex-1 text-base font-medium">{t(key)}</span>
+                <span className="text-zinc-300 dark:text-zinc-600">›</span>
+              </button>
+            ))}
+          </div>
         </div>
       </main>
     )
@@ -358,7 +362,7 @@ export function MenuOrder({
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-md flex-col px-4 pb-32">
+    <div className={`mx-auto flex min-h-screen w-full max-w-md flex-col bg-app-bg px-4 pb-32 theme-${theme}`}>
       {/* 店头 + 语言切换（自动切换由 middleware 处理，这里供手动切换） */}
       <div className="flex items-center justify-between py-4">
         <h1 className="text-xl font-semibold">{shopName}</h1>
@@ -397,7 +401,7 @@ export function MenuOrder({
             type="button"
             onClick={onCallWaiter}
             disabled={pending}
-            className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-amber-300 px-3 py-2 text-sm text-amber-700 transition-colors hover:bg-amber-50 disabled:opacity-60 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-950"
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-md border border-primary/40 px-3 py-2 text-sm text-primary-hover transition-colors hover:bg-primary/5 disabled:opacity-60"
           >
             <svg
               className="h-3.5 w-3.5"
@@ -446,7 +450,7 @@ export function MenuOrder({
                       </span>
                     )}
                     {n > 0 && (
-                      <span className="absolute right-1.5 top-1.5 flex h-6 min-w-6 items-center justify-center rounded-full bg-amber-500 px-1 text-xs font-semibold text-white">
+                      <span className="absolute right-1.5 top-1.5 flex h-6 min-w-6 items-center justify-center rounded-full bg-primary px-1 text-xs font-semibold text-white">
                         {n}
                       </span>
                     )}
@@ -461,7 +465,7 @@ export function MenuOrder({
                           </span>
                         )}
                       </div>
-                      <div className="mt-auto pt-1 text-sm font-semibold text-amber-600 dark:text-amber-500">
+                      <div className="mt-auto pt-1 text-sm font-semibold text-primary">
                         {formatPrice(Number(p.price))}đ
                         {p.unit ? (
                           <span className="text-xs font-normal text-zinc-400"> / {p.unit}</span>
@@ -481,7 +485,7 @@ export function MenuOrder({
         <div className="fixed inset-x-0 bottom-0 z-40 p-3">
           <button
             onClick={() => setCartOpen(true)}
-            className="mx-auto flex w-full max-w-md items-center justify-between rounded-full bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-3 text-white shadow-lg shadow-amber-500/30 active:scale-[0.99] dark:from-amber-500 dark:to-orange-500"
+            className="mx-auto flex w-full max-w-md items-center justify-between rounded-full bg-gradient-to-r from-primary to-primary-hover px-5 py-3 text-white shadow-lg shadow-primary/30 active:scale-[0.99]"
           >
             <span className="text-sm font-semibold">
               {t('cart')} · {cartCount}
@@ -730,7 +734,7 @@ export function MenuOrder({
                     subtotal === 0 ||
                     (orderType === 'delivery' && !pickup && minOrderAmount > 0 && subtotal < minOrderAmount)
                   }
-                  className="rounded-md bg-amber-500 px-5 py-2 text-sm text-white transition-colors hover:bg-amber-600 disabled:opacity-50 dark:bg-amber-500 dark:text-white"
+                  className="rounded-full bg-gradient-to-r from-primary to-primary-hover px-5 py-2 text-sm font-semibold text-white shadow-md shadow-primary/25 transition-transform hover:brightness-105 active:scale-[0.98] disabled:opacity-50"
                 >
                   {pending ? '…' : t('submit')}
                 </button>
@@ -859,7 +863,7 @@ function AddToCartSheet({
                     }
                     className={
                       active
-                        ? 'rounded-full bg-amber-500 px-3 py-1.5 text-xs text-white dark:bg-amber-500 dark:text-white'
+                        ? 'rounded-full bg-primary px-3 py-1.5 text-xs text-white'
                         : 'rounded-full border border-zinc-300 px-3 py-1.5 text-xs dark:border-zinc-700'
                     }
                   >
@@ -896,7 +900,7 @@ function AddToCartSheet({
                     }
                     className={
                       active
-                        ? 'rounded-full bg-amber-500 px-3 py-1.5 text-xs text-white dark:bg-amber-500 dark:text-white'
+                        ? 'rounded-full bg-primary px-3 py-1.5 text-xs text-white'
                         : 'rounded-full border border-zinc-300 px-3 py-1.5 text-xs dark:border-zinc-700'
                     }
                   >
@@ -935,7 +939,7 @@ function AddToCartSheet({
         <button
           type="button"
           onClick={() => onAdd(product.id, qty, selExtras, selOptions)}
-          className="mt-4 w-full rounded-full bg-amber-500 py-3 font-semibold text-white active:scale-[0.99] dark:bg-amber-500 dark:text-white"
+          className="mt-4 w-full rounded-full bg-gradient-to-r from-primary to-primary-hover py-3 font-semibold text-white shadow-md shadow-primary/25 transition-transform hover:brightness-105 active:scale-[0.99]"
         >
           {t('addToCart')} · {formatPrice(lineTotal)}đ
         </button>

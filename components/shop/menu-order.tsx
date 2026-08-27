@@ -352,16 +352,14 @@ export function MenuOrder({
         </div>
       </div>
 
-      {/* 当前用餐方式：点按返回欢迎页重选 */}
-      {open && (
-        <button
-          type="button"
-          onClick={() => setSelected(false)}
-          className="mb-1 flex items-center gap-1 self-start rounded-full border border-zinc-200 px-3 py-1 text-xs text-zinc-600 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
-        >
-          ↩ {t(orderType === 'dine_in' ? 'dineIn' : orderType === 'takeaway' ? 'takeaway' : 'delivery')}
-        </button>
-      )}
+      {/* 当前用餐方式：点按返回欢迎页重选（打烊也可见，保证能返回） */}
+      <button
+        type="button"
+        onClick={() => setSelected(false)}
+        className="mb-1 flex items-center gap-1 self-start rounded-full border border-zinc-200 px-3 py-1 text-xs text-zinc-600 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
+      >
+        ↩ {t(orderType === 'dine_in' ? 'dineIn' : orderType === 'takeaway' ? 'takeaway' : 'delivery')}
+      </button>
 
       {/* 呼叫服务员：客户随时找服务员（买水/买单/其他需求），老板端冒泡 + 声音 */}
       {open && (

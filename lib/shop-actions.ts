@@ -251,15 +251,19 @@ export async function createOrder(input: {
 export async function deleteMyData(input: {
   slug: string
   orderNo: string
-  phone: string
+  phone?: string
+  guestKey?: string
 }): Promise<void> {
   const shop = await getShopBySlug(input.slug)
-  const phone = input.phone?.trim()
+  const phone = input.phone?.trim() ?? ''
+  const guestKey = input.guestKey?.trim() ?? ''
   const orderNo = input.orderNo?.trim()
-  if (!phone || !orderNo) throw new Error('参数缺失')
+  if (!orderNo || (!phone && !guestKey)) throw new Error('参数缺失')
 
   const order = await prisma.order.findFirst({
-    where: { shopId: shop.id, displayNo: orderNo, customerPhone: phone },
+    where: guestKey
+      ? { shopId: shop.id, displayNo: orderNo, config: { path: ['guestKey'], equals: guestKey } }
+      : { shopId: shop.id, displayNo: orderNo, customerPhone: phone },
   })
   if (!order) throw new Error('订单不存在或手机号不匹配')
 

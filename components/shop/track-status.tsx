@@ -23,11 +23,11 @@ export function TrackStatus({
   const statusRef = useRef(initialStatus)
   const audioCtxRef = useRef<AudioContext | null>(null)
 
-  function beep() {
+  async function beep() {
     try {
       if (!audioCtxRef.current) audioCtxRef.current = new AudioContext()
-      void audioCtxRef.current.resume()
       const ctx = audioCtxRef.current
+      if (ctx.state === 'suspended') await ctx.resume()
       const osc = ctx.createOscillator()
       const gain = ctx.createGain()
       osc.type = 'sine'
@@ -52,7 +52,7 @@ export function TrackStatus({
           statusRef.current = s
           if (s === 'READY') {
             setReady(true)
-            beep()
+            void beep()
           }
         }
         if (s === 'COMPLETED' || s === 'CANCELLED') clearInterval(id)

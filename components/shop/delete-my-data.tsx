@@ -10,10 +10,12 @@ export function DeleteMyData({
   slug,
   orderNo,
   phone,
+  guestKey,
 }: {
   slug: string
   orderNo: string
   phone: string
+  guestKey?: string
 }) {
   const t = useTranslations('track')
   const router = useRouter()
@@ -23,7 +25,7 @@ export function DeleteMyData({
   async function onClick() {
     if (!window.confirm(t('deleteConfirm'))) return
     try {
-      await deleteMyData({ slug, orderNo, phone })
+      await deleteMyData({ slug, orderNo, phone, guestKey })
       setDone(true)
       router.refresh()
     } catch (err) {

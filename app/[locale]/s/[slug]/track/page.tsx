@@ -225,6 +225,7 @@ export default async function TrackOrderPage({
             slug={slug}
             orderNo={order.displayNo}
             phone={trackPhone}
+            guestKey={guestKey}
           />
         </div>
       )}

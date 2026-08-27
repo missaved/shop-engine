@@ -48,6 +48,13 @@ function serializeOptionGroups(
     .join('\n')
 }
 
+// 套餐组成数组 → 文本行（每行「商品名 数量」，数量为 1 时省略，供编辑回显）
+function serializeCombo(combo: { name: string; qty: number }[]): string {
+  return combo
+    .map((c) => (c.qty > 1 ? `${c.name} ${c.qty}` : c.name))
+    .join('\n')
+}
+
 // 加料文本 → 预览数组（与 actions.ts parseExtras 同规则，客户端预览用）
 function previewExtras(text: string): { name: string; price: number }[] {
   return text
@@ -59,6 +66,19 @@ function previewExtras(text: string): { name: string; price: number }[] {
       return m ? { name: m[1].trim(), price: Number(m[2]) } : { name: line, price: 0 }
     })
     .filter((e) => e.name)
+}
+
+// 套餐组成文本 → 预览数组（与 actions.ts parseCombo 同规则，客户端预览用）
+function previewCombo(text: string): { name: string; qty: number }[] {
+  return text
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const m = line.match(/^(.*?)\s+(\d+)$/)
+      return m ? { name: m[1].trim(), qty: Number(m[2]) } : { name: line, qty: 1 }
+    })
+    .filter((c) => c.name && c.qty > 0)
 }
 
 // 预置单位 / 分类 / 图标选项（下拉建议，仍可自由输入自定义值）
@@ -110,6 +130,7 @@ export type ProductPlain = {
     required: boolean
     options: { name: string; price: string }[]
   }[]
+  combo: { name: string; qty: number }[]
   bestseller: boolean
 }
 
@@ -365,6 +386,7 @@ function AddProductForm({ onAdded }: { onAdded: () => void }) {
   const [image, setImage] = useState('')
   const [extrasText, setExtrasText] = useState('')
   const [optionGroupsText, setOptionGroupsText] = useState('')
+  const [comboText, setComboText] = useState('')
   const [bestseller, setBestseller] = useState(false)
   const [uploading, setUploading] = useState(false)
 
@@ -397,12 +419,14 @@ function AddProductForm({ onAdded }: { onAdded: () => void }) {
           image: image || undefined,
           extrasText,
           optionGroupsText,
+          comboText,
           bestseller,
         })
         setName('')
         setCategory('')
         setExtrasText('')
         setOptionGroupsText('')
+        setComboText('')
         setBestseller(false)
         setPrice('')
         setUnit('')
@@ -543,6 +567,16 @@ function AddProductForm({ onAdded }: { onAdded: () => void }) {
           className="rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
         />
       </label>
+      <label className="flex flex-col gap-1 text-sm">
+        <span className="text-zinc-600 dark:text-zinc-400">{t('combo')}</span>
+        <textarea
+          value={comboText}
+          onChange={(e) => setComboText(e.target.value)}
+          rows={2}
+          placeholder={t('comboHint')}
+          className="rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
+        />
+      </label>
 
       <label className="flex items-center gap-2 text-sm">
         <input
@@ -628,6 +662,7 @@ function EditProductForm({
   const [optionGroupsText, setOptionGroupsText] = useState(
     serializeOptionGroups(product.optionGroups),
   )
+  const [comboText, setComboText] = useState(serializeCombo(product.combo))
   const [bestseller, setBestseller] = useState(product.bestseller)
 
   // 选本地图/拍照 → 上传 → 回填 URL
@@ -664,6 +699,7 @@ function EditProductForm({
           descEn: descEn || undefined,
           extrasText,
           optionGroupsText,
+          comboText,
           bestseller,
         })
         onDone()
@@ -839,6 +875,16 @@ function EditProductForm({
           onChange={(e) => setOptionGroupsText(e.target.value)}
           rows={3}
           placeholder={t('optionGroupsHint')}
+          className="rounded-md border border-zinc-300 px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-800"
+        />
+      </label>
+      <label className="flex flex-col gap-1 text-xs">
+        <span className="text-zinc-500">{t('combo')}</span>
+        <textarea
+          value={comboText}
+          onChange={(e) => setComboText(e.target.value)}
+          rows={2}
+          placeholder={t('comboHint')}
           className="rounded-md border border-zinc-300 px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-800"
         />
       </label>

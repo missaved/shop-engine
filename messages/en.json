@@ -107,6 +107,8 @@
     "toastOpened": "Opened",
     "toastClosed": "Closed",
     "bestseller": "Bestseller",
+    "combo": "Combo items",
+    "comboHint": "One per line: name qty (e.g. Beef pho 1)",
     "addItem": "Add item",
     "removeItem": "Remove",
     "items": "Items",
@@ -155,7 +157,8 @@
     "minOrderHint": "{amount}đ more to minimum",
     "note": "Note / taste",
     "notePlaceholder": "e.g. less spicy, no cilantro",
-    "bestseller": "Bestseller"
+    "bestseller": "Bestseller",
+    "combo": "Combo includes"
   },
   "track": {
     "title": "Track order",

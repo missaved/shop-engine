@@ -30,6 +30,7 @@ export default async function ShopMenuPage({
         required?: boolean
         options: { name: string; price?: number }[]
       }[]
+      combo?: { name: string; qty: number }[]
       bestseller?: boolean
     } | null
     return {
@@ -53,6 +54,7 @@ export default async function ShopMenuPage({
           price: (o.price ?? 0).toString(),
         })),
       })),
+      combo: (cfg?.combo ?? []).map((c) => ({ name: c.name, qty: c.qty })),
       bestseller: cfg?.bestseller ?? false,
     }
   })

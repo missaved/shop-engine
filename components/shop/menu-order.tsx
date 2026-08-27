@@ -24,6 +24,7 @@ export type MenuProduct = {
     required: boolean
     options: { name: string; price: string }[]
   }[]
+  combo: { name: string; qty: number }[]
   bestseller: boolean
 }
 
@@ -149,12 +150,15 @@ export function MenuOrder({
       ...products
         .filter((p) => (qty[p.id] ?? 0) > 0)
         .map((p) => {
+          const comboStr = p.combo
+            .map((c) => (c.qty > 1 ? `${c.name}×${c.qty}` : c.name))
+            .join(', ')
           const extraStr = (extras[p.id] ?? []).map((name) => `+${name}`).join(' ')
           const optStr = Object.entries(options[p.id] ?? {})
             .map(([, v]) => v)
             .filter(Boolean)
             .join(', ')
-          const detail = [optStr, extraStr].filter(Boolean).join(' ')
+          const detail = [comboStr, optStr, extraStr].filter(Boolean).join(' ')
           return `- ${p.name} x${qty[p.id]}${detail ? ' (' + detail + ')' : ''}`
         }),
       `${t('total')}: ${formatPrice(total)}đ`,
@@ -369,8 +373,13 @@ export function MenuOrder({
                       <button
                         type="button"
                         onClick={() => {
-                          // 有规格的商品 → 打开加购抽屉选规格；无规格 → 直接加数量
-                          if (p.optionGroups.length > 0) setActiveProduct(p)
+                          // 有规格/加料/套餐组成的商品 → 打开加购抽屉选规格看组成；否则 → 直接加数量
+                          if (
+                            p.optionGroups.length > 0 ||
+                            p.extras.length > 0 ||
+                            p.combo.length > 0
+                          )
+                            setActiveProduct(p)
                           else setQ(p.id, n + 1)
                         }}
                         className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-500 text-lg text-white dark:bg-amber-500 dark:text-white"
@@ -506,6 +515,13 @@ export function MenuOrder({
                         {exNames.length > 0 && (
                           <div className="truncate text-xs text-zinc-500">
                             {exNames.map((nm) => `+${nm}`).join(' ')}
+                          </div>
+                        )}
+                        {p.combo.length > 0 && (
+                          <div className="truncate text-xs text-zinc-500">
+                            {p.combo
+                              .map((c) => (c.qty > 1 ? `${c.name}×${c.qty}` : c.name))
+                              .join(', ')}
                           </div>
                         )}
                         <div className="mt-0.5 text-sm font-semibold">
@@ -786,6 +802,21 @@ function AddToCartSheet({
         <h3 className="mt-3 text-lg font-semibold">{product.name}</h3>
         {product.desc && (
           <p className="mt-1 text-sm leading-relaxed text-zinc-500">{product.desc}</p>
+        )}
+
+        {/* 套餐组成（combo）：展示套餐包含的商品 */}
+        {product.combo.length > 0 && (
+          <div className="mt-4">
+            <div className="mb-2 text-xs font-semibold text-zinc-500">{t('combo')}</div>
+            <ul className="space-y-1 text-sm text-zinc-600 dark:text-zinc-400">
+              {product.combo.map((c, i) => (
+                <li key={i} className="flex justify-between">
+                  <span>{c.name}</span>
+                  <span className="text-zinc-400">×{c.qty}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
 
         {/* 规格组（单选） */}

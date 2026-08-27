@@ -263,6 +263,20 @@ function parseOptionGroups(text?: string): {
     .filter((g) => g !== null)
 }
 
+// 解析 "商品名 数量" 文本行 → 套餐组成（数量可省略默认 1，如 "Phở bò tái 1"）
+function parseCombo(text?: string): { name: string; qty: number }[] {
+  return (text ?? '')
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const m = line.match(/^(.*?)\s+(\d+)$/)
+      if (m) return { name: m[1].trim(), qty: Number(m[2]) }
+      return { name: line, qty: 1 }
+    })
+    .filter((c) => c.name && c.qty > 0)
+}
+
 // 新增商品（老板录入：名称/价格/单位/图标/介绍，三语名暂回退主名，B8 再翻译）
 export async function createProduct(input: {
   name: string
@@ -274,6 +288,7 @@ export async function createProduct(input: {
   image?: string
   extrasText?: string
   optionGroupsText?: string
+  comboText?: string
   bestseller?: boolean
 }): Promise<void> {
   const user = await requireUser()
@@ -291,6 +306,7 @@ export async function createProduct(input: {
       descI18n: { zh: desc, en: desc, vi: desc }, // 三语先同值，B8 再翻译
       extras: parseExtras(input.extrasText),
       optionGroups: parseOptionGroups(input.optionGroupsText),
+      combo: parseCombo(input.comboText),
       bestseller: input.bestseller ?? false,
     }
 
@@ -336,6 +352,7 @@ export async function updateProduct(input: {
   descEn?: string
   extrasText?: string
   optionGroupsText?: string
+  comboText?: string
   bestseller?: boolean
 }): Promise<void> {
   const user = await requireUser()
@@ -370,6 +387,7 @@ export async function updateProduct(input: {
       descI18n,
       extras: parseExtras(input.extrasText),
       optionGroups: parseOptionGroups(input.optionGroupsText),
+      combo: parseCombo(input.comboText),
       bestseller: input.bestseller ?? (oldCfg.bestseller as boolean) ?? false,
     }
 

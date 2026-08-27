@@ -107,6 +107,8 @@
     "toastOpened": "Đã mở cửa",
     "toastClosed": "Đã đóng cửa",
     "bestseller": "Bán chạy",
+    "combo": "Combo (món kèm)",
+    "comboHint": "Mỗi dòng một món: Tên + số lượng (vd: Phở bò 1)",
     "addItem": "Thêm món",
     "removeItem": "Xóa",
     "items": "Món",
@@ -155,7 +157,8 @@
     "minOrderHint": "Thiếu {amount}đ đạt đơn tối thiểu",
     "note": "Ghi chú / khẩu vị",
     "notePlaceholder": "VD: ít cay, không ngò",
-    "bestseller": "Bán chạy"
+    "bestseller": "Bán chạy",
+    "combo": "Combo gồm"
   },
   "track": {
     "title": "Tra cứu đơn hàng",

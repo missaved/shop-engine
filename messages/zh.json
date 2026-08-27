@@ -107,6 +107,8 @@
     "toastOpened": "已开张",
     "toastClosed": "已打烊",
     "bestseller": "热卖",
+    "combo": "套餐组成",
+    "comboHint": "每行一项：商品名 数量（如：牛肉河粉 1）",
     "addItem": "加菜",
     "removeItem": "删除",
     "items": "商品",
@@ -155,7 +157,8 @@
     "minOrderHint": "还差 {amount}đ 起送",
     "note": "备注/口味",
     "notePlaceholder": "如：少辣、不要香菜",
-    "bestseller": "热卖"
+    "bestseller": "热卖",
+    "combo": "套餐包含"
   },
   "track": {
     "title": "查询订单",

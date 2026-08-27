@@ -150,6 +150,7 @@ export default async function TrackOrderPage({
               price: number
               extras?: { name: string; price: number | string }[]
               options?: { group: string; name: string; price: number | string }[]
+              combo?: { name: string; qty: number }[]
             }[]).map((it, idx) => {
               const extrasSum = (it.extras ?? []).reduce((s, e) => s + Number(e.price ?? 0), 0)
               const optionsSum = (it.options ?? []).reduce((s, o) => s + Number(o.price ?? 0), 0)
@@ -158,9 +159,14 @@ export default async function TrackOrderPage({
                 <li key={idx} className="flex justify-between gap-3">
                   <span className="flex flex-col">
                     <span>{it.name} ×{it.qty}</span>
-                    {((it.options?.length ?? 0) > 0 || (it.extras?.length ?? 0) > 0) && (
+                    {((it.options?.length ?? 0) > 0 ||
+                      (it.extras?.length ?? 0) > 0 ||
+                      (it.combo?.length ?? 0) > 0) && (
                       <span className="text-xs text-zinc-400 dark:text-zinc-500">
                         {[
+                          ...(it.combo ?? []).map((c) =>
+                            c.qty > 1 ? `${c.name}×${c.qty}` : c.name,
+                          ),
                           ...(it.options ?? []).map((o) => o.name),
                           ...(it.extras ?? []).map((e) => e.name),
                         ].join(' · ')}

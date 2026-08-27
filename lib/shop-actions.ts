@@ -113,6 +113,7 @@ export async function createOrder(input: {
       const cfg = p.config as {
         extras?: { name: string; price: number }[]
         optionGroups?: { name: string; options: { name: string; price?: number }[] }[]
+        combo?: { name: string; qty: number }[]
       } | null
       const chosenNames = extrasMap.get(p.id) ?? []
       const extras = (cfg?.extras ?? [])
@@ -133,6 +134,7 @@ export async function createOrder(input: {
         price: Number(p.price),
         extras,
         options,
+        combo: (cfg?.combo ?? []).map((c) => ({ name: c.name, qty: c.qty })),
       }
     })
     const subtotal = orderItems.reduce((sum, it) => {

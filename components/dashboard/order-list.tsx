@@ -22,6 +22,7 @@ export type OrderItem = {
   price: number | string
   extras?: { name: string; price: number | string }[]
   options?: { group: string; name: string; price: number | string }[]
+  combo?: { name: string; qty: number }[]
 }
 export type OrderPlain = {
   id: string
@@ -245,10 +246,14 @@ export function OrderList({
       ts('header', { shopName: shop.name }),
       ts('orderNo', { orderNo: order.displayNo }),
       ...order.items.map((i) => {
+        const comboStr = (i.combo ?? [])
+          .map((c) => (c.qty > 1 ? `${c.name}×${c.qty}` : c.name))
+          .join(', ')
         const detail = [
+          comboStr,
           ...(i.options ?? []).map((o) => o.name),
           ...(i.extras ?? []).map((e) => e.name),
-        ].join(' · ')
+        ].filter(Boolean).join(' · ')
         return `- ${i.name} x${i.qty}${detail ? ` (${detail})` : ''}`
       }),
       ...(order.note ? [`${ts('note')}: ${order.note}`] : []),
@@ -451,9 +456,13 @@ export function OrderList({
                   <span className="flex flex-col">
                     <span>{item.name} ×{item.qty}</span>
                     {((item.options?.length ?? 0) > 0 ||
-                      (item.extras?.length ?? 0) > 0) && (
+                      (item.extras?.length ?? 0) > 0 ||
+                      (item.combo?.length ?? 0) > 0) && (
                       <span className="text-xs text-zinc-400 dark:text-zinc-500">
                         {[
+                          ...(item.combo ?? []).map((c) =>
+                            c.qty > 1 ? `${c.name}×${c.qty}` : c.name,
+                          ),
                           ...(item.options ?? []).map((o) => o.name),
                           ...(item.extras ?? []).map((e) =>
                             Number(e.price) > 0
@@ -606,6 +615,13 @@ export function OrderList({
                   >
                     <span className="text-zinc-600 dark:text-zinc-400">
                       {item.name} ×{item.qty}
+                      {(item.combo?.length ?? 0) > 0 && (
+                        <span className="ml-1 text-xs text-zinc-400">
+                          {(item.combo ?? [])
+                            .map((c) => (c.qty > 1 ? `${c.name}×${c.qty}` : c.name))
+                            .join(', ')}
+                        </span>
+                      )}
                     </span>
                     <button
                       onClick={() =>

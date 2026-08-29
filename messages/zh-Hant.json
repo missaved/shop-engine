@@ -617,6 +617,15 @@
     "toastApproved": "已通過審核，店鋪上線",
     "toastRejected": "已駁回",
     "unlockAccount": "解鎖帳號",
-    "toastUnlocked": "帳號已解鎖"
+    "toastUnlocked": "帳號已解鎖",
+    "visitTitle": "訪問統計",
+    "visitPvToday": "今日瀏覽",
+    "visitUvToday": "今日訪客",
+    "visitPvTotal": "累計瀏覽",
+    "visitUvTotal": "累計訪客",
+    "visitCountryTop": "來源國家",
+    "visitPathTop": "熱門頁面",
+    "visitRecent": "最近訪問",
+    "visitEmpty": "暫無訪問數據"
   }
 }

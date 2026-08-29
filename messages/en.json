@@ -617,6 +617,15 @@
     "toastApproved": "Approved, shop is live",
     "toastRejected": "Rejected",
     "unlockAccount": "Unlock account",
-    "toastUnlocked": "Account unlocked"
+    "toastUnlocked": "Account unlocked",
+    "visitTitle": "Visit Stats",
+    "visitPvToday": "Today PV",
+    "visitUvToday": "Today UV",
+    "visitPvTotal": "Total PV",
+    "visitUvTotal": "Total UV",
+    "visitCountryTop": "Top countries",
+    "visitPathTop": "Top pages",
+    "visitRecent": "Recent visits",
+    "visitEmpty": "No visits yet"
   }
 }

@@ -617,6 +617,15 @@
     "toastApproved": "Đã duyệt, cửa hàng hoạt động",
     "toastRejected": "Đã từ chối",
     "unlockAccount": "Mở khóa tài khoản",
-    "toastUnlocked": "Đã mở khóa tài khoản"
+    "toastUnlocked": "Đã mở khóa tài khoản",
+    "visitTitle": "Thống kê truy cập",
+    "visitPvToday": "PV hôm nay",
+    "visitUvToday": "UV hôm nay",
+    "visitPvTotal": "Tổng PV",
+    "visitUvTotal": "Tổng UV",
+    "visitCountryTop": "Quốc gia hàng đầu",
+    "visitPathTop": "Trang phổ biến",
+    "visitRecent": "Truy cập gần đây",
+    "visitEmpty": "Chưa có truy cập"
   }
 }

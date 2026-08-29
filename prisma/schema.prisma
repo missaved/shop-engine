@@ -284,3 +284,18 @@ model ApiKey {
   revokedAt  DateTime?
   createdAt  DateTime  @default(now())
 }
+
+// 网站访问统计（2026-08-29 访问记录功能）：客户端页面访问埋点记录
+// 来源国家读 Cloudflare CF-IPCountry 头（隧道免费带），IP 读 CF-Connecting-IP，免 GeoIP 库
+model VisitLog {
+  id        String   @id @default(cuid())
+  path      String // 访问路径（含 locale 前缀，如 /vi/s/demo-pho）
+  referer   String? // document.referrer（来源页）
+  ip        String? // 访客 IP（CF-Connecting-IP）
+  country   String? // 来源国家（CF-IPCountry，2 位代码）
+  ua        String? // User-Agent
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([path])
+}

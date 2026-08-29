@@ -51,6 +51,46 @@ export default async function AnalyticsPage() {
     return { day: key.slice(5), total: Math.round((byDay.get(key) ?? 0) * 100) / 100 }
   })
 
+  // 访问统计（2026-08-29）：页面访问埋点聚合。来源国家读 CF-IPCountry，IP 读 CF-Connecting-IP，免 GeoIP 库
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const [todayPv, todayUvRows, totalPv, totalUvRows, countryRows, pathRows, recentRows] =
+    await Promise.all([
+      prisma.visitLog.count({ where: { createdAt: { gte: todayStart } } }),
+      prisma.visitLog.groupBy({
+        by: ['ip'],
+        where: { createdAt: { gte: todayStart }, ip: { not: null } },
+        _count: { _all: true },
+      }),
+      prisma.visitLog.count(),
+      prisma.visitLog.groupBy({
+        by: ['ip'],
+        where: { ip: { not: null } },
+        _count: { _all: true },
+      }),
+      prisma.visitLog.groupBy({
+        by: ['country'],
+        where: { country: { not: null } },
+        _count: { _all: true },
+        orderBy: { _count: { country: 'desc' } },
+        take: 6,
+      }),
+      prisma.visitLog.groupBy({
+        by: ['path'],
+        _count: { _all: true },
+        orderBy: { _count: { path: 'desc' } },
+        take: 10,
+      }),
+      prisma.visitLog.findMany({
+        orderBy: { createdAt: 'desc' },
+        take: 15,
+        select: { id: true, path: true, country: true, createdAt: true },
+      }),
+    ])
+
+  // groupBy 结果是行数组，distinct IP 数 = 数组长度
+  const todayUv = todayUvRows.length
+  const totalUv = totalUvRows.length
+
   const fmt = (n: number) => n.toLocaleString('en-US', { maximumFractionDigits: 0 })
 
   const cards = [
@@ -92,6 +132,88 @@ export default async function AnalyticsPage() {
           {t('trendTitle')}
         </p>
         <RevenueChart data={trend} />
+      </div>
+
+      {/* 访问统计（2026-08-29）：PV/UV / 来源国家 / 热门页面 / 最近访问 */}
+      <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <p className="mb-3 text-sm font-medium text-zinc-600 dark:text-zinc-300">
+          {t('visitTitle')}
+        </p>
+        <div className="grid grid-cols-4 gap-4">
+          {[
+            [t('visitPvToday'), todayPv],
+            [t('visitUvToday'), todayUv],
+            [t('visitPvTotal'), totalPv],
+            [t('visitUvTotal'), totalUv],
+          ].map(([label, v]) => (
+            <div
+              key={label as string}
+              className="rounded-lg border border-zinc-100 p-3 dark:border-zinc-800"
+            >
+              <p className="text-xs text-zinc-500">{label}</p>
+              <p className="mt-1 text-xl font-semibold tabular-nums">{String(v)}</p>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <div>
+            <p className="mb-2 text-xs font-medium text-zinc-500">{t('visitCountryTop')}</p>
+            {countryRows.length === 0 ? (
+              <p className="text-xs text-zinc-400">{t('visitEmpty')}</p>
+            ) : (
+              <ul className="space-y-1 text-sm">
+                {countryRows.map((r) => (
+                  <li key={r.country} className="flex justify-between">
+                    <span>{r.country}</span>
+                    <span className="tabular-nums">{r._count._all}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div>
+            <p className="mb-2 text-xs font-medium text-zinc-500">{t('visitPathTop')}</p>
+            {pathRows.length === 0 ? (
+              <p className="text-xs text-zinc-400">{t('visitEmpty')}</p>
+            ) : (
+              <ul className="space-y-1 text-sm">
+                {pathRows.map((r) => (
+                  <li key={r.path} className="flex justify-between">
+                    <span className="truncate pr-2">{r.path}</span>
+                    <span className="tabular-nums">{r._count._all}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <p className="mb-2 text-xs font-medium text-zinc-500">{t('visitRecent')}</p>
+          {recentRows.length === 0 ? (
+            <p className="text-xs text-zinc-400">{t('visitEmpty')}</p>
+          ) : (
+            <ul className="space-y-1 text-sm">
+              {recentRows.map((r) => (
+                <li key={r.id} className="flex justify-between text-zinc-600 dark:text-zinc-300">
+                  <span className="truncate pr-2">
+                    {r.country ? `[${r.country}] ` : ''}
+                    {r.path}
+                  </span>
+                  <span className="shrink-0 text-xs text-zinc-400">
+                    {r.createdAt.toLocaleString('zh-CN', {
+                      month: 'numeric',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </div>
   )

@@ -617,6 +617,15 @@
     "toastApproved": "已通过审核，店铺上线",
     "toastRejected": "已驳回",
     "unlockAccount": "解锁账号",
-    "toastUnlocked": "账号已解锁"
+    "toastUnlocked": "账号已解锁",
+    "visitTitle": "访问统计",
+    "visitPvToday": "今日浏览",
+    "visitUvToday": "今日访客",
+    "visitPvTotal": "累计浏览",
+    "visitUvTotal": "累计访客",
+    "visitCountryTop": "来源国家",
+    "visitPathTop": "热门页面",
+    "visitRecent": "最近访问",
+    "visitEmpty": "暂无访问数据"
   }
 }

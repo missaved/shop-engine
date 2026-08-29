@@ -6,6 +6,7 @@ import { routing } from '@/i18n/routing'
 import { AudioUnlocker } from '@/components/audio-unlocker'
 import { ClientLocaleAuto } from '@/components/client-locale-auto'
 import { InstallPWA } from '@/components/install-pwa'
+import { VisitTracker } from '@/components/visit-tracker'
 import '../globals.css'
 
 export const metadata = {
@@ -36,6 +37,8 @@ export default async function LocaleLayout({
           <ClientLocaleAuto />
           {/* PWA 保存桌面提示：前后端共用（Android 一键安装 / iOS 引导添加到主屏幕），须在 provider 内用 useTranslations */}
           <InstallPWA />
+          {/* 网站访问统计埋点：页面加载/路径变化时上报 /api/visit（须在 provider 内用 usePathname） */}
+          <VisitTracker />
         </NextIntlClientProvider>
         {/* 全局音频解锁：登录页首次手势即可解锁，老板端挂机收单也能响提示音 */}
         <AudioUnlocker />

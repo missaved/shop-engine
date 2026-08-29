@@ -617,6 +617,15 @@
     "toastApproved": "Diluluskan, kedai beroperasi",
     "toastRejected": "Ditolak",
     "unlockAccount": "Buka kunci akaun",
-    "toastUnlocked": "Akaun dibuka kunci"
+    "toastUnlocked": "Akaun dibuka kunci",
+    "visitTitle": "Statistik Lawatan",
+    "visitPvToday": "PV Hari Ini",
+    "visitUvToday": "UV Hari Ini",
+    "visitPvTotal": "Jumlah PV",
+    "visitUvTotal": "Jumlah UV",
+    "visitCountryTop": "Negara teratas",
+    "visitPathTop": "Halaman popular",
+    "visitRecent": "Lawatan terkini",
+    "visitEmpty": "Tiada lawatan"
   }
 }

@@ -617,6 +617,15 @@
     "toastApproved": "อนุมัติแล้ว ร้านค้าเปิดใช้งาน",
     "toastRejected": "ปฏิเสธแล้ว",
     "unlockAccount": "ปลดล็อกบัญชี",
-    "toastUnlocked": "ปลดล็อกบัญชีแล้ว"
+    "toastUnlocked": "ปลดล็อกบัญชีแล้ว",
+    "visitTitle": "สถิติการเข้าชม",
+    "visitPvToday": "PV วันนี้",
+    "visitUvToday": "UV วันนี้",
+    "visitPvTotal": "PV ทั้งหมด",
+    "visitUvTotal": "UV ทั้งหมด",
+    "visitCountryTop": "ประเทศยอดนิยม",
+    "visitPathTop": "หน้าที่นิยม",
+    "visitRecent": "การเข้าชมล่าสุด",
+    "visitEmpty": "ยังไม่มีการเข้าชม"
   }
 }

@@ -13,6 +13,8 @@ import {
   isRateLimited,
   recordFailure,
 } from '@/lib/rate-limit'
+import type { RateLimitOpts } from '@/lib/rate-limit'
+import { getSetting } from '@/lib/platform-settings'
 import { decryptSecret, verifyTOTP } from '@/lib/totp'
 import type { UserRole } from '@/generated/prisma/enums'
 
@@ -28,6 +30,16 @@ class NeedTotpSignin extends CredentialsSignin {
 
 class TotpInvalidSignin extends CredentialsSignin {
   code = 'TOTP_INVALID'
+}
+
+// 第 21 批（2026-08-29 用户拍板）：登录失败锁定。锁定期间登录直接拒绝（含正确密码），后台 unlockUser 解锁
+class AccountLockedSignin extends CredentialsSignin {
+  code = 'ACCOUNT_LOCKED'
+}
+
+// 2FA 强制（设置项 totpForce，默认关）：开时 admin 未绑定 TOTP → 拒绝登录并引导绑定
+class NeedTotpSetupSignin extends CredentialsSignin {
+  code = 'NEED_TOTP_SETUP'
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -67,7 +79,28 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           where: { OR: [{ phone }, { username: phone }] },
         })
         const isAdmin = user?.role === 'ADMIN'
-        const limitOpts = isAdmin ? ADMIN_LIMIT_OPTS : undefined
+        // 平台安全配置（2026-08-29 接线）：登录失败锁定阈值/时长、2FA 强制、admin 限流阈值均可配，默认值 = 既有常量
+        const security = (await getSetting<{
+          rateLimitMax?: number
+          rateLimitWindowMin?: number
+          accountLockThreshold?: number
+          accountLockMinutes?: number
+          totpForce?: boolean
+        }>('security')) ?? {}
+        const lockThreshold = security.accountLockThreshold ?? 5
+        const lockMinutes = security.accountLockMinutes ?? 15
+        // admin 档限流可配：max/window 读配置，历史累计与封禁保持默认（防削弱，只放开窗口维度）
+        const limitOpts: RateLimitOpts | undefined = isAdmin
+          ? {
+              max: security.rateLimitMax ?? ADMIN_LIMIT_OPTS.max,
+              windowMs:
+                (security.rateLimitWindowMin ?? ADMIN_LIMIT_OPTS.windowMs / 60_000) *
+                60_000,
+              historyMs: ADMIN_LIMIT_OPTS.historyMs,
+              historyMax: ADMIN_LIMIT_OPTS.historyMax,
+              banMs: ADMIN_LIMIT_OPTS.banMs,
+            }
+          : undefined
         const ipKey = isAdmin ? `admin:ip:${ip}` : `ip:${ip}`
         const phoneKey = isAdmin ? `admin:phone:${phone}` : `phone:${phone}`
 
@@ -81,16 +114,38 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return null
         }
 
+        // 登录失败锁定（用户拍板 2026-08-29）：锁定期内直接拒绝（含正确密码），后台 unlockUser 解锁
+        if (user.lockedUntil && user.lockedUntil.getTime() > Date.now()) {
+          throw new AccountLockedSignin()
+        }
+
         const ok = await compare(password, user.passwordHash)
         if (!ok) {
           recordFailure(ipKey, limitOpts)
           recordFailure(phoneKey, limitOpts)
+          // 失败累计锁定：failedAttempts+1，达阈值 → 置 lockedUntil = now + lockMinutes（可配）
+          const fails = (user.failedAttempts ?? 0) + 1
+          const locked = fails >= lockThreshold
+          await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              failedAttempts: fails,
+              lockedUntil: locked
+                ? new Date(Date.now() + lockMinutes * 60_000)
+                : null,
+            },
+          })
           return null
         }
 
         // 第 20 批 A3 + 审计修复：clearFailures 延迟到「完全登录成功」才执行。
         // 原「密码通过即清」会让连续错 otp 时每次先被清空，验证码爆破防护形同虚设（补测抓到）。
         // 现语义：密码错 / otp 错都累计；NEED_TOTP（密码对但缺 otp，正常第一步）不记；全对登录成功才清。
+        // 2FA 强制（2026-08-29 用户拍板默认关，本期不启用拦截）：totpForce=true 时 admin 未绑定 TOTP → 拒绝登录并引导绑定；
+        // 已绑定用户走下方常规 TOTP 校验；默认关零拦截（测试验证方便，后期正式运营再开启）
+        if (user.role === 'ADMIN' && security.totpForce && !user.totpEnabled) {
+          throw new NeedTotpSetupSignin()
+        }
         // 调试期（2026-08-29 用户报 2FA 死锁进不去）：TOTP_BYPASS=true 时跳过 TOTP 强制，登录只需密码；
         // 设置页可关闭/重绑（admin-actions 同步放宽）。生产去掉该环境变量即恢复强制 2FA。
         if (user.totpEnabled && process.env.TOTP_BYPASS !== 'true') {
@@ -112,6 +167,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // 完全登录成功：清空该 ip/phone 的失败计数（owner 无 TOTP，密码对即到此）
         clearFailures(ipKey)
         clearFailures(phoneKey)
+        // 登录失败锁定：成功登录清零累计（防历史失败把正常登录误锁）
+        if (user.failedAttempts || user.lockedUntil) {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { failedAttempts: 0, lockedUntil: null },
+          })
+        }
 
         return {
           id: user.id,

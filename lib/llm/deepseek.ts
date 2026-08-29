@@ -1,16 +1,18 @@
 // DeepSeek provider：文字生成主力（8.1 定案）。OpenAI 兼容 chat/completions
+// 2026-08-29：key/模型改读平台配置（DB 优先，env 回退）
 import type { LLMProvider } from './provider'
+import { getAiConfig } from '@/lib/platform-settings'
 
 export const deepseek: LLMProvider = {
   name: 'ds',
   async chat(messages, opts) {
-    const key = process.env.DEEPSEEK_API_KEY
+    const { key, model } = (await getAiConfig()).deepseek
     if (!key) throw new Error('ds: DEEPSEEK_API_KEY 未配置')
     const res = await fetch('https://api.deepseek.com/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
       body: JSON.stringify({
-        model: 'deepseek-chat', // 实测返回 deepseek-v4-flash
+        model, // 实测返回 deepseek-v4-flash
         messages,
         temperature: opts?.temperature ?? 0.3,
         max_tokens: 8192, // 菜品 JSON 含三语描述/图 prompt，默认上限会截断

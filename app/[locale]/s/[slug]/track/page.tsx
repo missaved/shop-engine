@@ -2,7 +2,8 @@
 import { getTranslations } from 'next-intl/server'
 import { headers } from 'next/headers'
 import { prisma } from '@/lib/prisma'
-import { getShopBySlug } from '@/lib/tenant'
+import { getShopBySlug, ShopUnavailableError } from '@/lib/tenant'
+import { ShopUnavailableView } from '@/components/shop/shop-unavailable'
 import { isRateLimited, recordFailure } from '@/lib/rate-limit'
 import { normalizePhone } from '@/lib/phone'
 import { Link } from '@/i18n/navigation'
@@ -40,7 +41,18 @@ export default async function TrackOrderPage({
   const { orderNo: orderNoStr, phone } = await searchParams
   const t = await getTranslations('track')
 
-  const shop = await getShopBySlug(slug)
+  // 维护模式全拦（含查单）/ 入驻审核未通过店：getShopBySlug 抛 ShopUnavailableError → 渲染提示页
+  let shop: Awaited<ReturnType<typeof getShopBySlug>>
+  try {
+    shop = await getShopBySlug(slug)
+  } catch (e) {
+    if (e instanceof ShopUnavailableError) {
+      return (
+        <ShopUnavailableView reason={e.reason} rejectReason={e.rejectReason} />
+      )
+    }
+    throw e
+  }
 
   let order: Awaited<ReturnType<typeof prisma.order.findFirst>> = null
   let notFound = false

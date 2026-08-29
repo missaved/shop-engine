@@ -11,7 +11,7 @@ import { LocaleSwitcher } from '@/components/locale-switcher'
 export default function LoginPage() {
   const t = useTranslations('login')
   const router = useRouter()
-  const [error, setError] = useState<'error' | 'rateLimited' | 'notAdmin' | null>(null)
+  const [error, setError] = useState<'error' | 'rateLimited' | 'accountLocked' | 'notAdmin' | null>(null)
   const [pending, setPending] = useState(false)
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -29,6 +29,8 @@ export default function LoginPage() {
 
       if (res?.error) {
         if (res.code === 'RATE_LIMITED') setError('rateLimited')
+        // 登录失败锁定（2026-08-29）：账号被锁定，后台 unlockUser 解锁
+        else if (res.code === 'ACCOUNT_LOCKED') setError('accountLocked')
         // admin 账号（已绑定 TOTP）走 boss 入口：authorize 抛 NEED_TOTP，提示改走 /admin/login
         else if (res.code === 'NEED_TOTP') setError('notAdmin')
         else setError('error')
@@ -85,7 +87,13 @@ export default function LoginPage() {
 
         {error && (
           <p className="mb-4 text-sm text-red-600 dark:text-red-400">
-            {error === 'notAdmin' ? t('adminGoAdminLogin') : t(error === 'rateLimited' ? 'rateLimited' : 'error')}
+            {error === 'notAdmin'
+              ? t('adminGoAdminLogin')
+              : error === 'rateLimited'
+                ? t('rateLimited')
+                : error === 'accountLocked'
+                  ? t('accountLocked')
+                  : t('error')}
           </p>
         )}
 

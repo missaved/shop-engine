@@ -1,11 +1,13 @@
 // Gemini provider：最后兜底（8.1 定案「实在不行才用」）
 // Gemini 无 system 角色，system 消息折进 systemInstruction
+// 2026-08-29：key/模型改读平台配置（DB 优先，env 回退）
 import type { LLMProvider, ChatMessage } from './provider'
+import { getAiConfig } from '@/lib/platform-settings'
 
 export const gemini: LLMProvider = {
   name: 'gemini',
   async chat(messages, opts) {
-    const key = process.env.GEMINI_API_KEY
+    const { key, model } = (await getAiConfig()).gemini
     if (!key) throw new Error('gemini: GEMINI_API_KEY 未配置')
     // 拆分 system 消息 → systemInstruction；其余 → contents
     const systemText = messages.filter((m) => m.role === 'system').map((m) => m.content).join('\n\n')
@@ -16,7 +18,7 @@ export const gemini: LLMProvider = {
     }))
     const body: Record<string, unknown> = { contents }
     if (systemText) body.systemInstruction = { parts: [{ text: systemText }] }
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${encodeURIComponent(key)}`
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

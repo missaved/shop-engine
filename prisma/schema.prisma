@@ -55,6 +55,8 @@ model Shop {
   subscribedUntil   DateTime? // 当前订阅到期；null=无期限；过期 = subscribedUntil < now
   platformSuspended Boolean   @default(false) // 平台人工停用（违规/冻结），独立于老板 open 打烊
   featured          Boolean   @default(false) // 平台推荐位（推广曝光，聚合首页排序用）
+  approved          Boolean   @default(true) // 入驻审核：false=待审/被拒（审核开关开启时新建店默认 false，通过后置 true）
+  rejectReason      String? // 入驻审核驳回原因（被拒前台显示；审核开关关闭时不使用）
   currency          String    @default("VND") // ISO 4217 货币码，一店一币种（多币种基础）
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -142,6 +144,8 @@ model User {
   role         UserRole @default(OWNER)
   totpSecret   String? // AES-256-GCM 加密的 TOTP 密钥（lib/totp.ts，admin 二次验证用）
   totpEnabled  Boolean  @default(false) // 是否已绑定 TOTP（admin 首次绑定引导后置 true）
+  failedAttempts Int      @default(0) // 登录失败累计（超阈值触发锁定）
+  lockedUntil    DateTime? // 登录锁定截止；锁定期间拒绝登录（后台解锁清除）
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -212,4 +216,71 @@ model ShopDraft {
   snapshot  Json? // 覆盖上架前的现有 Product[] 快照（9.2 一键还原用）
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// ---- 平台级设置中心（2026-08-29 扩展）----
+
+// 平台级键值配置表（设置中心地基）：key ∈ ai/oauth/site/security/maintenance/billing/notification/webhooks/onboarding
+// value 为各块 jsonb；敏感字段（AI key / OAuth secret / SMTP 密码 / 网关密钥）AES 加密后存入（lib/secret-crypto.ts）
+model PlatformSetting {
+  key       String   @id
+  value     Json?
+  updatedAt DateTime @updatedAt
+}
+
+// 平台审计日志：谁/何时/改了什么（管理后台基本盘；写入失败不阻塞主操作）
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String? // User.id；null=系统/脚本
+  actorName  String?
+  action     String // login / shop_manage / bill / config_change / totp / plan / announcement / apikey / auth
+  targetType String? // shop / user / plan / setting / announcement / apikey
+  targetId   String?
+  detail     Json? // 变更前后快照等
+  ip         String?
+  createdAt  DateTime @default(now())
+
+  @@index([actorId])
+  @@index([targetType, targetId])
+  @@index([createdAt])
+}
+
+// 套餐定义（收费扩展骨架）：plan 字符串 → 档位表；限额字段本期只存不校验
+model PlanTier {
+  key          String   @id // TRIAL / BASIC / PRO
+  name         String
+  nameI18n     Json? // 多语展示名（预留）
+  price        Decimal  @default(0) @db.Decimal(12, 2)
+  months       Int      @default(1) // 每期时长（月）
+  shopLimit    Int? // 店铺数上限（null=不限）
+  productLimit Int? // 商品数上限
+  aiQuota      Int? // AI 生成配额（次/月）
+  sortOrder    Int      @default(0)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// 平台公告（多条，前台 banner 展示后置；区别于维护模式单条文案）
+model PlatformAnnouncement {
+  id        String   @id @default(cuid())
+  title     String
+  body      String
+  locale    String? // null=全语言
+  startsAt  DateTime?
+  endsAt    DateTime?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// 平台 API key（开发者预留：生成/撤销/列表，调用校验后置；明文仅创建时显示一次）
+model ApiKey {
+  id         String    @id @default(cuid())
+  name       String
+  keyHash    String    @unique // 只存哈希（sha256），不存明文
+  scope      String    @default("platform")
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
 }

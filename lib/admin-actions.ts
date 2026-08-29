@@ -17,6 +17,8 @@ import {
   otpauthURI,
   verifyTOTP,
 } from '@/lib/totp'
+import { getSetting } from '@/lib/platform-settings'
+import { writeAudit, AUDIT_ACTION, AUDIT_TARGET } from '@/lib/audit'
 
 // slug 保留字黑名单：与路由 / 静态资源名冲突的词（/s/[slug] 客户菜单、/admin、/login 等）
 const RESERVED_SLUGS = new Set([
@@ -66,7 +68,7 @@ export async function createShop(input: {
   ownerPhone: string
   ownerPassword: string
 }): Promise<void> {
-  await requireAdmin()
+  const admin = await requireAdmin()
   const {
     slug,
     name,
@@ -101,6 +103,13 @@ export async function createShop(input: {
     if (slugTaken) throw new Error('该 slug 已被占用')
     if (phoneTaken) throw new Error('该老板手机号已注册')
 
+    // 套餐档位软校验（2026-08-29）：plan 必须是 PlanTier.key，未知档回退 TRIAL（兼容历史/防脏数据）
+    const tier = await prisma.planTier.findUnique({ where: { key: plan } })
+    const finalPlan = tier ? plan : 'TRIAL'
+    // 入驻审核联动（用户拍板）：reviewRequired=true 时新建店默认待审（approved=false），通过后才上线
+    const onboarding = await getSetting<{ reviewRequired?: boolean }>('onboarding')
+    const approved = !(onboarding?.reviewRequired)
+
     // 试用期：>0 天 → now + trialDays；0 → 无期限（null）
     const subscribedUntil =
       trialDays > 0 ? new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000) : null
@@ -120,7 +129,8 @@ export async function createShop(input: {
           currency,
           phone: phone?.trim() || null,
           address: address?.trim() || null,
-          plan,
+          plan: finalPlan,
+          approved,
           subscribedUntil,
           config,
         },
@@ -137,6 +147,14 @@ export async function createShop(input: {
     })
 
     revalidatePath('/admin/[locale]/shops', 'page')
+    await writeAudit({
+      actorId: admin.id,
+      actorName: admin.name,
+      action: AUDIT_ACTION.SHOP_MANAGE,
+      targetType: AUDIT_TARGET.SHOP,
+      targetId: (await prisma.shop.findUnique({ where: { slug: slug.trim() } }))?.id ?? null,
+      detail: { slug: slug.trim(), plan: finalPlan, approved, trialDays },
+    })
   } catch (e) {
     // P2002 唯一冲突兜底（并发下 findUnique 查重可能漏）
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
@@ -227,7 +245,7 @@ export async function changeAdminPassword(
   try {
     if (!oldPassword || !newPassword) throw new Error('旧密码与新密码不能为空')
     const pwdErr = validateAdminPassword(newPassword)
-    if (pwdErr) throw new Error('admin 新密码须 ≥12 位且含大小写字母、数字、符号')
+    if (pwdErr) throw new Error('admin 新密码至少 8 位且含字母与数字')
     // requireAdmin 只给 session user（无 passwordHash），改密需重查 DB 校验旧密码
     const admin = await prisma.user.findUnique({ where: { id: session.id } })
     if (!admin) throw new Error('admin 账号不存在')
@@ -324,6 +342,10 @@ export async function renewSubscription(input: {
     const shop = await prisma.shop.findUnique({ where: { id: shopId } })
     if (!shop) throw new Error('店铺不存在')
 
+    // 套餐档位软校验（2026-08-29）：未知档回退 TRIAL（兼容历史脏数据）
+    const tier = await prisma.planTier.findUnique({ where: { key: plan } })
+    const finalPlan = tier ? plan : 'TRIAL'
+
     // 新到期日：现有未过期时在到期日基础上续，否则（无期限/已过期）从 now 起算
     const base =
       shop.subscribedUntil && shop.subscribedUntil.getTime() > Date.now()
@@ -344,13 +366,78 @@ export async function renewSubscription(input: {
       })
       await tx.shop.update({
         where: { id: shopId },
-        data: { subscribedUntil: newUntil, plan },
+        data: { subscribedUntil: newUntil, plan: finalPlan },
       })
     })
 
     revalidatePath('/admin/[locale]/shops', 'page')
+    await writeAudit({
+      actorId: admin.id,
+      actorName: admin.name,
+      action: AUDIT_ACTION.BILL,
+      targetType: AUDIT_TARGET.SHOP,
+      targetId: shopId,
+      detail: { plan: finalPlan, months, amount: amount.toString() },
+    })
   } catch (e) {
     console.error('续费失败（shopId=%s）:', shopId, e)
+    throw e
+  }
+}
+
+// 后台解锁被封账号（2026-08-29 用户拍板：登录失败超阈值锁定，后台解锁即可）
+// 清零 failedAttempts + 清除 lockedUntil；被解锁后即可正常登录
+export async function unlockUser(userId: string): Promise<void> {
+  const admin = await requireAdmin()
+  try {
+    const user = await prisma.user.findUnique({ where: { id: userId } })
+    if (!user) throw new Error('账号不存在')
+    await prisma.user.update({
+      where: { id: userId },
+      data: { failedAttempts: 0, lockedUntil: null },
+    })
+    await writeAudit({
+      actorId: admin.id,
+      actorName: admin.name,
+      action: AUDIT_ACTION.AUTH,
+      targetType: AUDIT_TARGET.USER,
+      targetId: userId,
+      detail: { unlocked: true, phone: user.phone },
+    })
+    revalidatePath('/admin/[locale]/settings', 'page')
+  } catch (e) {
+    console.error('解锁账号失败（userId=%s）:', userId, e)
+    throw e
+  }
+}
+
+// 入驻审核：通过 / 驳回（2026-08-29 用户拍板；审核开关开时新建店默认待审）
+// approved=true → 上线；approved=false → 驳回并记录原因（前台显示），需通过后重新置 true
+export async function toggleShopApproval(
+  shopId: string,
+  approved: boolean,
+  reason?: string,
+): Promise<void> {
+  const admin = await requireAdmin()
+  try {
+    const shop = await prisma.shop.findUnique({ where: { id: shopId } })
+    if (!shop) throw new Error('店铺不存在')
+    if (!approved && !reason?.trim()) throw new Error('驳回须填写原因')
+    await prisma.shop.update({
+      where: { id: shopId },
+      data: { approved, rejectReason: approved ? null : reason?.trim() || null },
+    })
+    await writeAudit({
+      actorId: admin.id,
+      actorName: admin.name,
+      action: AUDIT_ACTION.SHOP_MANAGE,
+      targetType: AUDIT_TARGET.SHOP,
+      targetId: shopId,
+      detail: { approved, reason: reason?.trim() ?? null },
+    })
+    revalidatePath('/admin/[locale]/shops', 'page')
+  } catch (e) {
+    console.error('入驻审核失败（shopId=%s）:', shopId, e)
     throw e
   }
 }

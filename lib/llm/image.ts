@@ -3,6 +3,7 @@
 // minimax 有限流（8.1）：并发 1 + 请求间隔；失败按错误类型处置（下一步由调用方决定）
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
+import { getAiConfig } from '@/lib/platform-settings'
 
 // 输出根目录：与 /api/upload 同目录（9.6 单实例可写；生产 CF 隧道下 imageUrl 已是 URL 抽象，预留对象存储）
 const OUT_DIR = path.join(process.cwd(), 'public', 'uploads', 'presets')
@@ -53,7 +54,7 @@ async function callImage(key: string, prompt: string) {
 
 /** minimax 文生图一张（写实食物摄影 prompt），按 country/subcat/slug 归档，返回公开 URL */
 export async function generateImage(prompt: string, meta?: GenerateImageMeta): Promise<ImageResult> {
-  const key = process.env.MINIMAX_API_KEY
+  const { key } = (await getAiConfig()).minimax
   if (!key) return { ok: false, error: 'minimax: MINIMAX_API_KEY 未配置' }
   try {
     const country = (meta?.country ?? 'vn').toLowerCase()

@@ -3,13 +3,40 @@
 // 之后所有查询 where 必须带 shop.shopId，杜绝跨店访问
 import { prisma } from './prisma'
 import { notFound } from 'next/navigation'
+import { getSetting } from './platform-settings'
+
+// 顾客端店铺不可用错误（2026-08-29 用户拍板）：
+// - reason='maintenance'：维护模式全拦（含查单）——维护开启时所有顾客端访问显示维护页
+// - reason='not_approved'：入驻审核开启时，未通过审核的店铺拒绝访问（带驳回原因）
+// 页面层 catch 后用 ShopUnavailableView 渲染多语提示；server action 场景 message 即用户可读文案。
+export class ShopUnavailableError extends Error {
+  readonly reason: 'maintenance' | 'not_approved'
+  readonly rejectReason: string | null
+
+  constructor(reason: 'maintenance' | 'not_approved', rejectReason: string | null = null) {
+    super(reason === 'maintenance' ? '店铺维护中，请稍后再来' : '店铺暂未开放')
+    this.name = 'ShopUnavailableError'
+    this.reason = reason
+    this.rejectReason = rejectReason
+  }
+}
 
 // 按 slug 取店铺，找不到即 404
+// 顾客端统一拦截点：维护模式全拦（含查单）+ 入驻审核（开时 approved=false 拒绝）。
+// 8 个调用点（菜单/查单/下单 action/推荐菜）全为顾客端；boss/admin 后台（dashboard）不经过本函数，天然放行。
 export async function getShopBySlug(slug: string) {
   const shop = await prisma.shop.findUnique({
     where: { slug },
   })
   if (!shop) notFound()
+  const [maintenance, onboarding] = await Promise.all([
+    getSetting<{ mode?: boolean }>('maintenance'),
+    getSetting<{ reviewRequired?: boolean }>('onboarding'),
+  ])
+  if (maintenance?.mode) throw new ShopUnavailableError('maintenance')
+  if (onboarding?.reviewRequired && !shop.approved) {
+    throw new ShopUnavailableError('not_approved', shop.rejectReason)
+  }
   return shop
 }
 

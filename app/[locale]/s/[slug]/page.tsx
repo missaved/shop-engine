@@ -1,6 +1,7 @@
 // 客户侧菜单页：/s/[slug]，公开访问（未登录），按 slug 派生租户
 import { prisma } from '@/lib/prisma'
-import { getShopBySlug } from '@/lib/tenant'
+import { getShopBySlug, ShopUnavailableError } from '@/lib/tenant'
+import { ShopUnavailableView } from '@/components/shop/shop-unavailable'
 import { isShopExpired } from '@/lib/billing'
 import { MenuOrder } from '@/components/shop/menu-order'
 import type { MenuProduct } from '@/components/shop/menu-order'
@@ -26,7 +27,18 @@ export default async function ShopMenuPage({
   const tableStr = typeof table === 'string' ? table : ''
   const typeStr = typeof type === 'string' ? type : ''
   const continueStr = typeof continueParam === 'string' ? continueParam : ''
-  const shop = await getShopBySlug(slug)
+  // 维护模式全拦（含查单）/ 入驻审核未通过店：getShopBySlug 抛 ShopUnavailableError → 渲染提示页
+  let shop: Awaited<ReturnType<typeof getShopBySlug>>
+  try {
+    shop = await getShopBySlug(slug)
+  } catch (e) {
+    if (e instanceof ShopUnavailableError) {
+      return (
+        <ShopUnavailableView reason={e.reason} rejectReason={e.rejectReason} />
+      )
+    }
+    throw e
+  }
 
   const products = await prisma.product.findMany({
     where: { shopId: shop.id, active: true },

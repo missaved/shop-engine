@@ -3,6 +3,7 @@
 import { getTranslations } from 'next-intl/server'
 import { AddShopForm } from '@/components/admin/add-shop-form'
 import { ShopList } from '@/components/admin/shop-list'
+import { getSetting } from '@/lib/platform-settings'
 
 export default async function AdminShopsPage({
   searchParams,
@@ -15,6 +16,8 @@ export default async function AdminShopsPage({
   const q = sp.q ?? ''
   const vertical = sp.vertical ?? 'all'
   const status = sp.status ?? 'all'
+  // 平台试用天数配置（billing.trialDays）作建店表单默认值（未配 = undefined → 表单用 30）
+  const billing = await getSetting<{ trialDays?: number }>('billing')
 
   return (
     <div className="flex flex-col gap-4">
@@ -30,7 +33,7 @@ export default async function AdminShopsPage({
           <span className="text-zinc-400 transition-transform group-open:rotate-180">▾</span>
         </summary>
         <div className="border-t border-zinc-100 p-4 dark:border-zinc-800">
-          <AddShopForm />
+          <AddShopForm defaultTrialDays={billing?.trialDays} />
         </div>
       </details>
 

@@ -61,7 +61,7 @@ export async function createOrder(input: {
   const shop = await getShopBySlug(input.slug)
   if (!shop.open) throw new Error('店铺已打烊')
   if (shop.platformSuspended) throw new Error('店铺暂停营业')
-  if (isShopExpired(shop)) throw new Error('店铺已到期')
+  if (await isShopExpired(shop)) throw new Error('店铺已到期')
 
   const shopCfg = (shop.config as Record<string, unknown> | null) ?? {}
   if (!isOpenNow(shopCfg.openHours as string | undefined)) {
@@ -335,7 +335,7 @@ export async function addItemsToMyOrder(input: {
 }): Promise<{ displayNo: string; addedSubtotal: number }> {
   const shop = await getShopBySlug(input.slug)
   if (shop.platformSuspended) throw new Error('ORDER_NOT_ADDABLE')
-  if (isShopExpired(shop)) throw new Error('ORDER_NOT_ADDABLE')
+  if (await isShopExpired(shop)) throw new Error('ORDER_NOT_ADDABLE')
 
   const gk = input.guestKey?.trim() ?? ''
   const p = input.phone ? normalizePhone(input.phone) : ''

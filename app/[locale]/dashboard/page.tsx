@@ -92,7 +92,7 @@ export default async function DashboardPage() {
   if (!shop) return null
 
   // 订阅到期判断：老板后台顶部横幅提示（客户侧已同步拦截下单）
-  const subscriptionExpired = isShopExpired(shop)
+  const subscriptionExpired = await isShopExpired(shop)
 
   const shopPlain: ShopPlain = {
     id: shop.id,

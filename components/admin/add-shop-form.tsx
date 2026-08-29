@@ -42,7 +42,8 @@ const inputCls =
   'rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800'
 
 // 建店 + 老板账号一表单（受控 useState + useTransition + server action + toast，照抄 settings-panel AddProductForm 模式）
-export function AddShopForm() {
+// defaultTrialDays：平台 billing.trialDays 配置传入作表单默认（未配 = 30，兼容现状）
+export function AddShopForm({ defaultTrialDays }: { defaultTrialDays?: number }) {
   const t = useTranslations('admin')
   const router = useRouter()
   const [pending, startTransition] = useTransition()
@@ -57,7 +58,7 @@ export function AddShopForm() {
   const [openHours, setOpenHours] = useState('')
   const [minOrderAmount, setMinOrderAmount] = useState('')
   const [plan, setPlan] = useState<string>('TRIAL')
-  const [trialDays, setTrialDays] = useState('30')
+  const [trialDays, setTrialDays] = useState(String(defaultTrialDays ?? 30))
   const [ownerPhone, setOwnerPhone] = useState('')
   const [ownerPassword, setOwnerPassword] = useState('')
   const [nameI18n, setNameI18n] = useState<Record<string, string>>({})

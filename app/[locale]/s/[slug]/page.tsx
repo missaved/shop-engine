@@ -83,7 +83,7 @@ export default async function ShopMenuPage({
     (shop.config as { theme?: string } | null)?.theme,
   )
   // 营业三态：订阅到期 / 平台停用（老板打烊 open 已有），传给客户菜单渲染
-  const expired = isShopExpired(shop)
+  const expired = await isShopExpired(shop)
   const suspended = shop.platformSuspended
   return (
     <MenuOrder

@@ -90,10 +90,10 @@ export async function createShop(input: {
     if (!name.trim()) throw new Error('店名不能为空')
     if (!VERTICALS.includes(vertical)) throw new Error('未知垂直类目')
     if (!ownerPhone.trim()) throw new Error('老板手机号不能为空')
-    // 店主密码走宽松策略（≥8 位字母数字，8.2 决策：店主统一宽松，手机端不苛刻）
+    // 店主密码走宽松策略（≥8 位，8.2 决策 + 审计对齐拍板：纯 8 位即可，爆破靠登录失败锁定）
     if (!ownerPassword) throw new Error('老板初始密码不能为空')
     const ownerPwdErr = validateOwnerPassword(ownerPassword)
-    if (ownerPwdErr) throw new Error('老板初始密码至少 8 位且含字母与数字')
+    if (ownerPwdErr) throw new Error('老板初始密码至少 8 位')
 
     // 查重：slug / 老板手机号唯一（P2002 兜底）
     const [slugTaken, phoneTaken] = await Promise.all([
@@ -110,9 +110,11 @@ export async function createShop(input: {
     const onboarding = await getSetting<{ reviewRequired?: boolean }>('onboarding')
     const approved = !(onboarding?.reviewRequired)
 
-    // 试用期：>0 天 → now + trialDays；0 → 无期限（null）
+    // 试用期：>0 天 → now + trialDays；0/缺省 → 读 billing.trialDays（平台可配），仍无效 → 30 天默认
+    const billingTrial = (await getSetting<{ trialDays?: number }>('billing'))?.trialDays
+    const effTrialDays = trialDays > 0 ? trialDays : (billingTrial ?? 30)
     const subscribedUntil =
-      trialDays > 0 ? new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000) : null
+      effTrialDays > 0 ? new Date(Date.now() + effTrialDays * 24 * 60 * 60 * 1000) : null
 
     const config: Prisma.InputJsonValue = {
       ...(openHours ? { openHours } : {}),
@@ -153,7 +155,7 @@ export async function createShop(input: {
       action: AUDIT_ACTION.SHOP_MANAGE,
       targetType: AUDIT_TARGET.SHOP,
       targetId: (await prisma.shop.findUnique({ where: { slug: slug.trim() } }))?.id ?? null,
-      detail: { slug: slug.trim(), plan: finalPlan, approved, trialDays },
+      detail: { slug: slug.trim(), plan: finalPlan, approved, trialDays: effTrialDays },
     })
   } catch (e) {
     // P2002 唯一冲突兜底（并发下 findUnique 查重可能漏）
@@ -214,7 +216,7 @@ export async function deleteShop(shopId: string): Promise<void> {
   }
 }
 
-// 重置该店老板密码（店主走宽松策略 ≥8 位字母数字）
+// 重置该店老板密码（店主走宽松策略 ≥8 位）
 export async function resetOwnerPassword(
   shopId: string,
   newPassword: string,
@@ -222,7 +224,7 @@ export async function resetOwnerPassword(
   await requireAdmin()
   try {
     if (!newPassword) throw new Error('新密码不能为空')
-    if (validateOwnerPassword(newPassword)) throw new Error('新密码至少 8 位且含字母与数字')
+    if (validateOwnerPassword(newPassword)) throw new Error('新密码至少 8 位')
     const owner = await prisma.user.findFirst({ where: { shopId, role: 'OWNER' } })
     if (!owner) throw new Error('该店无老板账号')
     await prisma.user.update({
@@ -245,7 +247,7 @@ export async function changeAdminPassword(
   try {
     if (!oldPassword || !newPassword) throw new Error('旧密码与新密码不能为空')
     const pwdErr = validateAdminPassword(newPassword)
-    if (pwdErr) throw new Error('admin 新密码至少 8 位且含字母与数字')
+    if (pwdErr) throw new Error('admin 新密码至少 8 位')
     // requireAdmin 只给 session user（无 passwordHash），改密需重查 DB 校验旧密码
     const admin = await prisma.user.findUnique({ where: { id: session.id } })
     if (!admin) throw new Error('admin 账号不存在')

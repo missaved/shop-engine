@@ -740,7 +740,7 @@ export async function searchOrderHistory(input: {
   }))
 }
 
-// 店主改密（8.2 决策：店主宽松策略 ≥8 位字母数字 + 旧密码校验）
+// 店主改密（8.2 决策 + 审计对齐拍板：店主宽松策略 ≥8 位 + 旧密码校验）
 export async function changeOwnerPassword(
   oldPassword: string,
   newPassword: string,
@@ -748,7 +748,7 @@ export async function changeOwnerPassword(
   const user = await requireOwner()
   try {
     if (!oldPassword || !newPassword) throw new Error('旧密码与新密码不能为空')
-    if (validateOwnerPassword(newPassword)) throw new Error('新密码至少 8 位且含字母与数字')
+    if (validateOwnerPassword(newPassword)) throw new Error('新密码至少 8 位')
     // requireOwner 只给 session user（无 passwordHash），改密需重查 DB 校验旧密码
     const owner = await prisma.user.findUnique({ where: { id: user.id } })
     if (!owner) throw new Error('账号不存在')

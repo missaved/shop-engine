@@ -24,7 +24,7 @@ const PAGE_SIZE = 20
 const VERTICALS = ['FOOD', 'MOTO', 'SALON', 'PET', 'LAUNDRY'] as const
 type VerticalValue = (typeof VERTICALS)[number]
 
-// 订阅状态 → Prisma where（与 subStatus 判定一致，4 类互斥）
+// 订阅状态 → Prisma where（与 subStatus 判定一致，4 类互斥；pending = 入驻审核待审，独立维度）
 function statusWhere(status: string): Prisma.ShopWhereInput | null {
   const now = new Date()
   const notExpired: Prisma.ShopWhereInput[] = [
@@ -40,6 +40,9 @@ function statusWhere(status: string): Prisma.ShopWhereInput | null {
       return { platformSuspended: false, subscribedUntil: { lt: now } }
     case 'suspended':
       return { platformSuspended: true }
+    case 'pending':
+      // 入驻审核待审（2026-08-29）：approved=false 的新店，独立于订阅状态筛选
+      return { approved: false }
     default:
       return null
   }
@@ -99,7 +102,14 @@ export async function ShopList({
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
       orderBy: { createdAt: 'desc' },
-      include: { _count: { select: { orders: true, products: true } } },
+      include: {
+        _count: { select: { orders: true, products: true } },
+        // 老板账号（登录失败锁定后台解锁用）：卡片显示锁定徽章 + 解锁按钮
+        users: {
+          where: { role: 'OWNER' },
+          select: { id: true, failedAttempts: true, lockedUntil: true },
+        },
+      },
     }),
     prisma.shop.count({ where }),
   ])
@@ -148,6 +158,7 @@ export async function ShopList({
           <option value="active">{t('subActive')}</option>
           <option value="expired">{t('subExpired')}</option>
           <option value="suspended">{t('subSuspended')}</option>
+          <option value="pending">{t('subPending')}</option>
         </select>
         <button
           type="submit"
@@ -163,6 +174,9 @@ export async function ShopList({
       ) : (
         shops.map((s) => {
           const st = subStatus(s)
+          // 老板账号锁定状态（登录失败锁定后台解锁）：lockedUntil 未过即视为锁定
+          const owner = s.users[0]
+          const ownerLocked = !!owner?.lockedUntil && owner.lockedUntil.getTime() > Date.now()
           return (
             <div
               key={s.id}
@@ -177,11 +191,19 @@ export async function ShopList({
                     </span>
                   )}
                 </div>
-                <span
-                  className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${badgeClass(st)}`}
-                >
-                  {t(SUB_KEY[st])}
-                </span>
+                <div className="flex shrink-0 items-center gap-1.5">
+                  {/* 入驻审核状态（2026-08-29）：approved=false 显示「待审」，被驳回带原因 */}
+                  {!s.approved && (
+                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                      {t('subPending')}
+                    </span>
+                  )}
+                  <span
+                    className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${badgeClass(st)}`}
+                  >
+                    {t(SUB_KEY[st])}
+                  </span>
+                </div>
               </div>
               <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-zinc-500">
                 <span>{s.slug}</span>
@@ -197,12 +219,21 @@ export async function ShopList({
                 <span>{t('ordersCount', { n: s._count.orders })}</span>
                 <span>{t('productsCount', { n: s._count.products })}</span>
               </div>
+              {/* 被驳回原因（审核未通过时展示，供老板/中台对照） */}
+              {!s.approved && s.rejectReason && (
+                <p className="rounded-md bg-amber-50 px-3 py-1.5 text-xs text-amber-700 dark:bg-amber-900/20 dark:text-amber-300">
+                  {t('rejectReason')}: {s.rejectReason}
+                </p>
+              )}
               <ShopListActions
                 shopId={s.id}
                 slug={s.slug}
                 plan={s.plan}
                 suspended={s.platformSuspended}
                 featured={s.featured}
+                approved={s.approved}
+                ownerLocked={ownerLocked}
+                ownerId={owner?.id}
               />
             </div>
           )

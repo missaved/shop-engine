@@ -10,22 +10,30 @@ import {
   resetOwnerPassword,
   toggleFeatured,
   togglePlatformSuspended,
+  toggleShopApproval,
+  unlockUser,
 } from '@/lib/admin-actions'
 import { useToast, ToastView } from '../dashboard/use-toast'
 
-// 店铺卡片操作按钮：停用/启用、推荐位、删除、重置密码（client 交互 + toast）
+// 店铺卡片操作按钮：停用/启用、推荐位、删除、重置密码、入驻审核、解锁老板账号（client 交互 + toast）
 export function ShopListActions({
   shopId,
   slug,
   plan,
   suspended,
   featured,
+  approved,
+  ownerLocked,
+  ownerId,
 }: {
   shopId: string
   slug: string
   plan: string
   suspended: boolean
   featured: boolean
+  approved: boolean
+  ownerLocked: boolean
+  ownerId?: string
 }) {
   const t = useTranslations('admin')
   const router = useRouter()
@@ -66,6 +74,17 @@ export function ShopListActions({
     run(() => resetOwnerPassword(shopId, newPwd), t('toastPwdReset'))
     setResetOpen(false)
     setNewPwd('')
+  }
+
+  // 入驻审核（2026-08-29）：通过直接生效；驳回须填原因（服务端强校验，前端 prompt 收集）
+  function onReject() {
+    const reason = window.prompt(t('rejectReasonHint') ?? '')
+    if (reason === null) return // 用户取消
+    if (!reason.trim()) {
+      show(t('rejectReasonRequired'))
+      return
+    }
+    run(() => toggleShopApproval(shopId, false, reason.trim()), t('toastRejected'))
   }
 
   function onRenew() {
@@ -141,6 +160,35 @@ export function ShopListActions({
       >
         {t('renew')}
       </button>
+      {/* 入驻审核：待审店（approved=false）显示通过/驳回 */}
+      {!approved && (
+        <>
+          <button
+            onClick={() => run(() => toggleShopApproval(shopId, true), t('toastApproved'))}
+            disabled={pending}
+            className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs text-white transition-colors hover:bg-emerald-700 disabled:opacity-60"
+          >
+            {t('approveShop')}
+          </button>
+          <button
+            onClick={onReject}
+            disabled={pending}
+            className="rounded-md border border-amber-400 px-3 py-1.5 text-xs text-amber-700 transition-colors hover:bg-amber-50 disabled:opacity-60 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-900/20"
+          >
+            {t('rejectShop')}
+          </button>
+        </>
+      )}
+      {/* 登录失败锁定：老板账号锁定期内显示解锁（unlockUser 清零 failedAttempts + lockedUntil） */}
+      {ownerLocked && ownerId && (
+        <button
+          onClick={() => run(() => unlockUser(ownerId), t('toastUnlocked'))}
+          disabled={pending}
+          className="rounded-md border border-red-300 px-3 py-1.5 text-xs text-red-700 transition-colors hover:bg-red-50 disabled:opacity-60 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950"
+        >
+          {t('unlockAccount')}
+        </button>
+      )}
       <button
         onClick={onDelete}
         disabled={pending}

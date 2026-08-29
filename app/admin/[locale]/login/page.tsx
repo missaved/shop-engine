@@ -18,13 +18,15 @@ export default function AdminLoginPage() {
   const [step, setStep] = useState<'pwd' | 'otp'>('pwd')
   const [phone, setPhone] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState<'error' | 'rateLimited' | 'totpInvalid' | 'notAdmin' | null>(null)
+  const [error, setError] = useState<'error' | 'rateLimited' | 'accountLocked' | 'totpInvalid' | 'notAdmin' | null>(null)
   const [pending, setPending] = useState(false)
 
   function errText() {
     switch (error) {
       case 'rateLimited':
         return tl('rateLimited')
+      case 'accountLocked':
+        return tl('accountLocked')
       case 'totpInvalid':
         return t('totpInvalid')
       case 'notAdmin':
@@ -54,6 +56,8 @@ export default function AdminLoginPage() {
           return
         }
         if (res.code === 'RATE_LIMITED') setError('rateLimited')
+        // 登录失败锁定（2026-08-29）：账号被锁定，后台 unlockUser 解锁
+        else if (res.code === 'ACCOUNT_LOCKED') setError('accountLocked')
         else if (res.code === 'TOTP_INVALID') setError('totpInvalid')
         else setError('error')
         return

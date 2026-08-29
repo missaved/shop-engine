@@ -10,6 +10,16 @@ import { Prisma } from '@/generated/prisma/client'
 import { requireOwner } from '@/lib/dal'
 import { assertShopOwned, getShopBySlug } from '@/lib/tenant'
 import { isRateLimited, recordFailure } from '@/lib/rate-limit'
+import { compare, hash } from 'bcryptjs'
+import { validateOwnerPassword } from '@/lib/password-policy'
+import {
+  aggregateCartItems,
+  itemSubtotal,
+  priceCartItems,
+  type CartItem,
+  type StoredOrderItem,
+} from '@/lib/cart-pricing'
+import type { ShopTheme } from '@/lib/theme'
 
 // 完结订单：建复购提醒（21 天后）+ dismiss 过时提醒（新单/出餐）。
 // 收全款自动完结 / 手动推进到 COMPLETED 共用，避免重复建提醒
@@ -30,7 +40,7 @@ async function finalizeOrder(
   await prisma.reminder.updateMany({
     where: {
       orderId: order.id,
-      templateKey: { in: ['FOOD_NEW_ORDER', 'FOOD_READY'] },
+      templateKey: { in: ['FOOD_NEW_ORDER', 'FOOD_READY', 'FOOD_ADD'] },
       status: 'PENDING',
     },
     data: { status: 'DISMISSED' },
@@ -50,14 +60,18 @@ export async function setOrderPaidAmount(
       user.shopId,
       await prisma.order.findUnique({ where: { id: orderId } }),
     )
+    // 终态订单（已结单/已取消）禁止改实收：防「收全款」把已取消单翻回 COMPLETED 并建复购提醒
+    if (order.status === 'CANCELLED' || order.status === 'COMPLETED') {
+      throw new Error('已结单/已取消订单不可改实收')
+    }
 
     const amount = Number(paidAmount)
     if (!Number.isFinite(amount) || amount < 0) throw new Error('实收金额无效')
 
     const total = Number(order.total)
     const oldCfg = (order.config as Record<string, unknown> | null) ?? {}
-    // 收全款（实收 ≥ total）→ 自动完结，无需再手动推进
-    const willComplete = amount >= total && order.status !== 'COMPLETED'
+    // 收全款（实收 ≥ total）→ 自动完结；终态守卫在上方已排除 COMPLETED/CANCELLED，此处直接按金额判断
+    const willComplete = amount >= total
 
     await prisma.order.update({
       where: { id: orderId },
@@ -78,7 +92,9 @@ export async function setOrderPaidAmount(
   }
 }
 
-// 推进订单状态（B10：PENDING→IN_PROGRESS→READY→COMPLETED）
+// 推进订单状态（2026-08-29 用户需求修正：一次性推进到「已上桌/待取」，省去 处理中 中间态；
+// 推进只到 READY，不自动收款、不完结——收钱是老板确认实收后的独立动作（setOrderPaidAmount）。
+// 不建 FOOD_READY 提醒：推进是老板主动操作（餐已上桌/备好），无需再提醒自己）
 export async function advanceOrderStatus(orderId: string): Promise<void> {
   const user = await requireOwner()
   try {
@@ -87,47 +103,15 @@ export async function advanceOrderStatus(orderId: string): Promise<void> {
       await prisma.order.findUnique({ where: { id: orderId } }),
     )
 
-    const next = {
-      PENDING: 'IN_PROGRESS',
-      IN_PROGRESS: 'READY',
-      READY: 'COMPLETED',
-    } as const
-    const target = next[order.status as keyof typeof next]
-    if (!target) throw new Error('当前状态无法推进')
-
-    // 推进到「完毕」前必须先收全款（收全款本身会自动完结，此处拦截未收款的手动推进）
-    if (target === 'COMPLETED' && Number(order.paidAmount) < Number(order.total)) {
-      throw new Error('PAY_FIRST')
+    // 仅待处理/处理中可推进到已上桌/待取（READY）；READY 之后只剩收钱，不再推进
+    if (!['PENDING', 'IN_PROGRESS'].includes(order.status)) {
+      throw new Error('当前状态无法推进')
     }
 
     await prisma.order.update({
       where: { id: orderId },
-      data: { status: target },
+      data: { status: 'READY' },
     })
-
-    // D2 完成通知（到 READY）/ D3 复购提醒（到 COMPLETED，21 天后）
-    if (target === 'READY') {
-      await prisma.reminder.create({
-        data: {
-          shopId: user.shopId,
-          orderId,
-          templateKey: 'FOOD_READY',
-          dueAt: new Date(),
-          status: 'PENDING',
-          payload: {
-            displayNo: order.displayNo,
-            customerPhone: order.customerPhone,
-          },
-        },
-      })
-      // 新单提醒已过时（已出餐），dismiss 掉不再冒泡
-      await prisma.reminder.updateMany({
-        where: { orderId, templateKey: 'FOOD_NEW_ORDER', status: 'PENDING' },
-        data: { status: 'DISMISSED' },
-      })
-    } else if (target === 'COMPLETED') {
-      await finalizeOrder(order, user.shopId)
-    }
     revalidatePath('/[locale]/dashboard', 'page')
   } catch (e) {
     console.error('推进状态失败（orderId=%s）:', orderId, e)
@@ -156,7 +140,7 @@ export async function cancelOrder(orderId: string): Promise<void> {
     await prisma.reminder.updateMany({
       where: {
         orderId,
-        templateKey: { in: ['FOOD_NEW_ORDER', 'FOOD_READY'] },
+        templateKey: { in: ['FOOD_NEW_ORDER', 'FOOD_READY', 'FOOD_ADD'] },
         status: 'PENDING',
       },
       data: { status: 'DISMISSED' },
@@ -240,7 +224,9 @@ export async function updateShopSettings(input: {
   packingFee?: number
   deliveryArea?: string
   description?: string
-  theme?: 'warm' | 'clean' | 'layered'
+  descriptionZh?: string // 店面介绍·中文（2026-08-29 语种混杂修复：按 locale 展示）
+  descriptionEn?: string // 店面介绍·英文
+  theme?: ShopTheme
 }): Promise<void> {
   const user = await requireOwner()
   try {
@@ -255,6 +241,8 @@ export async function updateShopSettings(input: {
     if (input.packingFee !== undefined) config.packingFee = input.packingFee
     if (input.deliveryArea !== undefined) config.deliveryArea = input.deliveryArea
     if (input.description !== undefined) config.description = input.description
+    if (input.descriptionZh !== undefined) config.descriptionZh = input.descriptionZh
+    if (input.descriptionEn !== undefined) config.descriptionEn = input.descriptionEn
     if (input.theme !== undefined) config.theme = input.theme
 
     await prisma.shop.update({
@@ -344,6 +332,7 @@ export async function createProduct(input: {
   optionGroupsText?: string
   comboText?: string
   bestseller?: boolean
+  canAddOn?: boolean
 }): Promise<void> {
   const user = await requireOwner()
   try {
@@ -362,6 +351,8 @@ export async function createProduct(input: {
       optionGroups: parseOptionGroups(input.optionGroupsText),
       combo: parseCombo(input.comboText),
       bestseller: input.bestseller ?? false,
+      // 出餐后可追加（默认可追加，老板手动收窄）
+      canAddOn: input.canAddOn ?? true,
     }
 
     // 新商品排末尾：sortOrder = 当前最大 + 1（避免与已排序商品冲突）
@@ -408,6 +399,7 @@ export async function updateProduct(input: {
   optionGroupsText?: string
   comboText?: string
   bestseller?: boolean
+  canAddOn?: boolean
 }): Promise<void> {
   const user = await requireOwner()
   try {
@@ -433,16 +425,38 @@ export async function updateProduct(input: {
     if (input.descZh?.trim()) descI18n.zh = input.descZh.trim()
     if (input.descEn?.trim()) descI18n.en = input.descEn.trim()
 
+    // 多语言整改（2026-08-29）：编辑保存时按 name 匹配保留旧 nameZh（中文加料/中文规格），
+    // 老板改价/改描述不丢中文；改了名才回退（中文缺失时菜单 fallback 到本地语）
+    const oldExtras = (oldCfg.extras as { name: string; nameZh?: string }[] | undefined) ?? []
+    const oldGroups = (oldCfg.optionGroups as
+      | { name: string; nameZh?: string; options: { name: string; nameZh?: string }[] }[]
+      | undefined) ?? []
+    const extras = parseExtras(input.extrasText).map((ex) => ({
+      ...ex,
+      nameZh: oldExtras.find((o) => o.name === ex.name)?.nameZh ?? '',
+    }))
+    const optionGroups = parseOptionGroups(input.optionGroupsText).map((g) => ({
+      ...g,
+      nameZh: oldGroups.find((og) => og.name === g.name)?.nameZh ?? '',
+      options: g.options.map((o) => ({
+        ...o,
+        nameZh:
+          oldGroups.find((og) => og.name === g.name)?.options.find((oo) => oo.name === o.name)?.nameZh ?? '',
+      })),
+    }))
+
     const config = {
       ...oldCfg,
       image: input.image?.trim() ?? '',
       emoji: input.emoji?.trim() || (oldCfg.emoji as string) || '🍽️',
       nameI18n,
       descI18n,
-      extras: parseExtras(input.extrasText),
-      optionGroups: parseOptionGroups(input.optionGroupsText),
+      extras,
+      optionGroups,
       combo: parseCombo(input.comboText),
       bestseller: input.bestseller ?? (oldCfg.bestseller as boolean) ?? false,
+      // 出餐后可追加（未传则沿用旧值，旧数据缺省视为可追加）
+      canAddOn: input.canAddOn ?? (oldCfg.canAddOn as boolean | undefined) ?? true,
     }
 
     await prisma.product.update({
@@ -530,103 +544,105 @@ export async function getTrackStatus(
   orderNo: string,
   phone: string,
   guestKey?: string,
+  byIp?: boolean,
 ): Promise<string | null> {
   const shop = await getShopBySlug(slug)
   const no = orderNo.trim()
   const gk = guestKey?.trim() ?? ''
   const p = phone.trim()
-  if (!no || (!gk && !p)) return null
+  // byIp 模式（IP+30min 兜底单）无需 phone/guestKey，仅按订单号 + 请求 IP 匹配
+  if (!no || (!byIp && !gk && !p)) return null
 
   const h = await headers()
   const fwd = h.get('x-forwarded-for')
   const ip = (fwd ? fwd.split(',')[0].trim() : h.get('x-real-ip')?.trim()) || 'unknown'
   const keyIp = `track:ip:${ip}`
+  if (isRateLimited(keyIp)) return null
   const keyCred = gk ? `track:gk:${gk}` : `track:phone:${p}`
-  if (isRateLimited(keyIp) || isRateLimited(keyCred)) return null
+  if (!byIp && isRateLimited(keyCred)) return null
 
   const order = await prisma.order.findFirst({
-    where: gk
-      ? { shopId: shop.id, displayNo: no, config: { path: ['guestKey'], equals: gk } }
-      : { shopId: shop.id, displayNo: no, customerPhone: p },
+    where: byIp
+      ? { shopId: shop.id, displayNo: no, config: { path: ['guestIp'], equals: ip } }
+      : gk
+        ? { shopId: shop.id, displayNo: no, config: { path: ['guestKey'], equals: gk } }
+        : { shopId: shop.id, displayNo: no, customerPhone: p },
     select: { status: true },
   })
   if (!order) {
     recordFailure(keyIp)
-    recordFailure(keyCred)
+    if (!byIp) recordFailure(keyCred)
     return null
   }
   return order.status
 }
 
-// 订单 items 快照结构（含价格/加料/规格，服务端计价后落库）
-type StoredOrderItem = {
-  productId?: string
-  name: string
-  qty: number
-  price: number | string
-  extras?: { name: string; price: number | string }[]
-  options?: { group: string; name: string; price: number | string }[]
-}
-
-// 单行商品小计：商品价 + 加料价 + 规格价，乘以数量
-function itemSubtotal(it: StoredOrderItem): number {
-  const extrasSum = (it.extras ?? []).reduce((s, e) => s + Number(e.price), 0)
-  const optionsSum = (it.options ?? []).reduce((s, o) => s + Number(o.price), 0)
-  return (Number(it.price) + extrasSum + optionsSum) * Number(it.qty)
+// Issue7：菜单页检测 guestKey 是否有进行中的单（PENDING/IN_PROGRESS/READY），用于「你有进行中的订单」提示条
+export async function getGuestActiveOrder(input: {
+  slug: string
+  guestKey: string
+}): Promise<{ orderNo: string; status: string } | null> {
+  if (!input.guestKey) return null
+  const shop = await getShopBySlug(input.slug)
+  const order = await prisma.order.findFirst({
+    where: { shopId: shop.id, config: { path: ['guestKey'], equals: input.guestKey } },
+    orderBy: { createdAt: 'desc' },
+    select: { displayNo: true, status: true },
+  })
+  if (!order || !['PENDING', 'IN_PROGRESS', 'READY'].includes(order.status)) return null
+  return { orderNo: order.displayNo, status: order.status }
 }
 
 // 第 3 批-12：老板端对已建订单加菜（服务端重算新商品价，费用守恒）
+// M2 并发安全：FOR UPDATE 锁 Order 行 + 锁内重读（防与客户加菜并发丢更新）；已处理客户加菜则 dismiss 其 FOOD_ADD
 export async function addItemsToOrder(input: {
   orderId: string
-  items: { productId: string; qty: number }[]
+  items: CartItem[]
 }): Promise<void> {
   const user = await requireOwner()
   try {
-    const order = assertShopOwned(
-      user.shopId,
-      await prisma.order.findUnique({ where: { id: input.orderId } }),
-    )
-    if (['COMPLETED', 'CANCELLED'].includes(order.status)) {
-      throw new Error('订单已结束，不可加菜')
-    }
-
-    // 聚合新增数量，过滤无效项（qty 上限 99，对齐下单安全上限）
-    const qtyMap = new Map<string, number>()
-    for (const it of input.items ?? []) {
-      const q = Math.trunc(Number(it.qty))
-      if (!Number.isFinite(q) || q <= 0 || q > 99) continue
-      qtyMap.set(it.productId, (qtyMap.get(it.productId) ?? 0) + q)
-    }
+    // 聚合 + 运行时校验（M7/M8：qty 聚合上限 / extras、options 类型）
+    const { qtyMap, error: aggError } = aggregateCartItems(input.items)
+    if (aggError === 'overflow') throw new Error('单个商品数量超出上限')
     if (qtyMap.size === 0) throw new Error('请选择要加的商品')
 
-    // 服务端计价：从商品表查价，不信任客户端传价
-    const products = await prisma.product.findMany({
-      where: { id: { in: [...qtyMap.keys()] }, shopId: user.shopId, active: true },
+    // 服务端计价：从商品表查价，不信任客户端传价（复用价格 CartItem 的规格/加料/套餐组装）
+    const { items: addItems, subtotal: addSubtotal } = await priceCartItems({
+      shopId: user.shopId,
+      qtyMap,
+      extrasMap: new Map(),
+      optionsMap: new Map(),
     })
-    if (products.length !== qtyMap.size) throw new Error('部分商品已售罄或不存在')
 
-    const addItems: StoredOrderItem[] = products.map((p) => ({
-      productId: p.id,
-      name: p.name,
-      qty: qtyMap.get(p.id)!,
-      price: Number(p.price),
-      extras: [],
-      options: [],
-    }))
-    const addSubtotal = addItems.reduce((s, it) => s + itemSubtotal(it), 0)
+    const order = await prisma.$transaction(async (tx) => {
+      // 锁订单行（与客户 addItemsToMyOrder / removeItemFromOrder 同一把锁，串行化同单读写）
+      await tx.$queryRaw`SELECT id FROM "Order" WHERE id = ${input.orderId} FOR UPDATE`
+      const cur = await tx.order.findUnique({ where: { id: input.orderId } })
+      if (!cur) throw new Error('订单不存在')
+      if (cur.shopId !== user.shopId) throw new Error('无权操作该订单')
+      if (['COMPLETED', 'CANCELLED'].includes(cur.status)) {
+        throw new Error('订单已结束，不可加菜')
+      }
 
-    // 费用守恒：fee = 旧 total − 旧 subtotal，加菜只加 subtotal
-    const oldItems = (order.items as unknown as StoredOrderItem[]) ?? []
-    const oldSubtotal = oldItems.reduce((s, it) => s + itemSubtotal(it), 0)
-    const fee = Number(order.total) - oldSubtotal
-    const newTotal = oldSubtotal + addSubtotal + fee
+      // 费用守恒：fee = 旧 total − 旧 subtotal，加菜只加 subtotal
+      const oldItems = (cur.items as unknown as StoredOrderItem[]) ?? []
+      const oldSubtotal = oldItems.reduce((s, it) => s + itemSubtotal(it), 0)
+      const fee = Number(cur.total) - oldSubtotal
+      const newTotal = oldSubtotal + addSubtotal + fee
 
-    await prisma.order.update({
-      where: { id: order.id },
-      data: {
-        items: [...oldItems, ...addItems] as Prisma.InputJsonValue,
-        total: newTotal,
-      },
+      return tx.order.update({
+        where: { id: cur.id },
+        data: {
+          items: [...oldItems, ...addItems] as Prisma.InputJsonValue,
+          total: newTotal,
+        },
+      })
+    })
+
+    // 老板已处理客户加菜：dismiss 该单 PENDING FOOD_ADD（防陈旧待办滞留到终态）
+    await prisma.reminder.updateMany({
+      where: { orderId: order.id, templateKey: 'FOOD_ADD', status: 'PENDING' },
+      data: { status: 'DISMISSED' },
     })
     revalidatePath('/[locale]/dashboard', 'page')
   } catch (e) {
@@ -636,39 +652,115 @@ export async function addItemsToOrder(input: {
 }
 
 // 第 3 批-12：老板端删除已建订单的某行商品，重算 total
+// M2 并发安全：FOR UPDATE 锁 Order 行 + 锁内重读（防与客户加菜并发丢更新）
 export async function removeItemFromOrder(input: {
   orderId: string
   index: number
 }): Promise<void> {
   const user = await requireOwner()
   try {
-    const order = assertShopOwned(
-      user.shopId,
-      await prisma.order.findUnique({ where: { id: input.orderId } }),
-    )
-    if (['COMPLETED', 'CANCELLED'].includes(order.status)) {
-      throw new Error('订单已结束，不可删菜')
-    }
+    await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "Order" WHERE id = ${input.orderId} FOR UPDATE`
+      const cur = await tx.order.findUnique({ where: { id: input.orderId } })
+      if (!cur) throw new Error('订单不存在')
+      if (cur.shopId !== user.shopId) throw new Error('无权操作该订单')
+      if (['COMPLETED', 'CANCELLED'].includes(cur.status)) {
+        throw new Error('订单已结束，不可删菜')
+      }
 
-    const oldItems = (order.items as unknown as StoredOrderItem[]) ?? []
-    const idx = Math.trunc(Number(input.index))
-    if (idx < 0 || idx >= oldItems.length) throw new Error('商品不存在')
+      const oldItems = (cur.items as unknown as StoredOrderItem[]) ?? []
+      const idx = Math.trunc(Number(input.index))
+      if (idx < 0 || idx >= oldItems.length) throw new Error('商品不存在')
 
-    const removed = itemSubtotal(oldItems[idx])
-    const newItems = oldItems.filter((_, i) => i !== idx)
-    // 删空 items 时 total 归 0（费用一并取消，避免空单收配送费）
-    const newTotal = newItems.length === 0 ? 0 : Number(order.total) - removed
+      const removed = itemSubtotal(oldItems[idx])
+      const newItems = oldItems.filter((_, i) => i !== idx)
+      // 删空 items 时 total 归 0（费用一并取消，避免空单收配送费）
+      const newTotal = newItems.length === 0 ? 0 : Number(cur.total) - removed
 
-    await prisma.order.update({
-      where: { id: order.id },
-      data: {
-        items: newItems as Prisma.InputJsonValue,
-        total: newTotal,
-      },
+      await tx.order.update({
+        where: { id: cur.id },
+        data: {
+          items: newItems as Prisma.InputJsonValue,
+          total: newTotal,
+        },
+      })
     })
     revalidatePath('/[locale]/dashboard', 'page')
   } catch (e) {
     console.error('订单删菜失败（orderId=%s）:', input.orderId, e)
+    throw e
+  }
+}
+
+// Issue10：设置页「历史订单」查找——按单号/手机号模糊查最近 N 天（默认 90 天）的历史单，只读快照
+export type HistoryOrderRow = {
+  id: string
+  displayNo: string
+  status: string
+  createdAt: Date
+  total: string
+  items: unknown
+  customerPhone: string | null
+  tableNo: string | null
+}
+
+export async function searchOrderHistory(input: {
+  query?: string
+  days?: number
+}): Promise<HistoryOrderRow[]> {
+  const user = await requireOwner()
+  const query = input.query?.trim() ?? ''
+  const days = Math.min(Math.max(Number(input.days) || 90, 1), 365)
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+  const rows = await prisma.order.findMany({
+    where: {
+      shopId: user.shopId,
+      createdAt: { gte: since },
+      ...(query
+        ? {
+            OR: [
+              { displayNo: { contains: query, mode: 'insensitive' } },
+              { customerPhone: { contains: query } },
+            ],
+          }
+        : {}),
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 100,
+  })
+  return rows.map((o) => ({
+    id: o.id,
+    displayNo: o.displayNo,
+    status: o.status,
+    createdAt: o.createdAt,
+    total: o.total.toString(),
+    items: o.items,
+    customerPhone: o.customerPhone,
+    tableNo: ((o.config as { tableNo?: string } | null)?.tableNo ?? null),
+  }))
+}
+
+// 店主改密（8.2 决策：店主宽松策略 ≥8 位字母数字 + 旧密码校验）
+export async function changeOwnerPassword(
+  oldPassword: string,
+  newPassword: string,
+): Promise<void> {
+  const user = await requireOwner()
+  try {
+    if (!oldPassword || !newPassword) throw new Error('旧密码与新密码不能为空')
+    if (validateOwnerPassword(newPassword)) throw new Error('新密码至少 8 位且含字母与数字')
+    // requireOwner 只给 session user（无 passwordHash），改密需重查 DB 校验旧密码
+    const owner = await prisma.user.findUnique({ where: { id: user.id } })
+    if (!owner) throw new Error('账号不存在')
+    const ok = await compare(oldPassword, owner.passwordHash)
+    if (!ok) throw new Error('旧密码不正确')
+    await prisma.user.update({
+      where: { id: owner.id },
+      data: { passwordHash: await hash(newPassword, 10) },
+    })
+    revalidatePath('/[locale]/dashboard', 'page')
+  } catch (e) {
+    console.error('店主改密失败:', e)
     throw e
   }
 }

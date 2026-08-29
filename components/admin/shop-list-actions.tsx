@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from 'react'
 import { useTranslations } from 'next-intl'
-import { Link, useRouter } from '@/i18n/navigation'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import {
   deleteShop,
   renewSubscription,
@@ -57,7 +58,8 @@ export function ShopListActions({
   }
 
   function onReset() {
-    if (!newPwd || newPwd.length < 6) {
+    // 店主密码宽松策略 ≥8 位字母数字（8.2 决策），前端先拦，后端兜底校验
+    if (!newPwd || newPwd.length < 8) {
       show(t('pwdTooShort'))
       return
     }
@@ -96,12 +98,7 @@ export function ShopListActions({
       >
         {t('viewMenu')}
       </Link>
-      <Link
-        href={`/dashboard?shop=${slug}`}
-        className="rounded-md border border-blue-300 px-3 py-1.5 text-xs text-blue-700 transition-colors hover:bg-blue-50 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-950"
-      >
-        {t('enterShop')}
-      </Link>
+      {/* 第 20 批 A4（8.1 决策）：admin 不能进店，移除「进入后台」入口 */}
       <button
         onClick={() =>
           run(

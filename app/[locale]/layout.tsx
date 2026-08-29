@@ -4,6 +4,7 @@ import { getMessages } from 'next-intl/server'
 import { notFound } from 'next/navigation'
 import { routing } from '@/i18n/routing'
 import { AudioUnlocker } from '@/components/audio-unlocker'
+import { ClientLocaleAuto } from '@/components/client-locale-auto'
 import { InstallPWA } from '@/components/install-pwa'
 import '../globals.css'
 
@@ -31,6 +32,8 @@ export default async function LocaleLayout({
       <body className="flex min-h-full flex-col bg-orange-50/40 text-zinc-900 dark:bg-black dark:text-zinc-50">
         <NextIntlClientProvider messages={messages}>
           {children}
+          {/* 浏览器语言自动适配：须在 provider 内用 useLocale/useRouter，挂载时自动跳一次 */}
+          <ClientLocaleAuto />
           {/* PWA 保存桌面提示：前后端共用（Android 一键安装 / iOS 引导添加到主屏幕），须在 provider 内用 useTranslations */}
           <InstallPWA />
         </NextIntlClientProvider>

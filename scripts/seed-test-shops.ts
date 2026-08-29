@@ -43,6 +43,11 @@ const SHOPS: ShopDef[] = [
             { name: 'Đá', required: true, options: [{ name: 'Đá', price: 0 }, { name: 'Nóng', price: 0 }] },
             { name: 'Cỡ', required: false, options: [{ name: 'M', price: 0 }, { name: 'L', price: 10000 }] },
           ],
+          descI18n: {
+            zh: '香浓炼乳冰咖啡，越南经典',
+            en: 'Classic Vietnamese iced coffee with condensed milk',
+            vi: 'Cà phê sữa đá thơm đậm, đậu đen rang',
+          },
         },
       },
       {
@@ -50,14 +55,27 @@ const SHOPS: ShopDef[] = [
         price: 30000,
         unit: 'ly',
         category: 'Trà',
-        config: { extras: [{ name: 'Trân châu', price: 5000 }] },
+        config: {
+          extras: [{ name: 'Trân châu', price: 5000 }],
+          descI18n: {
+            zh: '香浓奶茶，可选珍珠',
+            en: 'Creamy milk tea, add pearls optional',
+            vi: 'Trà sữa béo ngọt, thêm trân châu',
+          },
+        },
       },
       {
         name: 'Bánh ngọt',
         price: 20000,
         unit: 'cái',
         category: 'Bánh',
-        config: {},
+        config: {
+          descI18n: {
+            zh: '每日现烤小甜点',
+            en: 'Daily baked pastry',
+            vi: 'Bánh ngọt nướng mỗi ngày',
+          },
+        },
       },
     ],
   },
@@ -73,21 +91,40 @@ const SHOPS: ShopDef[] = [
         price: 45000,
         unit: 'phần',
         category: 'Cơm',
-        config: { extras: [{ name: 'Thêm gà', price: 15000 }] },
+        config: {
+          extras: [{ name: 'Thêm gà', price: 15000 }],
+          descI18n: {
+            zh: '香嫩烤鸡配米饭，送例汤',
+            en: 'Grilled chicken rice with side soup',
+            vi: 'Cơm gà nướng thơm, kèm canh',
+          },
+        },
       },
       {
         name: 'Cơm bò',
         price: 55000,
         unit: 'phần',
         category: 'Cơm',
-        config: {},
+        config: {
+          descI18n: {
+            zh: '嫩牛肉片盖饭，微甜酱汁',
+            en: 'Beef rice with savory sweet sauce',
+            vi: 'Cơm bò mềm, sốt đậm đà',
+          },
+        },
       },
       {
         name: 'Nước ngọt',
         price: 10000,
         unit: 'lon',
         category: 'Nước',
-        config: {},
+        config: {
+          descI18n: {
+            zh: '冰镇碳酸饮料',
+            en: 'Chilled soft drink',
+            vi: 'Nước ngọt có ga ướp lạnh',
+          },
+        },
       },
     ],
   },

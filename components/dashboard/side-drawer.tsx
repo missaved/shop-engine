@@ -44,7 +44,7 @@ export function SideDrawer({
 
             {/* 抽屉：左侧滑出，收纳设置/收入/商品 */}
             <div
-              className={`fixed inset-y-0 left-0 z-50 flex w-[85vw] max-w-sm flex-col bg-white shadow-2xl transition-transform duration-300 ease-out dark:bg-zinc-900 ${
+              className={`fixed inset-y-0 left-0 z-50 flex w-[95vw] max-w-[1920px] flex-col bg-white shadow-2xl transition-transform duration-300 ease-out dark:bg-zinc-900 ${
                 open ? 'translate-x-0' : '-translate-x-full'
               }`}
             >

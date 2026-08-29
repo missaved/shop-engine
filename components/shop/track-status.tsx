@@ -10,13 +10,17 @@ export function TrackStatus({
   orderNo,
   phone,
   guestKey,
+  byIp,
   initialStatus,
+  orderType,
 }: {
   slug: string
   orderNo: string
   phone: string
   guestKey?: string
+  byIp?: boolean
   initialStatus: string
+  orderType?: string
 }) {
   const t = useTranslations('track')
   const [ready, setReady] = useState(initialStatus === 'READY')
@@ -46,13 +50,16 @@ export function TrackStatus({
     if (initialStatus === 'COMPLETED' || initialStatus === 'CANCELLED') return
     const id = setInterval(async () => {
       try {
-        const s = await getTrackStatus(slug, orderNo, phone, guestKey)
+        const s = await getTrackStatus(slug, orderNo, phone, guestKey, byIp)
         if (!s) return
         if (s !== statusRef.current) {
           statusRef.current = s
           if (s === 'READY') {
             setReady(true)
             void beep()
+          } else {
+            // 加菜后订单回退处理中（IN_PROGRESS）→ 撤销「已上桌/待取」横幅，避免残留误导
+            setReady(false)
           }
         }
         if (s === 'COMPLETED' || s === 'CANCELLED') clearInterval(id)
@@ -61,7 +68,7 @@ export function TrackStatus({
       }
     }, 15000)
     return () => clearInterval(id)
-  }, [slug, orderNo, phone, guestKey, initialStatus])
+  }, [slug, orderNo, phone, guestKey, byIp, initialStatus])
 
   if (!ready) return null
 
@@ -80,7 +87,7 @@ export function TrackStatus({
           <circle cx="12" cy="12" r="9" />
           <path d="m8 12 3 3 5-6" />
         </svg>
-        {t('statusReadyHint')}
+        {t(orderType === 'dine_in' ? 'statusReadyHintDineIn' : 'statusReadyHint')}
       </p>
     </div>
   )

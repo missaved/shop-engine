@@ -1,15 +1,17 @@
 'use client'
 
 import { useState } from 'react'
-import { signIn, getSession } from 'next-auth/react'
+import { signIn, getSession, signOut } from 'next-auth/react'
 import { useTranslations } from 'next-intl'
 import { useRouter } from '@/i18n/navigation'
+import { LocaleSwitcher } from '@/components/locale-switcher'
 
 // 老板登录页：手机号 + 密码（Auth.js Credentials）
+// 第 20 批 A4（8.1 决策）：/login 为 boss 专属入口，admin 在此登录后登出并引导 /admin/login
 export default function LoginPage() {
   const t = useTranslations('login')
   const router = useRouter()
-  const [error, setError] = useState<'error' | 'rateLimited' | null>(null)
+  const [error, setError] = useState<'error' | 'rateLimited' | 'notAdmin' | null>(null)
   const [pending, setPending] = useState(false)
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -26,12 +28,20 @@ export default function LoginPage() {
       })
 
       if (res?.error) {
-        setError(res.code === 'RATE_LIMITED' ? 'rateLimited' : 'error')
+        if (res.code === 'RATE_LIMITED') setError('rateLimited')
+        // admin 账号（已绑定 TOTP）走 boss 入口：authorize 抛 NEED_TOTP，提示改走 /admin/login
+        else if (res.code === 'NEED_TOTP') setError('notAdmin')
+        else setError('error')
         return
       }
-      // 按角色分流：ADMIN → /admin，OWNER → /dashboard
       const session = await getSession()
-      router.push(session?.user?.role === 'ADMIN' ? '/admin' : '/dashboard')
+      if (session?.user?.role === 'ADMIN') {
+        // admin 不该走 boss 登录：登出并提示走 /admin/login
+        await signOut({ redirect: false })
+        setError('notAdmin')
+        return
+      }
+      router.push('/dashboard')
       router.refresh()
     } catch (err) {
       console.error('登录失败:', err)
@@ -42,7 +52,8 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex flex-1 items-center justify-center px-6">
+    <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6">
+      <LocaleSwitcher />
       <form
         method="post"
         onSubmit={onSubmit}
@@ -74,7 +85,7 @@ export default function LoginPage() {
 
         {error && (
           <p className="mb-4 text-sm text-red-600 dark:text-red-400">
-            {t(error === 'rateLimited' ? 'rateLimited' : 'error')}
+            {error === 'notAdmin' ? t('adminGoAdminLogin') : t(error === 'rateLimited' ? 'rateLimited' : 'error')}
           </p>
         )}
 

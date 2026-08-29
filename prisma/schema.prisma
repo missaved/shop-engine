@@ -64,6 +64,7 @@ model Shop {
   reminders Reminder[]
   users     User[]
   billings  Billing[]
+  shopDrafts ShopDraft[]
 }
 
 // 商品 / 服务项（快捷开单大按钮即预置 product）
@@ -135,9 +136,12 @@ model User {
   shopId       String?
   shop         Shop?    @relation(fields: [shopId], references: [id], onDelete: Cascade)
   phone        String   @unique
+  username     String?  @unique // 平台运营 ADMIN 登录用户名（第 20 批后加：后台不用手机号当管理员名；owner 保持 null）
   passwordHash String
   name         String?
   role         UserRole @default(OWNER)
+  totpSecret   String? // AES-256-GCM 加密的 TOTP 密钥（lib/totp.ts，admin 二次验证用）
+  totpEnabled  Boolean  @default(false) // 是否已绑定 TOTP（admin 首次绑定引导后置 true）
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -157,4 +161,55 @@ model Billing {
   createdAt DateTime @default(now())
 
   @@index([shopId, createdAt])
+}
+
+// 预生成菜品模板（第 19 批 A1）：一次生成、跨店复用；按 (country, subcategory) 一行，
+// items 内嵌多语菜品数组。上架/引导时读此表写入 ShopDraft → Product
+model FoodPreset {
+  id            String   @id @default(cuid())
+  vertical      Vertical @default(FOOD) // 本批只做 food 垂直
+  cuisine       String   @default("vn") // 菜系维度（第 20 批中越拆分）：vn 越南菜 / cn 中国菜 / drink 酒水饮品
+  subcategory   String // 子分类 slug：pho / bun / hotpot-cn-meat / beer ...
+  locale        String   @default("vi") // 生成主语言（nativeName 的语言）
+  country       String   @default("VN") // 多国预留：只有 VN 填数据
+  items         Json // [{ nativeName, name_en, name_zh, description_local, description_en, defaultPrice, currency, extras[], allergens[], dietaryTags[], optionGroups[], imagePrompt, imageUrl }]
+  promptVersion String? // 生成 prompt 版本（升级后可用于重生成）
+  modelUsed     String? // ds / minimax / gemini（本次实际用的）
+  priceSource   String? // 定价来源/规则说明
+  active        Boolean  @default(true) // 启用/停用（admin 可切）
+  generatedAt   DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([country, cuisine, subcategory])
+  @@index([country, cuisine, subcategory, active])
+}
+
+// 自定义预设品类（第 20 批 Admin「新增品类」）：Admin 手动注册的元数据，脚本按此生成 FoodPreset
+// 与 FOOD_SUBCATEGORIES 静态 35 类并存：静态类从代码读 meta，自定义类从此表读
+// （FoodPreset 均按 (country,cuisine,subcategory) upsert，两类生成结果无差别）
+model PresetCategory {
+  id        String   @id @default(cuid())
+  key       String   @unique // 子分类 slug（对应 FoodPreset.subcategory）
+  nameVi    String // 越南语分类名
+  nameZh    String // 中文分类名
+  nameEn    String // 英文分类名
+  cuisine   String   @default("vn") // vn 越南菜 / cn 中国菜 / drink 酒水饮品
+  count     Int      @default(40) // 目标道数
+  examples  String[] // 维度指引（多方位，参考不限定）
+  active    Boolean  @default(true) // 停用后不再用于生成/展示
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// 开店引导草稿（第 19 批 9.1）：独立表替代 Shop.config.draftMenu（jsonb 混存），
+// 草稿与营业设置互不污染，可独立查询/恢复
+model ShopDraft {
+  id        String   @id @default(cuid())
+  shopId    String   @unique
+  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  presetId  String? // 来源 FoodPreset.id（可空=手工/AI 加菜草稿）
+  items     Json // 引导草稿菜品（结构与 Product.config 兼容，上架前老板可编辑）
+  snapshot  Json? // 覆盖上架前的现有 Product[] 快照（9.2 一键还原用）
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

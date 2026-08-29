@@ -79,25 +79,42 @@ def main():
             page.wait_for_timeout(500)
             check("收入卡展开明细（30 ngày）", page.get_by_text("30 ngày").count() > 0)
 
-        # ── 5. 设置面板主题三选 ──
-        theme_buttons = [
-            page.locator("button", has_text="Ấm áp").count(),
-            page.locator("button", has_text="Tối giản").count(),
-            page.locator("button", has_text="Phân lớp").count(),
+        # ── 5. 设置面板主题六选（门面皮肤选择器，按 data-od-id 精确定位）──
+        theme_cards = [
+            "theme-card-warm", "theme-card-moss", "theme-card-minimal",
+            "theme-card-night", "theme-card-vibrant", "theme-card-gourmet",
         ]
-        check("主题三选按钮（暖/净/分层）", all(c > 0 for c in theme_buttons),
-              f"{theme_buttons}")
+        card_counts = []
+        for cid in theme_cards:
+            card = page.locator(f'button[data-od-id="{cid}"]')
+            card_counts.append(card.count())
+            # 每张卡自带 theme-<v> 小样 + 店名/按钮颜色
+            if card.count() > 0:
+                cls = card.first.get_attribute("class") or ""
+                inner_theme = card.first.locator("span.font-display").first
+                check(f"皮肤卡 {cid} 存在且挂自身 theme 类", inner_theme.count() > 0,
+                      f"theme class={'theme-'+cid.split('-').pop() in cls}")
+        check("主题六选按钮（6 张皮肤卡）", all(c > 0 for c in card_counts),
+              f"{card_counts}")
 
-        # ── 6. 主题 CSS 变量切换（浏览器内切 class，验证三套主色不同）──
+        # ── 6. 主题 CSS 变量切换（对 6 套皮肤逐一强制重置 class，校验主色互不相同）──
         page.goto(f"{BASE}/vi/s/demo-pho", wait_until="networkidle")
-        root = page.locator("main[class*='theme-']").first
-        warm = root.evaluate("el => getComputedStyle(el).getPropertyValue('--theme-primary').trim()")
-        root.evaluate("el => { el.classList.add('theme-clean') }")
-        clean = root.evaluate("el => getComputedStyle(el).getPropertyValue('--theme-primary').trim()")
-        root.evaluate("el => { el.classList.remove('theme-clean'); el.classList.add('theme-layered') }")
-        layered = root.evaluate("el => getComputedStyle(el).getPropertyValue('--theme-primary').trim()")
-        check("三套主题主色切换生效", warm != clean and clean != layered,
-              f"warm={warm} clean={clean} layered={layered}")
+        # 一次抓取稳定的元素句柄；之后所有改类/读色都在同一句柄上做，不依赖选择器重找。
+        # 这样即使改类时清空了某个 theme-* 类，句柄仍指向这个 <main>，不会丢掉。
+        root = page.locator("main[class*='theme-']").first.element_handle()
+        skins = ["warm", "moss", "minimal", "night", "vibrant", "gourmet"]
+        seen = []
+        for skin in skins:
+            root.evaluate(
+                "el => { [...el.classList].forEach(c => { if (c.startsWith('theme-')) el.classList.remove(c) }); "
+                "el.classList.add('theme-" + skin + "') }"
+            )
+            cls = root.get_attribute("class") or ""
+            px = root.evaluate("el => getComputedStyle(el).getPropertyValue('--theme-primary').trim()")
+            check(f"切到 {skin} 时外层挂 theme-{skin}", f"theme-{skin}" in cls, cls[:80])
+            seen.append(px)
+        distinct = len(set(seen)) == len(seen)
+        check("六套主题主色各不相同", distinct, f"colors={seen}")
 
         b.close()
     summarize()

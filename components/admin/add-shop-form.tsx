@@ -2,14 +2,23 @@
 
 import { useState, useTransition } from 'react'
 import { useTranslations } from 'next-intl'
-import { useRouter } from '@/i18n/navigation'
-import { createShop } from '@/lib/admin-actions'
+import { useRouter } from 'next/navigation'
+import { createShop, type Vertical } from '@/lib/admin-actions'
 import { routing } from '@/i18n/routing'
 import { useToast, ToastView } from '../dashboard/use-toast'
 
-// 币种 / 套餐选项（套餐 TRIAL/BASIC/PRO；vertical 第 2 批仅开放 FOOD）
+// 币种 / 套餐选项（套餐 TRIAL/BASIC/PRO；第 20 批起 vertical 开放全部 5 垂直）
 const CURRENCIES = ['VND', 'USD', 'EUR', 'SGD', 'CNY'] as const
 const PLANS = ['TRIAL', 'BASIC', 'PRO'] as const
+
+// 垂直类目（SaaS 附加的 App 即这些垂直；FOOD 先行，其余为模板扩展位）
+const VERTICALS = [
+  { value: 'FOOD', labelKey: 'verticalFood' },
+  { value: 'MOTO', labelKey: 'verticalMoto' },
+  { value: 'SALON', labelKey: 'verticalSalon' },
+  { value: 'PET', labelKey: 'verticalPet' },
+  { value: 'LAUNDRY', labelKey: 'verticalLaundry' },
+] as const
 
 // slug 保留字（前端即时校验，与服务端 admin-actions 保持一致）
 const RESERVED_SLUGS = new Set([
@@ -41,6 +50,7 @@ export function AddShopForm() {
 
   const [slug, setSlug] = useState('')
   const [name, setName] = useState('')
+  const [vertical, setVertical] = useState<Vertical>('FOOD')
   const [currency, setCurrency] = useState<string>('VND')
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState('')
@@ -72,7 +82,7 @@ export function AddShopForm() {
         await createShop({
           slug,
           name,
-          vertical: 'FOOD',
+          vertical,
           currency,
           phone: phone || null,
           address: address || null,
@@ -140,8 +150,16 @@ export function AddShopForm() {
         </label>
         <label className="flex flex-col gap-1 text-sm">
           <span className="text-zinc-600 dark:text-zinc-400">{t('vertical')}</span>
-          <select value="FOOD" disabled className={inputCls}>
-            <option value="FOOD">{t('verticalFood')}</option>
+          <select
+            value={vertical}
+            onChange={(e) => setVertical(e.target.value as Vertical)}
+            className={inputCls}
+          >
+            {VERTICALS.map((v) => (
+              <option key={v.value} value={v.value}>
+                {t(v.labelKey)}
+              </option>
+            ))}
           </select>
         </label>
         <label className="flex flex-col gap-1 text-sm">

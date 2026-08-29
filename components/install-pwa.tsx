@@ -3,6 +3,7 @@
 // 保存桌面 PWA 提示：Android/桌面监听 beforeinstallprompt 一键安装；iOS 提示分享→添加到主屏幕
 import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
+import { usePathname } from 'next/navigation'
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>
@@ -11,6 +12,7 @@ type BeforeInstallPromptEvent = Event & {
 
 export function InstallPWA() {
   const t = useTranslations('common')
+  const pathname = usePathname()
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null)
   const [isIOS, setIsIOS] = useState(false)
   const [hidden, setHidden] = useState(false)
@@ -36,6 +38,8 @@ export function InstallPWA() {
     setHidden(true)
   }
 
+  // SaaS 管理后台（电脑端控制）不提示安装 App；仅客户侧菜单/查单页展示
+  if (pathname.includes('/admin')) return null
   // 无安装入口（Android/桌面未触发 prompt、非 iOS）→ 不渲染
   if (hidden || (!deferred && !isIOS)) return null
 

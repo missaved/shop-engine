@@ -20,16 +20,24 @@ export function TableQrGenerator({
   const [qrDataUrl, setQrDataUrl] = useState('')
   const [busy, setBusy] = useState(false)
 
-  // 店铺菜单页 URL 用当前访问域名动态构造（无论部署在哪，扫码都指向本店）
+  // 店铺菜单页 URL 用当前访问域名动态构造（无论部署在哪，扫码都指向本店）；
+  // 桌号非空时拼 ?table= 参数 → 扫码后菜单页预填桌号并锁定（用户反馈：桌号要真正进二维码，不能只是台卡上印大字）
   useEffect(() => {
     if (!slug) return
-    const url = `${window.location.origin}/s/${slug}`
-    setBusy(true)
-    generateShopQr(url)
-      .then(setQrDataUrl)
-      .catch(() => setQrDataUrl(''))
-      .finally(() => setBusy(false))
-  }, [slug])
+    const no = tableNo.trim()
+    const url = no
+      ? `${window.location.origin}/s/${slug}?table=${encodeURIComponent(no)}`
+      : `${window.location.origin}/s/${slug}`
+    // 400ms 防抖：避免每敲一个字符就重生成二维码闪「…」
+    const timer = setTimeout(() => {
+      setBusy(true)
+      generateShopQr(url)
+        .then(setQrDataUrl)
+        .catch(() => setQrDataUrl(''))
+        .finally(() => setBusy(false))
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [slug, tableNo])
 
   // canvas 合成台卡 PNG：白底 + 细边框 + 桌号 + 二维码 + 店名 + 三语，导出一张可打印整图
   function composeCard(dataUrl: string): Promise<string> {

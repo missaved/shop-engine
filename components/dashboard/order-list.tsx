@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useRef, useState, useTransition } from 'react'
+import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
 import { useRouter } from '@/i18n/navigation'
 import { routing } from '@/i18n/routing'
+import type { ShopTheme } from '@/lib/theme'
 import {
   addItemsToOrder,
   advanceOrderStatus,
@@ -40,6 +41,8 @@ export type OrderPlain = {
   tableNo: string | null
   address: string | null
   createdAt: string
+  // 是否为业务日「今天」（服务端按 UTC+7 计算，见 dashboard/page.tsx）
+  today: boolean
   items: OrderItem[]
 }
 export type ShopPlain = {
@@ -56,7 +59,9 @@ export type ShopPlain = {
     packingFee?: number
     deliveryArea?: string
     description?: string
-    theme?: 'warm' | 'clean' | 'layered'
+    descriptionZh?: string // 店面介绍·中文（2026-08-29 语种混杂修复）
+    descriptionEn?: string // 店面介绍·英文
+    theme?: ShopTheme
   } | null
 }
 // 加菜面板可选商品（id/name/price/active 够用，ProductPlain 满足此结构）
@@ -83,6 +88,12 @@ const STATUS_KEY: Record<string, string> = {
   READY: 'statusReady',
   COMPLETED: 'statusCompleted',
   CANCELLED: 'statusCancelled',
+}
+
+// 堂食店内用餐：READY 显示「已上桌」而非「待取」；外带/外送维持「待取」
+function statusKeyOf(o: OrderPlain): string {
+  if (o.status === 'READY' && o.orderType === 'dine_in') return 'statusReadyDineIn'
+  return STATUS_KEY[o.status] ?? 'statusPending'
 }
 
 // 订单状态 → 徽章/色条样式（一眼可见的状态色彩编码，避免逐条读文字）
@@ -169,19 +180,51 @@ export function OrderList({
   const [addQty, setAddQty] = useState('1')
   const { msg, show } = useToast()
 
-  // 已完成订单默认折叠（仅显示订单号+价格+时间），点展开看全貌
+  // 所有订单默认折叠成概要行（仅订单号+状态+时间+金额），点开看全貌（含 PENDING/READY）
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
-  const isFolded = (order: OrderPlain) =>
-    order.status === 'COMPLETED' && (collapsed[order.id] ?? true)
-  // 展开后 5 秒自动收缩（点开看一眼即可，无需手动折叠）
-  const collapseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const isFolded = (order: OrderPlain) => collapsed[order.id] ?? true
+  // 展开后 5 秒自动收回（所有订单统一规则，含进行中）；timer 按订单 id 独立，点开 A 再点 B 互不影响、各自按时收回
+  const collapseTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
+  const scheduleAutoCollapse = useCallback((id: string) => {
+    const timers = collapseTimersRef.current
+    const prev = timers.get(id)
+    if (prev) clearTimeout(prev)
+    timers.set(
+      id,
+      setTimeout(() => {
+        setCollapsed((prev) => ({ ...prev, [id]: true }))
+        timers.delete(id)
+      }, 5000)
+    )
+  }, [])
   function expandOrder(id: string) {
     setCollapsed((prev) => ({ ...prev, [id]: false }))
-    if (collapseTimerRef.current) clearTimeout(collapseTimerRef.current)
-    collapseTimerRef.current = setTimeout(() => {
-      setCollapsed((prev) => ({ ...prev, [id]: true }))
-    }, 5000)
+    scheduleAutoCollapse(id)
   }
+
+  // 待办提醒点击跳单：监听 order-jump 事件（由 ReminderList 派发），收到即展开该订单 + 5 秒自动收回（与手动展开同规则）
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ orderId?: string }>).detail
+      if (!detail?.orderId) return
+      // 已取消订单不展开（终态默认折叠，跳单无意义）
+      const target = orders.find((o) => o.id === detail.orderId)
+      if (!target || target.status === 'CANCELLED') return
+      setCollapsed((prev) => ({ ...prev, [detail.orderId!]: false }))
+      scheduleAutoCollapse(detail.orderId!)
+    }
+    window.addEventListener('order-jump', handler)
+    return () => window.removeEventListener('order-jump', handler)
+  }, [orders, scheduleAutoCollapse])
+
+  // 组件卸载时清空所有自动收回计时器（防泄漏）
+  useEffect(() => {
+    const timers = collapseTimersRef.current
+    return () => {
+      timers.forEach((timer) => clearTimeout(timer))
+      timers.clear()
+    }
+  }, [])
 
   // P1-1 新订单实时性：记当前最大 orderNo，轮询发现更大则刷新 + 提示音
   const maxRef = useRef(0)
@@ -338,6 +381,12 @@ export function OrderList({
     return true
   })
 
+  // 订单管理显示规则（2026-08-29 用户反馈）：进行中订单（未处理/未收款）无论是否今日都常显——
+  // 未走完完整流程的订单不能隐藏；只有终态订单（COMPLETED/CANCELLED）的历史部分才按 Issue6「只显示今日」隐藏
+  const todayList = filtered.filter(
+    (o) => o.today || ['PENDING', 'IN_PROGRESS', 'READY'].includes(o.status),
+  )
+
   if (orders.length === 0) {
     return <p className="text-zinc-500">{t('empty')}</p>
   }
@@ -372,14 +421,13 @@ export function OrderList({
         />
       </div>
 
-      {filtered.length === 0 && <p className="text-zinc-500">{t('noMatch')}</p>}
+      {todayList.length === 0 && <p className="text-zinc-500">{t('noMatch')}</p>}
 
-      {filtered.map((order) => {
+      {todayList.map((order) => {
         const state = paymentState(order)
         const debt = Math.max(0, Number(order.total) - Number(order.paidAmount))
-        const canAdvance = ['PENDING', 'IN_PROGRESS', 'READY'].includes(
-          order.status,
-        )
+        // 推进到已上桌/待取（READY）后可推进；READY 之后只收钱，不再显示推进按钮
+        const canAdvance = ['PENDING', 'IN_PROGRESS'].includes(order.status)
         const canCancel = !['COMPLETED', 'CANCELLED'].includes(order.status)
         const typeStyle = order.orderType
           ? ORDER_TYPE_STYLE[order.orderType]
@@ -401,6 +449,13 @@ export function OrderList({
               <div className="flex items-center gap-2 text-left">
                 <span className="text-xs text-zinc-400">▸</span>
                 <span className="font-medium">{order.displayNo}</span>
+                {order.status && (
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLE[order.status]?.badge ?? 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300'}`}
+                  >
+                    {t(statusKeyOf(order))}
+                  </span>
+                )}
                 <span className="text-xs text-zinc-400">
                   {formatTime(order.createdAt)}
                 </span>
@@ -421,17 +476,15 @@ export function OrderList({
             <div className="mb-2 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="font-medium">{order.displayNo}</span>
-                {order.status === 'COMPLETED' && (
-                  <button
-                    onClick={() =>
-                      setCollapsed((prev) => ({ ...prev, [order.id]: true }))
-                    }
-                    aria-label="折叠"
-                    className="text-xs text-zinc-400 hover:text-zinc-600"
-                  >
-                    ▾
-                  </button>
-                )}
+                <button
+                  onClick={() =>
+                    setCollapsed((prev) => ({ ...prev, [order.id]: true }))
+                  }
+                  aria-label={t('fold')}
+                  className="text-xs text-zinc-400 hover:text-zinc-600"
+                >
+                  ▾
+                </button>
                 {typeStyle && (
                   <span
                     className={`rounded-full px-2 py-0.5 text-xs font-medium ${typeStyle.badge}`}
@@ -443,7 +496,7 @@ export function OrderList({
               <span
                 className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLE[order.status]?.badge ?? 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300'}`}
               >
-                {t(STATUS_KEY[order.status] ?? 'statusPending')}
+                {t(statusKeyOf(order))}
               </span>
             </div>
 
@@ -517,92 +570,97 @@ export function OrderList({
               </span>
             </div>
 
-            {/* 收款：支付方式 3 选 + 实收金额 + 快捷收全款 */}
-            <div className="mb-3">
-              <div className="mb-2 flex gap-1">
-                {(['cash', 'qr', 'other'] as const).map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    onClick={() =>
-                      setPaymentMethod((prev) => ({ ...prev, [order.id]: m }))
+            {/* 收款：支付方式 3 选 + 实收金额 + 快捷收全款（终态订单已结/已取消，不可改实收，不渲染） */}
+            {!['COMPLETED', 'CANCELLED'].includes(order.status) && (
+              <div className="mb-3">
+                <div className="mb-2 flex gap-2">
+                  {(['cash', 'qr', 'other'] as const).map((m) => (
+                    <button
+                      key={m}
+                      type="button"
+                      onClick={() =>
+                        setPaymentMethod((prev) => ({ ...prev, [order.id]: m }))
+                      }
+                      className={`flex-1 rounded-md border px-2.5 text-xs transition-colors min-h-[40px] ${
+                        (paymentMethod[order.id] ?? 'cash') === m
+                          ? 'border-amber-500 bg-amber-500 text-white'
+                          : 'border-zinc-300 text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800'
+                      }`}
+                    >
+                      {t(m === 'cash' ? 'payCash' : m === 'qr' ? 'payQr' : 'payOther')}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    value={paidInput[order.id] ?? order.paidAmount}
+                    onChange={(e) =>
+                      setPaidInput((prev) => ({
+                        ...prev,
+                        [order.id]: e.target.value,
+                      }))
                     }
-                    className={`rounded-md border px-2.5 py-1 text-xs transition-colors ${
-                      (paymentMethod[order.id] ?? 'cash') === m
-                        ? 'border-amber-500 bg-amber-500 text-white'
-                        : 'border-zinc-300 text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800'
-                    }`}
+                    placeholder={t('paidAmount')}
+                    className="w-28 rounded-md border border-zinc-300 px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-800"
+                  />
+                  <button
+                    onClick={() =>
+                      run(
+                        () =>
+                          setOrderPaidAmount(
+                            order.id,
+                            Number(paidInput[order.id] ?? order.paidAmount),
+                            (paymentMethod[order.id] as
+                              | 'cash'
+                              | 'qr'
+                              | 'other'
+                              | undefined) ?? 'cash',
+                          ),
+                        t('toastPaid'),
+                      )
+                    }
+                    disabled={pending}
+                    className="rounded-md border border-zinc-300 px-3 text-sm transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800 min-h-[44px]"
                   >
-                    {t(m === 'cash' ? 'payCash' : m === 'qr' ? 'payQr' : 'payOther')}
+                    {t('collect')}
                   </button>
-                ))}
+                  <button
+                    onClick={() =>
+                      run(
+                        () =>
+                          setOrderPaidAmount(
+                            order.id,
+                            Number(order.total),
+                            (paymentMethod[order.id] as
+                              | 'cash'
+                              | 'qr'
+                              | 'other'
+                              | undefined) ?? 'cash',
+                          ),
+                        t('toastPaid'),
+                      )
+                    }
+                    disabled={pending}
+                    className="rounded-md border border-zinc-300 px-3 text-xs transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800 min-h-[44px]"
+                  >
+                    {t('collectFull')}
+                  </button>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  value={paidInput[order.id] ?? order.paidAmount}
-                  onChange={(e) =>
-                    setPaidInput((prev) => ({
-                      ...prev,
-                      [order.id]: e.target.value,
-                    }))
-                  }
-                  placeholder={t('paidAmount')}
-                  className="w-28 rounded-md border border-zinc-300 px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-800"
-                />
-                <button
-                  onClick={() =>
-                    run(
-                      () =>
-                        setOrderPaidAmount(
-                          order.id,
-                          Number(paidInput[order.id] ?? order.paidAmount),
-                          (paymentMethod[order.id] as
-                            | 'cash'
-                            | 'qr'
-                            | 'other'
-                            | undefined) ?? 'cash',
-                        ),
-                      t('toastPaid'),
-                    )
-                  }
-                  disabled={pending}
-                  className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
-                >
-                  {t('collect')}
-                </button>
-                <button
-                  onClick={() =>
-                    run(
-                      () =>
-                        setOrderPaidAmount(
-                          order.id,
-                          Number(order.total),
-                          (paymentMethod[order.id] as
-                            | 'cash'
-                            | 'qr'
-                            | 'other'
-                            | undefined) ?? 'cash',
-                        ),
-                      t('toastPaid'),
-                    )
-                  }
-                  disabled={pending}
-                  className="rounded-md border border-zinc-300 px-3 py-1.5 text-xs transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
-                >
-                  {t('collectFull')}
-                </button>
-              </div>
-            </div>
+            )}
 
             <div className="flex gap-2">
               {canAdvance && (
                 <button
                   onClick={() =>
-                    run(() => advanceOrderStatus(order.id), t('toastAdvanced'))
+                    run(
+                      () => advanceOrderStatus(order.id),
+                      t('toastAdvanced'),
+                    )
                   }
                   disabled={pending}
-                  className="flex-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 px-3 py-2 text-sm font-semibold text-white shadow-md shadow-amber-500/25 transition-transform hover:brightness-105 active:scale-[0.98] disabled:opacity-60"
+                  className="flex-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 px-4 text-sm font-semibold text-white shadow-md shadow-amber-500/25 transition-transform hover:brightness-105 active:scale-[0.98] disabled:opacity-60 min-h-[44px]"
                 >
                   {t('advance')}
                 </button>
@@ -616,7 +674,7 @@ export function OrderList({
                     }
                   }}
                   disabled={pending}
-                  className="flex-1 rounded-md border border-red-300 px-3 py-2 text-sm text-red-700 transition-colors hover:bg-red-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950"
+                  className="flex-1 rounded-md border border-red-300 px-3 text-sm text-red-700 transition-colors hover:bg-red-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950 min-h-[44px]"
                 >
                   {t('cancelOrder')}
                 </button>
@@ -628,20 +686,20 @@ export function OrderList({
                     setAddProductId('')
                     setAddQty('1')
                   }}
-                  className="flex-1 rounded-md border border-amber-300 px-3 py-2 text-sm text-amber-700 transition-colors hover:bg-amber-50 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-950"
+                  className="flex-1 rounded-md border border-amber-300 px-3 text-sm text-amber-700 transition-colors hover:bg-amber-50 dark:border-amber-700 dark:text-amber-300 dark:hover:bg-amber-950 min-h-[44px]"
                 >
                   {addOpenId === order.id ? '×' : t('addItem')}
                 </button>
               )}
               <button
                 onClick={() => copySummary(order)}
-                className="flex-1 rounded-md border border-zinc-300 px-3 py-2 text-sm transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                className="flex-1 rounded-md border border-zinc-300 px-3 text-sm transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800 min-h-[44px]"
               >
                 {copiedId === order.id ? '✓' : t('copySummary')}
               </button>
               <button
                 onClick={() => sendZalo(order)}
-                className="flex-1 rounded-md border border-zinc-300 px-3 py-2 text-sm transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                className="flex-1 rounded-md border border-zinc-300 px-3 text-sm transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800 min-h-[44px]"
               >
                 {t('sendZalo')}
               </button>
@@ -739,6 +797,7 @@ export function OrderList({
           </div>
         )
       })}
+
       <ToastView msg={msg} />
     </section>
   )

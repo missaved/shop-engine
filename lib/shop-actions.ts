@@ -9,19 +9,21 @@ import { Prisma } from '@/generated/prisma/client'
 import { getShopBySlug } from '@/lib/tenant'
 import { isShopExpired } from '@/lib/billing'
 import { formatPrice } from '@/lib/format'
+import { isRateLimited, recordFailure } from '@/lib/rate-limit'
+import { normalizePhone } from '@/lib/phone'
+import {
+  aggregateCartItems,
+  itemSubtotal,
+  priceCartItems,
+  type CartItem,
+  type StoredOrderItem,
+} from '@/lib/cart-pricing'
 
-export type CartItem = {
-  productId: string
-  qty: number
-  extras?: string[]
-  // 规格选择：规格组名 -> 选中选项名
-  options?: Record<string, string>
-}
 export type OrderType = 'dine_in' | 'takeaway' | 'delivery'
 
 // 下单安全上限（防伪造/异常输入，P0-3）
-const PHONE_RE = /^0\d{9,10}$/ // 越南手机号：0 开头，9~10 位
-const MAX_QTY_PER_ITEM = 99 // 单商品数量上限（餐饮单合理值，防 qty 传超大数致金额溢出）
+// 手机号正则：归一化后纯数字，兼容越南 0 开头 10 位 / 中国 11 位 / 国际号（+86/+84 在 normalizePhone 已换算）
+const PHONE_RE = /^\d{7,15}$/
 const MAX_ORDER_AMOUNT = 50_000_000 // 单订单金额上限（VND，防伪造巨款单）
 
 // 营业时间是否在营业中（openHours 字符串 "07:00-22:00"，支持跨午夜）
@@ -67,7 +69,8 @@ export async function createOrder(input: {
   }
 
   const orderType = input.orderType ?? 'dine_in'
-  const tableNo = input.tableNo?.trim() || undefined
+  // 桌号仅堂食（dine_in）有意义：扫码预填后切外带/外送的单不持久化 tableNo（防脏数据/提醒 payload 带桌号）
+  const tableNo = orderType === 'dine_in' ? input.tableNo?.trim() || undefined : undefined
   const address = input.address?.trim() || undefined
   // 堂食打包（收打包费）；外送自取（到店取，免配送费、地址/手机号非必填）
   const packing = input.packing === true
@@ -75,7 +78,8 @@ export async function createOrder(input: {
   if (orderType === 'delivery' && !pickup && !address) throw new Error('外送请填写地址')
 
   // 手机号：仅外送（非自取）强制；自取/堂食/外带可选（现场点单/取餐无需手机）
-  const phone = input.customerPhone?.trim() || undefined
+  // 归一化后再存/校验：+86/+84、空格/连字符写法统一为本地号，保证查单精确匹配命中
+  const phone = input.customerPhone ? normalizePhone(input.customerPhone) || undefined : undefined
   if (orderType === 'delivery' && !pickup) {
     if (!phone) throw new Error('外送请填写手机号')
     if (!PHONE_RE.test(phone)) throw new Error('手机号格式不正确')
@@ -84,17 +88,10 @@ export async function createOrder(input: {
     throw new Error('手机号格式不正确')
   }
 
-  // 聚合数量 + 合并加料 + 规格（防同一商品重复项，过滤无效/非正 qty）
-  const qtyMap = new Map<string, number>()
-  const extrasMap = new Map<string, string[]>()
-  const optionsMap = new Map<string, Record<string, string>>()
-  for (const it of input.items ?? []) {
-    const q = Math.trunc(Number(it.qty))
-    if (!Number.isFinite(q) || q <= 0 || q > MAX_QTY_PER_ITEM) continue
-    qtyMap.set(it.productId, (qtyMap.get(it.productId) ?? 0) + q)
-    if (it.extras?.length) extrasMap.set(it.productId, it.extras)
-    if (it.options) optionsMap.set(it.productId, it.options)
-  }
+  // 聚合数量 + 合并加料 + 规格（防同一商品重复项，过滤无效/非正 qty；M7/M8 类型与聚合上限校验）
+  const { qtyMap, extrasMap, optionsMap, error: aggError } = aggregateCartItems(input.items)
+  if (aggError === 'overflow') throw new Error('单个商品数量超出上限')
+  if (aggError === 'invalid') throw new Error('商品信息有误')
   if (qtyMap.size === 0) throw new Error('请至少选择一件商品')
 
   const idempotencyKey = input.idempotencyKey?.trim() || null
@@ -109,46 +106,13 @@ export async function createOrder(input: {
       if (existing) return { orderNo: existing.orderNo, displayNo: existing.displayNo }
     }
 
-    const products = await prisma.product.findMany({
-      where: { id: { in: [...qtyMap.keys()] }, shopId: shop.id, active: true },
+    // 服务端计价：加料价 + 规格价都从 Product.config 查，不信任客户端传价（复用 lib/cart-pricing）
+    const { items: orderItems, subtotal } = await priceCartItems({
+      shopId: shop.id,
+      qtyMap,
+      extrasMap,
+      optionsMap,
     })
-    // 找到的商品数 ≠ 请求的商品数 → 有售罄/越权/不存在的项
-    if (products.length !== qtyMap.size) throw new Error('部分商品已售罄或不存在')
-
-    // 服务端计价：加料价 + 规格价都从 Product.config 查，不信任客户端传价
-    const orderItems = products.map((p) => {
-      const cfg = p.config as {
-        extras?: { name: string; price: number }[]
-        optionGroups?: { name: string; options: { name: string; price?: number }[] }[]
-        combo?: { name: string; qty: number }[]
-      } | null
-      const chosenNames = extrasMap.get(p.id) ?? []
-      const extras = (cfg?.extras ?? [])
-        .filter((ex) => chosenNames.includes(ex.name))
-        .map((ex) => ({ name: ex.name, price: Number(ex.price) }))
-      // 规格：按 optionGroups 查选中选项的加价；未选中/非法选项丢弃
-      const chosenOptions = optionsMap.get(p.id) ?? {}
-      const options = (cfg?.optionGroups ?? [])
-        .map((g) => {
-          const opt = g.options.find((o) => o.name === chosenOptions[g.name])
-          return opt ? { group: g.name, name: opt.name, price: Number(opt.price ?? 0) } : null
-        })
-        .filter((o): o is { group: string; name: string; price: number } => o !== null)
-      return {
-        productId: p.id,
-        name: p.name,
-        qty: qtyMap.get(p.id)!,
-        price: Number(p.price),
-        extras,
-        options,
-        combo: (cfg?.combo ?? []).map((c) => ({ name: c.name, qty: c.qty })),
-      }
-    })
-    const subtotal = orderItems.reduce((sum, it) => {
-      const extrasSum = it.extras.reduce((s, ex) => s + ex.price, 0)
-      const optionsSum = it.options.reduce((s, g) => s + g.price, 0)
-      return sum + (it.price + extrasSum + optionsSum) * it.qty
-    }, 0)
 
     // 配送费：仅外送（非自取）；打包费：堂食打包。起送价仍按商品小计判断，运费另算
     const deliveryFee = orderType === 'delivery' && !pickup ? Number(shopCfg.deliveryFee ?? 0) : 0
@@ -270,7 +234,7 @@ export async function deleteMyData(input: {
   guestKey?: string
 }): Promise<void> {
   const shop = await getShopBySlug(input.slug)
-  const phone = input.phone?.trim() ?? ''
+  const phone = input.phone ? normalizePhone(input.phone) : ''
   const guestKey = input.guestKey?.trim() ?? ''
   const orderNo = input.orderNo?.trim()
   if (!orderNo || (!phone && !guestKey)) throw new Error('参数缺失')
@@ -301,6 +265,9 @@ export async function deleteMyData(input: {
 }
 
 // 客户呼叫服务员（找服务员买水/买单/其他需求）：创建 CALL_WAITER 提醒，老板端冒泡 + 声音
+// 第18批 频率限制：按「上次发送时间」双窗口限流（防滥用，用户确认规则）——
+// ① 同一来源距最近一次呼叫 <60s 拒绝（1 分钟最多 1 次）；② 5 分钟内 ≥2 条拒绝（5 分钟最多 2 次）。
+// 同一来源：堂食按桌号锁定（同桌反复呼叫），无桌号退回 IP 维度。超限抛稳定错误码 CALL_TOO_FREQUENT，前端按 locale 映射。
 export async function callWaiter(input: {
   slug: string
   tableNo?: string
@@ -308,6 +275,30 @@ export async function callWaiter(input: {
 }): Promise<void> {
   const shop = await getShopBySlug(input.slug)
   try {
+    const now = new Date()
+    const since = new Date(now.getTime() - 5 * 60 * 1000)
+    const h = await headers()
+    const fwd = h.get('x-forwarded-for')
+    const ip = (fwd ? fwd.split(',')[0].trim() : h.get('x-real-ip')?.trim()) || 'unknown'
+    const tableNo = input.tableNo?.trim() || null
+
+    // 近 5 分钟该店呼叫记录（低频事件，全量查回内存过滤，免复杂 Json 路径查询）
+    const recent = await prisma.reminder.findMany({
+      where: { shopId: shop.id, templateKey: 'CALL_WAITER', createdAt: { gte: since } },
+      select: { createdAt: true, payload: true },
+    })
+    const sameSource = recent.filter((r) => {
+      const p = (r.payload as Record<string, unknown>) ?? {}
+      if (tableNo) return p.tableNo === tableNo
+      return p.ip === ip
+    })
+    if (sameSource.some((r) => now.getTime() - r.createdAt.getTime() < 60 * 1000)) {
+      throw new Error('CALL_TOO_FREQUENT') // 规则①：1 分钟内最多 1 次
+    }
+    if (sameSource.length >= 2) {
+      throw new Error('CALL_TOO_FREQUENT') // 规则②：5 分钟内最多 2 次
+    }
+
     await prisma.reminder.create({
       data: {
         shopId: shop.id,
@@ -317,13 +308,156 @@ export async function callWaiter(input: {
         status: 'PENDING',
         payload: {
           tableNo: input.tableNo?.trim() || null,
-          customerPhone: input.phone?.trim() || null,
+          customerPhone: input.phone ? normalizePhone(input.phone) || null : null,
+          ip, // 频率限制维度：无桌号时按 IP 判同源（第18批）
         },
       },
     })
     revalidatePath('/[locale]/dashboard', 'page')
   } catch (e) {
     console.error('呼叫服务员失败（slug=%s）:', input.slug, e)
+    throw e
+  }
+}
+
+// P0 客户自助加菜（游客可调，无 requireOwner）：guestKey（游客 cookie）或 orderNo+phone 锁单，
+// 服务端计价 + 费用守恒，校验订单未结束；READY（待取餐）阶段按商品 canAddOn 属性限制
+//（烧烤摊取餐后临时加饮料/小菜可行，未标「可追加」的菜不行）。成功后建 FOOD_ADD 待办给老板「去处理」。
+// 入参 guestKey 由调用方传入解码值（track 页读 cookie 已 decode），action 内直接比较不再 decode。
+// 错误统一抛稳定错误码（ORDER_NOT_FOUND / ORDER_NOT_ADDABLE / ITEM_NOT_ADDABLE / AMOUNT_OVER / NO_ITEMS / RATE_LIMITED / ADD_FAILED），
+// 前端按 locale 映射，不向客户直出中文。
+export async function addItemsToMyOrder(input: {
+  slug: string
+  orderNo: string
+  items: CartItem[]
+  phone?: string
+  guestKey?: string
+}): Promise<{ displayNo: string; addedSubtotal: number }> {
+  const shop = await getShopBySlug(input.slug)
+  if (shop.platformSuspended) throw new Error('ORDER_NOT_ADDABLE')
+  if (isShopExpired(shop)) throw new Error('ORDER_NOT_ADDABLE')
+
+  const gk = input.guestKey?.trim() ?? ''
+  const p = input.phone ? normalizePhone(input.phone) : ''
+  const no = input.orderNo?.trim() ?? ''
+  // M3 空凭证守卫：防 Prisma 忽略 undefined → 退化成「无凭证匹配任意该 displayNo 订单」
+  if (!no || (!gk && !p)) throw new Error('ORDER_NOT_FOUND')
+
+  // 限流：IP + 凭证双 key（防枚举/刷单，复用查单同一套计数，5 次失败/60s）
+  const h = await headers()
+  const fwd = h.get('x-forwarded-for')
+  const ip = (fwd ? fwd.split(',')[0].trim() : h.get('x-real-ip')?.trim()) || 'unknown'
+  const keyIp = `track:ip:${ip}`
+  const keyCred = gk ? `track:gk:${gk}` : `track:phone:${p}`
+  if (isRateLimited(keyIp) || isRateLimited(keyCred)) throw new Error('RATE_LIMITED')
+
+  // 聚合 + 运行时校验（M7/M8：qty 聚合上限 / extras、options 类型）
+  const { qtyMap, extrasMap, optionsMap, error: aggError } = aggregateCartItems(input.items)
+  if (aggError === 'overflow') throw new Error('NO_ITEMS')
+  if (qtyMap.size === 0) throw new Error('NO_ITEMS')
+
+  try {
+    // 定位订单（凭证匹配本人订单）；未命中记录失败（防枚举）
+    const matched = await prisma.order.findFirst({
+      where: gk
+        ? { shopId: shop.id, displayNo: no, config: { path: ['guestKey'], equals: gk } }
+        : { shopId: shop.id, displayNo: no, customerPhone: p },
+      select: { id: true },
+    })
+    if (!matched) {
+      recordFailure(keyIp)
+      recordFailure(keyCred)
+      throw new Error('ORDER_NOT_FOUND')
+    }
+
+    // 服务端计价（不信任客户端传价）
+    const { items: addItems, subtotal: addSubtotal, canAddOnById } = await priceCartItems({
+      shopId: shop.id,
+      qtyMap,
+      extrasMap,
+      optionsMap,
+    })
+
+    // 事务锁单重读（M2）：锁 Order 行 + 锁内重读状态/items/total，防与老板侧/并发加菜丢更新
+    const order = await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM "Order" WHERE id = ${matched.id} FOR UPDATE`
+      const cur = await tx.order.findUnique({
+        where: { id: matched.id },
+        select: { id: true, displayNo: true, status: true, items: true, total: true },
+      })
+      if (!cur) throw new Error('ORDER_NOT_FOUND')
+      // 订单未结束才可加：PENDING/IN_PROGRESS/READY 均可；COMPLETED/CANCELLED 拒绝
+      if (cur.status === 'COMPLETED' || cur.status === 'CANCELLED') {
+        throw new Error('ORDER_NOT_ADDABLE')
+      }
+      // READY（待取餐）阶段：仅商品标了「可追加」（canAddOn）才能加（⑤-3，锁内状态重查后再校验）
+      if (cur.status === 'READY') {
+        const blocked = addItems.some((it) => {
+          // 旧商品 config 缺 canAddOn → 默认可追加（用户拍板）
+          return it.productId != null && (canAddOnById.get(it.productId) ?? true) === false
+        })
+        if (blocked) throw new Error('ITEM_NOT_ADDABLE')
+      }
+
+      // 费用守恒：fee = 旧 total − 旧 subtotal，加菜只加 subtotal
+      const oldItems = (cur.items as unknown as StoredOrderItem[]) ?? []
+      const oldSubtotal = oldItems.reduce((s, it) => s + itemSubtotal(it), 0)
+      const fee = Number(cur.total) - oldSubtotal
+      const newTotal = oldSubtotal + addSubtotal + fee
+      if (newTotal > MAX_ORDER_AMOUNT) throw new Error('AMOUNT_OVER')
+
+      return tx.order.update({
+        where: { id: cur.id },
+        data: {
+          items: [...oldItems, ...addItems] as Prisma.InputJsonValue,
+          total: newTotal,
+          // 已上桌(READY)后加菜：新菜仍需制作 → 回退处理中，boss 端推进按钮恢复，可再推进到 READY
+          ...(cur.status === 'READY' ? { status: 'IN_PROGRESS' as const } : {}),
+        },
+        select: { id: true, displayNo: true },
+      })
+    })
+
+    // FOOD_ADD 待办（事务外，锁不占久）：老板端冒泡，留到「去处理/忽略」或终态才清（不做 5s 自动消失）
+    const itemsSummary = addItems.map((it) => ({ name: it.name, qty: it.qty }))
+    await prisma.reminder.create({
+      data: {
+        shopId: shop.id,
+        orderId: order.id,
+        templateKey: 'FOOD_ADD',
+        dueAt: new Date(),
+        status: 'PENDING',
+        payload: {
+          displayNo: order.displayNo,
+          customerName: null,
+          customerPhone: p || null,
+          total: addSubtotal,
+          orderType: null,
+          tableNo: null,
+          items: itemsSummary,
+          guestKey: gk || null,
+        },
+      },
+    })
+    revalidatePath('/[locale]/dashboard', 'page')
+    return { displayNo: order.displayNo, addedSubtotal: addSubtotal }
+  } catch (e) {
+    if (e instanceof Error) {
+      const codes = [
+        'ORDER_NOT_FOUND',
+        'ORDER_NOT_ADDABLE',
+        'ITEM_NOT_ADDABLE',
+        'AMOUNT_OVER',
+        'NO_ITEMS',
+        'RATE_LIMITED',
+      ]
+      // 稳定错误码直接透传（前端按 locale 映射，不向客户直出中文）
+      if (codes.includes(e.message)) throw e
+      // priceCartItems 的售罄中文错误 → 转稳定码
+      if (e.message === '部分商品已售罄或不存在') throw new Error('NO_ITEMS')
+      console.error('客户加菜失败（slug=%s, orderNo=%s）:', input.slug, input.orderNo, e)
+      throw new Error('ADD_FAILED')
+    }
     throw e
   }
 }

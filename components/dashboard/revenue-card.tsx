@@ -1,12 +1,12 @@
 'use client'
 
-// 营业额卡片：默认显示今日营业额，点击展开 1/3/7/30 天明细二级菜单
-import { useState } from 'react'
+// 营业额卡片（整行独立展示）：今日营业额大字 + 3/7/30 天明细横排网格常驻
+// 不再塞进三卡并排的 grid，也不再绝对定位下拉（Issue9 布局重构）
 import { useTranslations } from 'next-intl'
 import { formatPrice } from '@/lib/format'
 
+// 明细档位（今日已在顶部大字，网格只列 3/7/30）
 const RANGES = [
-  { days: 1, key: 'revenue1d' },
   { days: 3, key: 'revenue3d' },
   { days: 7, key: 'revenue7d' },
   { days: 30, key: 'revenue30d' },
@@ -34,47 +34,35 @@ export function RevenueCard({
   currency: string
 }) {
   const t = useTranslations('dashboard')
-  const [expanded, setExpanded] = useState(false)
   const values: Record<number, number> = { 1: day1, 3: day3, 7: day7, 30: day30 }
   const counts: Record<number, number> = { 1: count1, 3: count3, 7: count7, 30: count30 }
 
   return (
-    <div className="relative flex flex-col items-center justify-center rounded-xl border border-zinc-200 bg-white p-3 text-center shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-      <button onClick={() => setExpanded((v) => !v)} className="flex w-full flex-col items-center" title={t('revenue')}>
-        <svg
-          className="h-5 w-5 text-amber-500"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-        </svg>
-        <p className="mt-1 text-2xl font-semibold text-amber-600 dark:text-amber-500">
-          {formatPrice(day1, currency)}
-        </p>
-        <p className="text-xs text-zinc-500">{t('revenue')}</p>
-      </button>
-      {expanded && (
-        <div className="absolute inset-x-0 top-full z-20 mt-2 rounded-lg border border-zinc-200 bg-white p-2 text-left shadow-lg dark:border-zinc-700 dark:bg-zinc-900">
-          {RANGES.map((r) => (
-            <div
-              key={r.days}
-              className="flex items-center justify-between gap-2 rounded-md px-2 py-1.5 hover:bg-zinc-50 dark:hover:bg-zinc-800"
-            >
-              <span className="text-xs text-zinc-500">{t(r.key)}</span>
-              <span className="text-xs text-zinc-400">
-                {t('ordersCount', { n: counts[r.days] })}
-              </span>
-              <span className="text-sm font-semibold text-amber-600 dark:text-amber-500">
-                {formatPrice(values[r.days], currency)}
-              </span>
-            </div>
-          ))}
+    <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="flex items-end justify-between gap-3">
+        <div>
+          <p className="text-sm text-zinc-500">{t('revenue')}</p>
+          <p className="mt-1 text-3xl font-semibold text-amber-600 dark:text-amber-500">
+            {formatPrice(day1, currency)}
+          </p>
         </div>
-      )}
+        <p className="text-xs text-zinc-400">{t('ordersCount', { n: count1 })}</p>
+      </div>
+
+      {/* 3/7/30 天明细常驻网格（整行宽度，不折叠不悬停） */}
+      <div className="mt-3 grid grid-cols-3 gap-2 border-t border-zinc-100 pt-3 dark:border-zinc-800">
+        {RANGES.map((r) => (
+          <div key={r.days} className="flex flex-col gap-0.5">
+            <span className="text-xs text-zinc-500">{t(r.key)}</span>
+            <span className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+              {formatPrice(values[r.days], currency)}
+            </span>
+            <span className="text-xs text-zinc-400">
+              {t('ordersCount', { n: counts[r.days] })}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

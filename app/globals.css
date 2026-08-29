@@ -1,42 +1,218 @@
 @import "tailwindcss";
 
+/* ============================================================
+   门店皮肤系统（6 套完整 token）
+   每套皮肤 = 一整套变量（不只换主色，还换 表面/边框/次要文字/图瓦/显示字体/圆角/投影/按钮形状）。
+   组件用 var(--theme-*) 或 @theme 映射出的 Tailwind 类（如 bg-surface / text-sub / border-line / bg-tile）。
+   ============================================================ */
+
+/* 基础（dark 模式基座） */
 :root {
   --background: #ffffff;
   --foreground: #171717;
 }
 
-/* ===== 店铺主题模板（3 套）：老板端 settings 可选，客户侧按 theme class 切换 =====
-   warm    暖色食品风（默认）：amber 主色 + 暖白背景
-   clean   极简白净风：黑主色 + 纯白背景 + 细边框
-   layered 卡片分层风：amber 主色 + 灰底 + 卡片阴影 */
-:root {
-  --theme-primary: #f59e0b;        /* amber-500 */
-  --theme-primary-hover: #d97706;  /* amber-600 */
-  --theme-primary-fg: #ffffff;
-  --theme-bg: #fff7ed;             /* amber-50 */
+/* ---- 皮肤 1 · warm 暖咖 · 食品暖色（默认）---- */
+:root,
+.theme-warm {
+  --theme-accent: #b45309;
+  --theme-accent-hover: color-mix(in oklch, var(--theme-accent) 82%, black);
+  --theme-accent-contrast: #ffffff;
+  --theme-accent-soft: #f7e3cd;
+  --theme-bg: #faf5ec;
+  --theme-surface: #ffffff;
+  --theme-fg: #26201a;
+  --theme-muted: #6f6151;
+  --theme-border: #ece3d4;
+  --theme-tile: #f3e7d3;
+  --theme-tile-ink: #7a5c2e;
+  --theme-font-display: 'Iowan Old Style', 'Charter', Georgia, serif;
+  --theme-radius-card: 16px;
+  --theme-radius-btn: 14px;
+  --theme-radius-chip: 999px;
+  --theme-elevation: rgba(38, 32, 26, 0.09);
+  --theme-display-weight: 600;
 }
-.theme-clean {
-  --theme-primary: #18181b;        /* zinc-900 黑 */
-  --theme-primary-hover: #27272a;  /* zinc-800 */
-  --theme-primary-fg: #ffffff;
+
+/* ---- 皮肤 2 · moss 墨绿 · 高级餐厅 ---- */
+.theme-moss {
+  --theme-accent: #3d684b;
+  --theme-accent-hover: color-mix(in oklch, var(--theme-accent) 82%, black);
+  --theme-accent-contrast: #ffffff;
+  --theme-accent-soft: #e3ebe0;
+  --theme-bg: #f2efe4;
+  --theme-surface: #ffffff;
+  --theme-fg: #1f2a21;
+  --theme-muted: #637067;
+  --theme-border: #e0dccb;
+  --theme-tile: #e7ede1;
+  --theme-tile-ink: #4f6a54;
+  --theme-font-display: 'Charter', 'Iowan Old Style', Georgia, serif;
+  --theme-radius-card: 18px;
+  --theme-radius-btn: 18px;
+  --theme-radius-chip: 999px;
+  --theme-elevation: rgba(31, 42, 33, 0.11);
+  --theme-display-weight: 500;
+}
+
+/* ---- 皮肤 3 · minimal 极简 · 杂志风 ---- */
+.theme-minimal {
+  --theme-accent: #1b1b1b;
+  --theme-accent-hover: color-mix(in oklch, var(--theme-accent) 82%, black);
+  --theme-accent-contrast: #ffffff;
+  --theme-accent-soft: #f1f1ef;
   --theme-bg: #ffffff;
+  --theme-surface: #ffffff;
+  --theme-fg: #1b1b1b;
+  --theme-muted: #777770;
+  --theme-border: #e9e9e7;
+  --theme-tile: #f5f5f3;
+  --theme-tile-ink: #9a9a92;
+  --theme-font-display: 'Georgia', 'Times New Roman', serif;
+  --theme-radius-card: 8px;
+  --theme-radius-btn: 8px;
+  --theme-radius-chip: 999px;
+  --theme-elevation: rgba(0, 0, 0, 0.02);
+  --theme-display-weight: 500;
 }
+
+/* ---- 皮肤 4 · night 深夜 · 氛围 ---- */
+.theme-night {
+  --theme-accent: #e5a33c;
+  --theme-accent-hover: color-mix(in oklch, var(--theme-accent) 82%, white);
+  --theme-accent-contrast: #241703;
+  --theme-accent-soft: #33291a;
+  --theme-bg: #14161a;
+  --theme-surface: #1d2126;
+  --theme-fg: #f1eee6;
+  --theme-muted: #9aa0a8;
+  --theme-border: #2b2f36;
+  --theme-tile: #22252b;
+  --theme-tile-ink: #c9a86a;
+  --theme-font-display: 'Iowan Old Style', 'Charter', Georgia, serif;
+  --theme-radius-card: 16px;
+  --theme-radius-btn: 12px;
+  --theme-radius-chip: 999px;
+  --theme-elevation: rgba(0, 0, 0, 0.45);
+  --theme-display-weight: 600;
+}
+
+/* ---- 皮肤 5 · vibrant 活力 · 年轻撞色 ---- */
+.theme-vibrant {
+  --theme-accent: #d6421f;
+  --theme-accent-hover: color-mix(in oklch, var(--theme-accent) 82%, black);
+  --theme-accent-contrast: #ffffff;
+  --theme-accent-soft: #ffe1d4;
+  --theme-bg: #fff5ec;
+  --theme-surface: #ffffff;
+  --theme-fg: #241a10;
+  --theme-muted: #856c55;
+  --theme-border: #f3dcc0;
+  --theme-tile: #ffe6d6;
+  --theme-tile-ink: #c1502f;
+  --theme-font-display: 'Georgia', 'Charter', serif;
+  --theme-radius-card: 20px;
+  --theme-radius-btn: 999px;
+  --theme-radius-chip: 999px;
+  --theme-elevation: rgba(214, 66, 31, 0.16);
+  --theme-display-weight: 800;
+}
+
+/* ---- 皮肤 6 · gourmet 高食欲 · 质感 ---- */
+.theme-gourmet {
+  --theme-accent: #d1431f;
+  --theme-accent-hover: color-mix(in oklch, var(--theme-accent) 82%, black);
+  --theme-accent-contrast: #ffffff;
+  --theme-accent-soft: #fbe2d5;
+  --theme-bg: #fdf6ec;
+  --theme-surface: #ffffff;
+  --theme-fg: #231a12;
+  --theme-muted: #6f6151;
+  --theme-border: #f0e4d2;
+  --theme-tile: #f7e3cb;
+  --theme-tile-ink: #a06b3f;
+  --theme-font-display: 'Iowan Old Style', 'Charter', Georgia, serif;
+  --theme-radius-card: 18px;
+  --theme-radius-btn: 999px;
+  --theme-radius-chip: 999px;
+  --theme-elevation: rgba(209, 67, 31, 0.18);
+  --theme-display-weight: 600;
+}
+
+/* ---- 旧主题别名（迁移用，即将废弃）---- */
+.theme-clean { /* 等同 minimal */
+  --theme-accent: #1b1b1b;
+  --theme-accent-hover: color-mix(in oklch, var(--theme-accent) 82%, black);
+  --theme-accent-contrast: #ffffff;
+  --theme-accent-soft: #f1f1ef;
+  --theme-bg: #ffffff;
+  --theme-surface: #ffffff;
+  --theme-fg: #1b1b1b;
+  --theme-muted: #777770;
+  --theme-border: #e9e9e7;
+  --theme-tile: #f5f5f3;
+  --theme-tile-ink: #9a9a92;
+  --theme-font-display: 'Georgia', 'Times New Roman', serif;
+  --theme-radius-card: 8px;
+  --theme-radius-btn: 8px;
+  --theme-radius-chip: 999px;
+  --theme-elevation: rgba(0, 0, 0, 0.02);
+  --theme-display-weight: 500;
+}
+.theme-layered { /* 等同 warm */
+  --theme-accent: #b45309;
+  --theme-accent-hover: color-mix(in oklch, var(--theme-accent) 82%, black);
+  --theme-accent-contrast: #ffffff;
+  --theme-accent-soft: #f7e3cd;
+  --theme-bg: #fafaf7;
+  --theme-surface: #ffffff;
+  --theme-fg: #26201a;
+  --theme-muted: #6f6151;
+  --theme-border: #ece3d4;
+  --theme-tile: #f3e7d3;
+  --theme-tile-ink: #7a5c2e;
+  --theme-font-display: 'Iowan Old Style', 'Charter', Georgia, serif;
+  --theme-radius-card: 16px;
+  --theme-radius-btn: 14px;
+  --theme-radius-chip: 999px;
+  --theme-elevation: rgba(38, 32, 26, 0.09);
+  --theme-display-weight: 600;
+}
+
+/* 兼容旧引用：--theme-primary/-hover/-fg 仍从 accent 派生 */
+:root,
+.theme-warm,
+.theme-moss,
+.theme-minimal,
+.theme-night,
+.theme-vibrant,
+.theme-gourmet,
+.theme-clean,
 .theme-layered {
-  --theme-primary: #f59e0b;        /* amber-500 */
-  --theme-primary-hover: #d97706;  /* amber-600 */
-  --theme-primary-fg: #ffffff;
-  --theme-bg: #fafafa;             /* zinc-50 */
+  --theme-primary: var(--theme-accent);
+  --theme-primary-hover: var(--theme-accent-hover);
+  --theme-primary-fg: var(--theme-accent-contrast);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  /* 语义色 token：组件用 bg-primary / bg-primary-hover / bg-app-bg，随主题 class 切换 */
+  /* 既有（客户端主按钮/背景已用） */
   --color-primary: var(--theme-primary);
   --color-primary-hover: var(--theme-primary-hover);
+  --color-primary-fg: var(--theme-primary-fg);
   --color-app-bg: var(--theme-bg);
+  /* 新增：让组件可用 bg-surface / text-fg / text-sub / border-line / bg-tile / text-tile-ink / bg-soft */
+  --color-surface: var(--theme-surface);
+  --color-fg: var(--theme-fg);
+  --color-sub: var(--theme-muted);
+  --color-line: var(--theme-border);
+  --color-tile: var(--theme-tile);
+  --color-tile-ink: var(--theme-tile-ink);
+  --color-soft: var(--theme-accent-soft);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--theme-font-display);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -49,7 +225,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, 'PingFang SC', 'Microsoft YaHei', sans-serif;
 }
 
 /* 菜单页微动画：底部抽屉滑入 + 浮层淡入 */
@@ -61,7 +237,7 @@ body {
   from { opacity: 0; }
   to { opacity: 1; }
 }
-/* 待办菜品明细跑马灯：内容复制两份，平移 -50% 循环，超长时无缝滚动 */
+/* 待办菜品明细跑马灯 */
 @keyframes marquee {
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }
@@ -71,4 +247,14 @@ body {
   .animate-slide-up { animation: slide-up 0.25s ease-out; }
   .animate-fade-in { animation: fade-in 0.2s ease-out; }
   .animate-marquee { animation: marquee 10s linear infinite; }
+}
+
+/* 焦点可见：所有可点元素一个清晰 focus ring（皮肤主色 + 表面色双环） */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--theme-surface), 0 0 0 6px var(--theme-accent);
 }

@@ -214,6 +214,7 @@
     "phonePlaceholder": "用于查单，请输入手机号",
     "optional": "选填",
     "error": "下单失败，请重试",
+    "orderClosedHint": "该订单已完成或已取消，无法继续加菜，请重新下单",
     "total": "合计",
     "submit": "下单",
     "callWaiter": "呼叫服务员",

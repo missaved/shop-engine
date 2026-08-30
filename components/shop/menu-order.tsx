@@ -153,6 +153,9 @@ export function MenuOrder({
     null,
   )
   const [error, setError] = useState<string | null>(null)
+  // continue 加菜模式的本地可写镜像：prop 是只读 URL 参数；订单已完结等业务拒绝时置空，
+  // 让「继续加菜」失效后可正常下新单（2026-08-30 修复生产 500 时引入）
+  const [continueNo, setContinueNo] = useState<string | undefined>(continueOrderNo)
   const [callSent, setCallSent] = useState(false) // 呼叫服务员成功提示
   const [callTooFrequent, setCallTooFrequent] = useState(false) // 第18批 频率限制提示
   const [callCooldown, setCallCooldown] = useState(false) // 第18批 冷却：呼叫后 60s 禁点（防连点）
@@ -270,16 +273,28 @@ export function MenuOrder({
 
     startTransition(async () => {
       try {
-        if (continueOrderNo) {
+        if (continueNo) {
           // 继续点菜：提交合并进现有订单（加菜不建新单），复用 addItemsToMyOrder
           // （服务端按 orderNo 锁单 + 计价 + 校验订单未结束/READY 阶段可追加）
-          await addItemsToMyOrder({ slug, orderNo: continueOrderNo, items, phone, guestKey })
+          const res = await addItemsToMyOrder({ slug, orderNo: continueNo, items, phone, guestKey })
+          if (!res.ok) {
+            // 业务拒绝（2026-08-30）：订单已完结/不存在 → 明确提示 + 退出 continue 模式（可下新单）。
+            // 走结构化结果而非 catch：生产构建下 throw 的业务码 message 被剥离 → 前端只会 500 无提示
+            setCartOpen(false) // 失败后关闭购物车抽屉，让错误提示可见
+            if (res.code === 'ORDER_NOT_ADDABLE' || res.code === 'ORDER_NOT_FOUND') {
+              setError(t('orderClosedHint'))
+              setContinueNo(undefined)
+            } else {
+              setError(t('error'))
+            }
+            return
+          }
           // 记住手机号 cookie（客户下次访问菜单/查单自动预填）
           if (phone.trim()) {
             document.cookie = `customer_phone=${encodeURIComponent(phone.trim())}; max-age=31536000; path=/; SameSite=Lax`
           }
           // 加菜成功：done 视图显示「已加菜」卡；orderNo 数字占位（未新建单），displayNo = 原订单号
-          setDone({ orderNo: 0, displayNo: continueOrderNo })
+          setDone({ orderNo: 0, displayNo: continueNo })
         } else {
           const res = await createOrder({
             slug,
@@ -307,7 +322,7 @@ export function MenuOrder({
         // 继续点菜分支：服务端抛稳定错误码（ORDER_NOT_ADDABLE 等），不向客户直出，显示通用文案
         const msg = err instanceof Error ? err.message : ''
         const isNetwork = /fetch|network|failed to connect|ECONN|ERR_/i.test(msg)
-        setError(isNetwork || (continueOrderNo && /^[A-Z_]+$/.test(msg)) ? t('error') : msg || t('error'))
+        setError(isNetwork || (continueNo && /^[A-Z_]+$/.test(msg)) ? t('error') : msg || t('error'))
       }
     })
   }

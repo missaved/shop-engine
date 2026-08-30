@@ -214,6 +214,7 @@
     "phonePlaceholder": "Your phone number for tracking",
     "optional": "Optional",
     "error": "Failed to place order, please retry",
+    "orderClosedHint": "This order is completed or cancelled. No more items can be added. Please place a new order.",
     "total": "Total",
     "submit": "Order",
     "callWaiter": "Call waiter",

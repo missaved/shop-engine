@@ -214,6 +214,7 @@
     "phonePlaceholder": "Nombor telefon anda untuk penjejakan",
     "optional": "Pilihan",
     "error": "Gagal membuat pesanan, sila cuba lagi",
+    "orderClosedHint": "Pesanan ini telah selesai atau dibatalkan. Tidak boleh tambah lagi. Sila buat pesanan baharu.",
     "total": "Jumlah",
     "submit": "Pesan",
     "callWaiter": "Panggil pelayan",

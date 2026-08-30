@@ -214,6 +214,7 @@
     "phonePlaceholder": "SĐT để tra cứu đơn hàng",
     "optional": "Không bắt buộc",
     "error": "Đặt hàng thất bại, vui lòng thử lại",
+    "orderClosedHint": "Đơn hàng đã hoàn tất hoặc bị huỷ, không thể thêm món. Vui lòng đặt hàng mới.",
     "total": "Tổng",
     "submit": "Đặt hàng",
     "callWaiter": "Gọi nhân viên",

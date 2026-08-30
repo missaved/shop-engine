@@ -129,6 +129,11 @@ export function AddMoreMenu({
         options: Object.keys(it.options).length > 0 ? it.options : undefined,
       }))
       const res = await addItemsToMyOrder({ slug, orderNo, items, phone, guestKey })
+      if (!res.ok) {
+        // 业务拒绝（2026-08-30）：走结构化结果，生产构建下 throw 的业务码 message 会被剥离
+        setError(t(ERROR_KEY[res.code] ?? 'errAddFailed'))
+        return
+      }
       setPending([])
       setFeedback(t('added', { orderNo: res.displayNo }))
       router.refresh()

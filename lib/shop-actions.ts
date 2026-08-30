@@ -324,24 +324,37 @@ export async function callWaiter(input: {
 // 服务端计价 + 费用守恒，校验订单未结束；READY（待取餐）阶段按商品 canAddOn 属性限制
 //（烧烤摊取餐后临时加饮料/小菜可行，未标「可追加」的菜不行）。成功后建 FOOD_ADD 待办给老板「去处理」。
 // 入参 guestKey 由调用方传入解码值（track 页读 cookie 已 decode），action 内直接比较不再 decode。
-// 错误统一抛稳定错误码（ORDER_NOT_FOUND / ORDER_NOT_ADDABLE / ITEM_NOT_ADDABLE / AMOUNT_OVER / NO_ITEMS / RATE_LIMITED / ADD_FAILED），
-// 前端按 locale 映射，不向客户直出中文。
+// 业务拒绝走结构化结果（生产构建下 action 抛错的 message 被剥离 → 前端只见 500 无提示，
+// 故稳定业务码改 return { ok:false, code } 正常透传；仅不可恢复异常保留 throw）。
+export type AddItemsResult =
+  | { ok: true; displayNo: string; addedSubtotal: number }
+  | {
+      ok: false
+      code:
+        | 'ORDER_NOT_ADDABLE'
+        | 'ORDER_NOT_FOUND'
+        | 'ITEM_NOT_ADDABLE'
+        | 'AMOUNT_OVER'
+        | 'NO_ITEMS'
+        | 'RATE_LIMITED'
+    }
+
 export async function addItemsToMyOrder(input: {
   slug: string
   orderNo: string
   items: CartItem[]
   phone?: string
   guestKey?: string
-}): Promise<{ displayNo: string; addedSubtotal: number }> {
+}): Promise<AddItemsResult> {
   const shop = await getShopBySlug(input.slug)
-  if (shop.platformSuspended) throw new Error('ORDER_NOT_ADDABLE')
-  if (await isShopExpired(shop)) throw new Error('ORDER_NOT_ADDABLE')
+  if (shop.platformSuspended) return { ok: false, code: 'ORDER_NOT_ADDABLE' }
+  if (await isShopExpired(shop)) return { ok: false, code: 'ORDER_NOT_ADDABLE' }
 
   const gk = input.guestKey?.trim() ?? ''
   const p = input.phone ? normalizePhone(input.phone) : ''
   const no = input.orderNo?.trim() ?? ''
   // M3 空凭证守卫：防 Prisma 忽略 undefined → 退化成「无凭证匹配任意该 displayNo 订单」
-  if (!no || (!gk && !p)) throw new Error('ORDER_NOT_FOUND')
+  if (!no || (!gk && !p)) return { ok: false, code: 'ORDER_NOT_FOUND' }
 
   // 限流：IP + 凭证双 key（防枚举/刷单，复用查单同一套计数，5 次失败/60s）
   const h = await headers()
@@ -349,12 +362,12 @@ export async function addItemsToMyOrder(input: {
   const ip = (fwd ? fwd.split(',')[0].trim() : h.get('x-real-ip')?.trim()) || 'unknown'
   const keyIp = `track:ip:${ip}`
   const keyCred = gk ? `track:gk:${gk}` : `track:phone:${p}`
-  if (isRateLimited(keyIp) || isRateLimited(keyCred)) throw new Error('RATE_LIMITED')
+  if (isRateLimited(keyIp) || isRateLimited(keyCred)) return { ok: false, code: 'RATE_LIMITED' }
 
   // 聚合 + 运行时校验（M7/M8：qty 聚合上限 / extras、options 类型）
   const { qtyMap, extrasMap, optionsMap, error: aggError } = aggregateCartItems(input.items)
-  if (aggError === 'overflow') throw new Error('NO_ITEMS')
-  if (qtyMap.size === 0) throw new Error('NO_ITEMS')
+  if (aggError === 'overflow') return { ok: false, code: 'NO_ITEMS' }
+  if (qtyMap.size === 0) return { ok: false, code: 'NO_ITEMS' }
 
   try {
     // 定位订单（凭证匹配本人订单）；未命中记录失败（防枚举）
@@ -367,7 +380,7 @@ export async function addItemsToMyOrder(input: {
     if (!matched) {
       recordFailure(keyIp)
       recordFailure(keyCred)
-      throw new Error('ORDER_NOT_FOUND')
+      return { ok: false, code: 'ORDER_NOT_FOUND' }
     }
 
     // 服务端计价（不信任客户端传价）
@@ -377,6 +390,17 @@ export async function addItemsToMyOrder(input: {
       extrasMap,
       optionsMap,
     })
+
+    // 终态预校验（事务外，2026-08-30）：boss 结账(COMPLETED)/取消(CANCELLED)后继续加菜是用户高频路径，
+    // 直接 return 结构化结果（不走 throw，生产构建下业务码 message 被剥离 → 前端只会 500 无提示）。
+    // 事务内保留同款校验兜底，仅覆盖「本处校验后、锁单前」被并发完结的极小竞态。
+    const pre = await prisma.order.findUnique({
+      where: { id: matched.id },
+      select: { status: true },
+    })
+    if (pre && (pre.status === 'COMPLETED' || pre.status === 'CANCELLED')) {
+      return { ok: false, code: 'ORDER_NOT_ADDABLE' }
+    }
 
     // 事务锁单重读（M2）：锁 Order 行 + 锁内重读状态/items/total，防与老板侧/并发加菜丢更新
     const order = await prisma.$transaction(async (tx) => {
@@ -440,7 +464,7 @@ export async function addItemsToMyOrder(input: {
       },
     })
     revalidatePath('/[locale]/dashboard', 'page')
-    return { displayNo: order.displayNo, addedSubtotal: addSubtotal }
+    return { ok: true, displayNo: order.displayNo, addedSubtotal: addSubtotal }
   } catch (e) {
     if (e instanceof Error) {
       const codes = [

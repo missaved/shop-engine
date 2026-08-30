@@ -1,4 +1,4 @@
-# 私有仓库自动部署：用 Vercel Token 由 CI 发起部署，绕过 Vercel 对私有仓库的 git 作者校验
+# 私有仓库自动部署：用 Vercel Personal Access Token 由 CI 发起，绕过 Hobby 私有仓库的 git 作者校验
 name: Deploy to Vercel
 
 on:
@@ -25,8 +25,11 @@ jobs:
       - name: Install Vercel CLI
         run: npm install --global vercel
 
-      - name: Link to Vercel project
-        run: vercel link --yes --project "$VERCEL_PROJECT_ID" --scope "$VERCEL_ORG_ID" --token "$VERCEL_TOKEN"
+      - name: Pull project settings & env
+        run: vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
 
-      - name: Deploy to production
-        run: vercel deploy --prod --token "$VERCEL_TOKEN"
+      - name: Build
+        run: vercel build --prod --token "$VERCEL_TOKEN"
+
+      - name: Deploy prebuilt
+        run: vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN"

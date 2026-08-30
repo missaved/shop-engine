@@ -9,6 +9,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     env:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -25,7 +26,7 @@ jobs:
         run: npm install --global vercel
 
       - name: Link to Vercel project
-        run: vercel link --yes --project-id "$VERCEL_PROJECT_ID" --org-id "$VERCEL_ORG_ID" --token "$VERCEL_TOKEN"
+        run: vercel link --yes --project "$VERCEL_PROJECT_ID" --scope "$VERCEL_ORG_ID" --token "$VERCEL_TOKEN"
 
       - name: Deploy to production
         run: vercel deploy --prod --token "$VERCEL_TOKEN"

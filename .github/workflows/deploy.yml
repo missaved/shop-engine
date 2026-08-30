@@ -9,14 +9,23 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     steps:
       - uses: actions/checkout@v4
 
-      # 官方 vercel-action：读取 Vercel 项目设置（Root Directory / Build Command / 环境变量），link + build + deploy
-      - name: Deploy to Vercel (production)
-        uses: vercel/vercel-action@v1
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          vercel-token: ${{ secrets.VERCEL_TOKEN }}
-          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
-          vercel-args: '--prod'
+          node-version: 24
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel
+
+      - name: Link to Vercel project
+        run: vercel link --yes --project-id "$VERCEL_PROJECT_ID" --org-id "$VERCEL_ORG_ID" --token "$VERCEL_TOKEN"
+
+      - name: Deploy to production
+        run: vercel deploy --prod --token "$VERCEL_TOKEN"

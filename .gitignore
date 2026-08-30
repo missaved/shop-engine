@@ -51,3 +51,11 @@ next-env.d.ts
 # python 缓存（Playwright 验收脚本编译产物）
 __pycache__/
 *.pyc
+
+# 运行日志与测试产物（不入库）
+/logs/
+/tests/results/
+/tests/screenshots/
+
+# 生产部署验证脚本（引用生产凭据，公开仓库不入库）
+/tests/prod-*.py

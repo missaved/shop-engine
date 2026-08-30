@@ -25,6 +25,9 @@ jobs:
       - name: Install Vercel CLI
         run: npm install --global vercel
 
+      - name: Install pnpm (packageManager 声明为 pnpm@11.24.0)
+        run: npm install --global pnpm@11.24.0
+
       - name: Pull project settings & env
         run: vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
 

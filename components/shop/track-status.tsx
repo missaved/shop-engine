@@ -1,9 +1,11 @@
 'use client'
 
-// 查单页实时状态：轮询订单状态，出餐(READY)时语音 + 横幅提示（客户端打开接收提醒）
+// 查单页实时状态：5s 轮询订单状态（2026-08-30 由 15s 缩短），出餐(READY)时语音 + 横幅即时提示；
+// 任意状态变化（含结账/取消）触发整页刷新，让状态标签/进度条/加菜区/继续点菜按钮自动对齐服务端
 import { useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { getTrackStatus } from '@/lib/actions'
+import { useRouter } from '@/i18n/navigation'
 
 export function TrackStatus({
   slug,
@@ -23,6 +25,7 @@ export function TrackStatus({
   orderType?: string
 }) {
   const t = useTranslations('track')
+  const router = useRouter()
   const [ready, setReady] = useState(initialStatus === 'READY')
   const statusRef = useRef(initialStatus)
   const audioCtxRef = useRef<AudioContext | null>(null)
@@ -54,6 +57,9 @@ export function TrackStatus({
         if (!s) return
         if (s !== statusRef.current) {
           statusRef.current = s
+          // 状态变化（含 boss 推进/结账/取消）→ 刷新整页主数据（状态标签/进度条/加菜区/继续点菜按钮）。
+          // 本组件只负责 READY 的即时语音/视觉提醒，整页数据由 router.refresh 对齐服务端最新状态
+          router.refresh()
           if (s === 'READY') {
             setReady(true)
             void beep()
@@ -66,9 +72,9 @@ export function TrackStatus({
       } catch {
         // 轮询失败静默，下一轮重试
       }
-    }, 15000)
+    }, 5000)
     return () => clearInterval(id)
-  }, [slug, orderNo, phone, guestKey, byIp, initialStatus])
+  }, [slug, orderNo, phone, guestKey, byIp, initialStatus, router])
 
   if (!ready) return null
 

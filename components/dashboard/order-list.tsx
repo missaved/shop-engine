@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
-import { useRouter } from '@/i18n/navigation'
 import { routing } from '@/i18n/routing'
 import type { ShopTheme } from '@/lib/theme'
 import {
@@ -11,40 +10,16 @@ import {
   cancelOrder,
   getLatestOrderNo,
   getLatestCallTs,
+  getDashboardOrders,
   removeItemFromOrder,
   setOrderPaidAmount,
 } from '@/lib/actions'
 import { useToast, ToastView } from './use-toast'
 import { formatPrice } from '@/lib/format'
 import { playVoice, preloadVoices } from '@/lib/audio'
-
-// 订单与店铺的序列化类型（server component 已把 Decimal/Date 转成基础类型）
-export type OrderItem = {
-  name: string
-  qty: number
-  price: number | string
-  extras?: { name: string; price: number | string }[]
-  options?: { group: string; name: string; price: number | string }[]
-  combo?: { name: string; qty: number }[]
-}
-export type OrderPlain = {
-  id: string
-  orderNo: number
-  displayNo: string
-  total: string
-  paidAmount: string
-  customerName: string | null
-  customerPhone: string | null
-  status: string
-  note: string | null
-  orderType: string | null
-  tableNo: string | null
-  address: string | null
-  createdAt: string
-  // 是否为业务日「今天」（服务端按 UTC+7 计算，见 dashboard/page.tsx）
-  today: boolean
-  items: OrderItem[]
-}
+// 订单序列化类型：与轮询 server action / 首屏渲染共用 lib/dashboard-orders（单一来源，防漂移）
+import type { OrderItem, OrderPlain } from '@/lib/dashboard-orders'
+export type { OrderItem, OrderPlain }
 export type ShopPlain = {
   id: string
   slug: string
@@ -155,7 +130,7 @@ function formatTime(iso: string): string {
 
 // 订单列表：复制摘要 / 发 Zalo / 推进状态 / 取消 / 设置实收
 export function OrderList({
-  orders,
+  orders: initialOrders,
   shop,
   products,
 }: {
@@ -165,8 +140,11 @@ export function OrderList({
 }) {
   const t = useTranslations('dashboard')
   const ts = useTranslations('orderSummary')
-  const router = useRouter()
   const locale = useLocale()
+  // 订单列表本地 state（2026-08-30）：首屏用 server component 传入的 initialOrders，
+  // 之后由轮询 server action getDashboardOrders() 更新——绕开 router.refresh() 的 Router Cache 旧快照，
+  // 让新订单/toast 同机制同时到达（server action 直查库，无客户端缓存层）
+  const [orders, setOrders] = useState<OrderPlain[]>(initialOrders)
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [paidInput, setPaidInput] = useState<Record<string, string>>({})
   // 支付方式（现金/扫码/其他），按订单存，默认现金
@@ -244,7 +222,8 @@ export function OrderList({
           maxRef.current = latest
           void playVoice(`/sounds/new-order.${locale}.mp3`)
           show(t('newOrderAlert'))
-          router.refresh()
+          // 拉取完整订单列表 setState（server action 直查库，绕开 router.refresh 的客户端缓存）
+          setOrders(await getDashboardOrders())
         }
         const latestCall = await getLatestCallTs()
         if (firstCall) {
@@ -254,14 +233,14 @@ export function OrderList({
           callTsRef.current = latestCall
           void playVoice(`/sounds/call-waiter.${locale}.mp3`)
           show(t('callWaiterAlert'))
-          router.refresh()
+          setOrders(await getDashboardOrders())
         }
       } catch {
         // 轮询失败静默，下一轮重试
       }
     }, 2000)
     return () => clearInterval(id)
-  }, [router, show, t, locale])
+  }, [show, t, locale])
 
   // 预加载全部三语提示语音，播放时零延迟（首次 fetch+decode 的延迟被前置）
   useEffect(() => {
@@ -348,12 +327,13 @@ export function OrderList({
   }
 
   // okMsg 传成功提示；失败统一走 toastError（P0-5）
+  // 操作完成后拉取完整订单列表 setState（server action 直查库，绕开 router.refresh 的客户端缓存）
   function run(fn: () => Promise<void>, okMsg?: string) {
     startTransition(async () => {
       try {
         await fn()
         if (okMsg) show(okMsg)
-        router.refresh()
+        setOrders(await getDashboardOrders())
       } catch (e) {
         console.error('操作失败:', e)
         // 推进到完毕但未收款：给明确的业务提示，其余用通用失败提示

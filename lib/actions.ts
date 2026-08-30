@@ -20,6 +20,12 @@ import {
   type StoredOrderItem,
 } from '@/lib/cart-pricing'
 import type { ShopTheme } from '@/lib/theme'
+import {
+  findOrdersForDashboard,
+  serializeOrders,
+  vietnamTodayStartUtc,
+  type OrderPlain,
+} from '@/lib/dashboard-orders'
 
 // 完结订单：建复购提醒（21 天后）+ dismiss 过时提醒（新单/出餐）。
 // 收全款自动完结 / 手动推进到 COMPLETED 共用，避免重复建提醒
@@ -524,6 +530,15 @@ export async function getLatestOrderNo(): Promise<number> {
     _max: { orderNo: true },
   })
   return max._max.orderNo ?? 0
+}
+
+// boss 端订单实时性（2026-08-30）：返回本店完整订单列表（OrderPlain[]）。
+// 与 getLatestOrderNo 同为 server action 直查库（无 RSC/客户端缓存），供 order-list 轮询 setState，
+// 绕开 router.refresh() 的 Router Cache 旧快照问题——toast 与订单列表由此同机制同时到达
+export async function getDashboardOrders(): Promise<OrderPlain[]> {
+  const user = await requireOwner()
+  const orders = await findOrdersForDashboard(user.shopId)
+  return serializeOrders(orders, vietnamTodayStartUtc())
 }
 
 // 呼叫服务员实时性：返回最新 CALL_WAITER 提醒的创建时间戳（轮询判断有无新呼叫）

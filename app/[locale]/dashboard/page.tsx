@@ -6,7 +6,8 @@ import { signOut } from '@/auth'
 import { formatPrice } from '@/lib/format'
 import { isShopExpired } from '@/lib/billing'
 import { OrderList } from '@/components/dashboard/order-list'
-import type { OrderPlain, ShopPlain } from '@/components/dashboard/order-list'
+import type { ShopPlain } from '@/components/dashboard/order-list'
+import { findOrdersForDashboard, serializeOrders, vietnamTodayStartUtc, type OrderPlain } from '@/lib/dashboard-orders'
 import { SettingsPanel } from '@/components/dashboard/settings-panel'
 import type { ProductPlain } from '@/components/dashboard/settings-panel'
 import { ReminderList } from '@/components/dashboard/reminder-list'
@@ -46,23 +47,9 @@ const STATUS_KEY: Record<string, string> = {
   CANCELLED: 'statusCancelled',
 }
 
-// 订单查询排序：进行中（PENDING/IN_PROGRESS/READY）在前，终态（COMPLETED/CANCELLED）在后，组内 createdAt desc
-// （Prisma 7 orderBy 仅支持标量 asc/desc，无法单条表达「终态后置」，故拆两次查询拼接）
-async function findOrdersForDashboard(shopId: string) {
-  const [active, terminal] = await Promise.all([
-    prisma.order.findMany({
-      where: { shopId, status: { in: ['PENDING', 'IN_PROGRESS', 'READY'] } },
-      orderBy: [{ createdAt: 'desc' }],
-    }),
-    prisma.order.findMany({
-      where: { shopId, status: { in: ['COMPLETED', 'CANCELLED'] } },
-      orderBy: [{ createdAt: 'desc' }],
-    }),
-  ])
-  return [...active, ...terminal]
-}
-
 // 老板侧一页后台：今日概览 + 桌台简表 + 待办提醒 + 订单列表 + 设置
+// 订单实时性（2026-08-30）：订单列表首屏由本页渲染传入，之后 order-list 轮询 server action
+// getDashboardOrders() setState 更新（server action 直查库，绕开 router.refresh 的客户端 Router Cache 旧快照）
 export default async function DashboardPage() {
   // 第 20 批 A4（8.1 决策）：admin 不参与 boss 端、不能进店 → dashboard 只服务 OWNER
   const user = await requireOwner()
@@ -72,6 +59,7 @@ export default async function DashboardPage() {
   const [shop, orders, products, reminders, presets, categories, shopDraft] = await Promise.all([
     prisma.shop.findUnique({ where: { id: shopId } }),
     findOrdersForDashboard(shopId),
+
     prisma.product.findMany({
       where: { shopId },
       orderBy: { sortOrder: 'asc' },
@@ -105,30 +93,9 @@ export default async function DashboardPage() {
     config: shop.config as ShopPlain['config'],
   }
 
-  // 业务日边界：固定 UTC+7（越南运营时区），避免服务器 UTC 造成的「今日」偏移
-  // （UTC 0 点 = 越南 07:00，若用服务器 UTC 会把越南今晨 0-7 点的订单误判为历史）
-  const VIET_OFFSET = 7 * 60 * 60 * 1000
-  const vietTodayStart = new Date(Date.now() + VIET_OFFSET)
-  vietTodayStart.setHours(0, 0, 0, 0)
-  const todayStartUtc = new Date(vietTodayStart.getTime() - VIET_OFFSET)
-
-  const ordersPlain: OrderPlain[] = orders.map((o) => ({
-    id: o.id,
-    orderNo: o.orderNo,
-    displayNo: o.displayNo,
-    total: o.total.toString(),
-    paidAmount: o.paidAmount.toString(),
-    customerName: o.customerName,
-    customerPhone: o.customerPhone,
-    status: o.status,
-    note: o.note,
-    orderType: (o.config as { orderType?: string } | null)?.orderType ?? null,
-    tableNo: (o.config as { tableNo?: string } | null)?.tableNo ?? null,
-    address: (o.config as { address?: string } | null)?.address ?? null,
-    createdAt: o.createdAt.toISOString(),
-    today: o.createdAt >= todayStartUtc,
-    items: o.items as unknown as OrderPlain['items'],
-  }))
+  // 业务日边界 + 订单序列化：共用 lib/dashboard-orders（与轮询 server action 同一份逻辑，防漂移）
+  const todayStartUtc = vietnamTodayStartUtc()
+  const ordersPlain: OrderPlain[] = serializeOrders(orders, todayStartUtc)
 
   const productsPlain: ProductPlain[] = products.map((p) => {
     const cfg = p.config as {

@@ -2,6 +2,7 @@ import { getTranslations } from 'next-intl/server'
 import { requireAdmin } from '@/lib/dal'
 import { prisma } from '@/lib/prisma'
 import { RevenueChart } from '@/components/admin/revenue-chart'
+import { VisitChart } from '@/components/admin/visit-chart'
 import type { Prisma } from '@/generated/prisma/client'
 
 // 营收看板（第 20 批阶段五）：跨店聚合，本月 + 累计并排，欠款单列，近 30 天趋势图（recharts）
@@ -53,7 +54,7 @@ export default async function AnalyticsPage() {
 
   // 访问统计（2026-08-29）：页面访问埋点聚合。来源国家读 CF-IPCountry，IP 读 CF-Connecting-IP，免 GeoIP 库
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const [todayPv, todayUvRows, totalPv, totalUvRows, countryRows, pathRows, recentRows] =
+  const [todayPv, todayUvRows, totalPv, totalUvRows, countryRows, pathRows, recentRows, visitRows] =
     await Promise.all([
       prisma.visitLog.count({ where: { createdAt: { gte: todayStart } } }),
       prisma.visitLog.groupBy({
@@ -85,11 +86,31 @@ export default async function AnalyticsPage() {
         take: 15,
         select: { id: true, path: true, country: true, createdAt: true },
       }),
+      prisma.visitLog.findMany({
+        where: { createdAt: { gte: daysAgo30 } },
+        select: { ip: true, createdAt: true },
+      }),
     ])
 
   // groupBy 结果是行数组，distinct IP 数 = 数组长度
   const todayUv = todayUvRows.length
   const totalUv = totalUvRows.length
+
+  // 访问趋势：近 30 天按日聚合 PV（行数）/ UV（distinct IP，30 天量级 JS 聚合足够）
+  const visitByDay = new Map<string, { pv: number; uv: Set<string> }>()
+  for (const row of visitRows) {
+    const key = row.createdAt.toISOString().slice(0, 10)
+    const agg = visitByDay.get(key) ?? { pv: 0, uv: new Set<string>() }
+    agg.pv++
+    if (row.ip) agg.uv.add(row.ip)
+    visitByDay.set(key, agg)
+  }
+  const visitTrend = Array.from({ length: 30 }, (_, i) => {
+    const d = new Date(now.getTime() - (29 - i) * 24 * 60 * 60 * 1000)
+    const key = d.toISOString().slice(0, 10)
+    const agg = visitByDay.get(key)
+    return { day: key.slice(5), pv: agg?.pv ?? 0, uv: agg?.uv.size ?? 0 }
+  })
 
   const fmt = (n: number) => n.toLocaleString('en-US', { maximumFractionDigits: 0 })
 
@@ -139,7 +160,12 @@ export default async function AnalyticsPage() {
         <p className="mb-3 text-sm font-medium text-zinc-600 dark:text-zinc-300">
           {t('visitTitle')}
         </p>
-        <div className="grid grid-cols-4 gap-4">
+
+        {/* 访问趋势：近 30 天 PV/UV 双线（2026-08-30 增强） */}
+        <p className="mb-2 text-xs font-medium text-zinc-500">{t('visitTrendTitle')}</p>
+        <VisitChart data={visitTrend} />
+
+        <div className="mt-4 grid grid-cols-4 gap-4">
           {[
             [t('visitPvToday'), todayPv],
             [t('visitUvToday'), todayUv],

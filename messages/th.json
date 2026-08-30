@@ -600,6 +600,19 @@
     "setApiKeyRevoked": "เพิกถอนแล้ว",
     "setApiKeyScope": "ขอบเขต",
     "setApiKeysEmpty": "ยังไม่มี API key",
+    "setAnnouncements": "ประกาศ",
+    "setAnnouncementsHint": "ประกาศแพลตฟอร์ม (การแจ้งเตือนในแอป ยังไม่แสดงฝั่งลูกค้า)",
+    "setAnnouncementTitle": "หัวข้อ",
+    "setAnnouncementBody": "เนื้อหา",
+    "setAnnouncementActive": "เปิดใช้งาน",
+    "setAnnouncementActiveYes": "เปิดใช้งานอยู่",
+    "setAnnouncementActiveNo": "ปิดใช้งาน",
+    "setAnnouncementAdd": "เพิ่มประกาศ",
+    "setAnnouncementUpdate": "อัปเดต",
+    "setAnnouncementEdit": "แก้ไข",
+    "setAnnouncementDelete": "ลบ",
+    "setAnnouncementDeleteConfirm": "ลบประกาศนี้หรือไม่?",
+    "setAnnouncementEmpty": "ไม่มีประกาศ",
     "setAudit": "บันทึกการตรวจสอบ",
     "setAuditHint": "บันทึกการดำเนินการสำคัญ (เข้าสู่ระบบ / จัดการร้านค้า / การเรียกเก็บเงิน / การเปลี่ยนการกำหนดค่า)",
     "setAuditAllActions": "การดำเนินการทั้งหมด",
@@ -626,6 +639,7 @@
     "visitCountryTop": "ประเทศยอดนิยม",
     "visitPathTop": "หน้าที่นิยม",
     "visitRecent": "การเข้าชมล่าสุด",
-    "visitEmpty": "ยังไม่มีการเข้าชม"
+    "visitEmpty": "ยังไม่มีการเข้าชม",
+    "visitTrendTitle": "แนวโน้มการเข้าชม (30 วันที่ผ่านมา)"
   }
 }

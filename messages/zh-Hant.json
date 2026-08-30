@@ -600,6 +600,19 @@
     "setApiKeyRevoked": "已撤銷",
     "setApiKeyScope": "範圍",
     "setApiKeysEmpty": "暫無 API key",
+    "setAnnouncements": "公告管理",
+    "setAnnouncementsHint": "平台公告（站內通知，顧客端展示預留）",
+    "setAnnouncementTitle": "標題",
+    "setAnnouncementBody": "正文",
+    "setAnnouncementActive": "啟用",
+    "setAnnouncementActiveYes": "啟用中",
+    "setAnnouncementActiveNo": "已停用",
+    "setAnnouncementAdd": "新增公告",
+    "setAnnouncementUpdate": "更新公告",
+    "setAnnouncementEdit": "編輯",
+    "setAnnouncementDelete": "刪除",
+    "setAnnouncementDeleteConfirm": "確定刪除該公告？",
+    "setAnnouncementEmpty": "暫無公告",
     "setAudit": "稽核日誌",
     "setAuditHint": "關鍵操作記錄（登入/店鋪管理/計費/設定變更等）",
     "setAuditAllActions": "全部動作",
@@ -626,6 +639,7 @@
     "visitCountryTop": "來源國家",
     "visitPathTop": "熱門頁面",
     "visitRecent": "最近訪問",
-    "visitEmpty": "暫無訪問數據"
+    "visitEmpty": "暫無訪問數據",
+    "visitTrendTitle": "訪問趨勢（近 30 天）"
   }
 }

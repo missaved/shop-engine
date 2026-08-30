@@ -600,6 +600,19 @@
     "setApiKeyRevoked": "Đã thu hồi",
     "setApiKeyScope": "Phạm vi",
     "setApiKeysEmpty": "Chưa có API key",
+    "setAnnouncements": "Thông báo",
+    "setAnnouncementsHint": "Thông báo nền tảng (hiển thị phía khách hàng dành sau)",
+    "setAnnouncementTitle": "Tiêu đề",
+    "setAnnouncementBody": "Nội dung",
+    "setAnnouncementActive": "Kích hoạt",
+    "setAnnouncementActiveYes": "Đang kích hoạt",
+    "setAnnouncementActiveNo": "Đã tắt",
+    "setAnnouncementAdd": "Thêm thông báo",
+    "setAnnouncementUpdate": "Cập nhật",
+    "setAnnouncementEdit": "Sửa",
+    "setAnnouncementDelete": "Xóa",
+    "setAnnouncementDeleteConfirm": "Xóa thông báo này?",
+    "setAnnouncementEmpty": "Chưa có thông báo",
     "setAudit": "Nhật ký kiểm toán",
     "setAuditHint": "Ghi lại thao tác quan trọng (đăng nhập / quản lý cửa hàng / tính phí / đổi cấu hình)",
     "setAuditAllActions": "Mọi thao tác",
@@ -626,6 +639,7 @@
     "visitCountryTop": "Quốc gia hàng đầu",
     "visitPathTop": "Trang phổ biến",
     "visitRecent": "Truy cập gần đây",
-    "visitEmpty": "Chưa có truy cập"
+    "visitEmpty": "Chưa có truy cập",
+    "visitTrendTitle": "Xu hướng truy cập (30 ngày qua)"
   }
 }

@@ -414,7 +414,7 @@ export async function saveTier(input: {
         shopLimit: input.shopLimit ?? null,
         productLimit: input.productLimit ?? null,
         aiQuota: input.aiQuota ?? null,
-        active: input.active ?? true,
+        // 编辑时不传 active 即保留原值（修复：原 `?? true` 会静默激活非激活档；新增默认 true 走 create 分支）
       },
       create: {
         key,

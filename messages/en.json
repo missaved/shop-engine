@@ -600,6 +600,19 @@
     "setApiKeyRevoked": "Revoked",
     "setApiKeyScope": "Scope",
     "setApiKeysEmpty": "No API keys",
+    "setAnnouncements": "Announcements",
+    "setAnnouncementsHint": "Platform announcements (in-app notices; customer-side display reserved)",
+    "setAnnouncementTitle": "Title",
+    "setAnnouncementBody": "Body",
+    "setAnnouncementActive": "Enabled",
+    "setAnnouncementActiveYes": "Enabled",
+    "setAnnouncementActiveNo": "Disabled",
+    "setAnnouncementAdd": "Add announcement",
+    "setAnnouncementUpdate": "Update",
+    "setAnnouncementEdit": "Edit",
+    "setAnnouncementDelete": "Delete",
+    "setAnnouncementDeleteConfirm": "Delete this announcement?",
+    "setAnnouncementEmpty": "No announcements",
     "setAudit": "Audit log",
     "setAuditHint": "Key operation records (login / shop mgmt / billing / config changes)",
     "setAuditAllActions": "All actions",
@@ -626,6 +639,7 @@
     "visitCountryTop": "Top countries",
     "visitPathTop": "Top pages",
     "visitRecent": "Recent visits",
-    "visitEmpty": "No visits yet"
+    "visitEmpty": "No visits yet",
+    "visitTrendTitle": "Visit trend (last 30 days)"
   }
 }

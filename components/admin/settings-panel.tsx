@@ -901,6 +901,7 @@ function OpenSection({ data }: { data: SettingsData }) {
   return (
     <div className="flex flex-col gap-4">
       <TierBlock tiers={data.tiers} />
+      <AnnouncementBlock announcements={data.announcements} />
       <ApiKeyBlock apiKeys={data.apiKeys} />
       <AuditBlock />
     </div>
@@ -1155,6 +1156,97 @@ function ApiKeyBlock({ apiKeys }: { apiKeys: SettingsData['apiKeys'] }) {
       </ul>
       {msg && <p className="text-sm text-green-600">{msg}</p>}
       {err && <p className="text-sm text-red-600">{err}</p>}
+    </Card>
+  )
+}
+
+// 公告管理（2026-08-30 补全）：后端 saveAnnouncement/deleteAnnouncement 早已完备，此块补齐前端 UI。
+// 数据来自 getSettingsData().announcements（最多 50 条）。表单仅暴露标题/正文/启用（locale/时间窗口留空 = 全站公告）。
+function AnnouncementBlock({ announcements }: { announcements: SettingsData['announcements'] }) {
+  const t = useTranslations('admin')
+  const { pending, msg, err, run } = useSave()
+  const empty = { id: '', title: '', body: '', active: true }
+  const [form, setForm] = useState(empty)
+  const [editId, setEditId] = useState<string | null>(null)
+
+  function startEdit(a: SettingsData['announcements'][number]) {
+    setEditId(a.id)
+    setForm({ id: a.id, title: a.title, body: a.body, active: a.active })
+  }
+
+  function save() {
+    run(async () => {
+      await saveAnnouncement({
+        id: editId ?? undefined,
+        title: form.title,
+        body: form.body,
+        active: form.active,
+      })
+      setForm(empty)
+      setEditId(null)
+    })
+  }
+
+  function onDelete(id: string) {
+    if (!window.confirm(t('setAnnouncementDeleteConfirm'))) return
+    run(async () => {
+      await deleteAnnouncement(id)
+    })
+  }
+
+  return (
+    <Card title={t('setAnnouncements')} hint={t('setAnnouncementsHint')}>
+      <div className="flex flex-col gap-2">
+        <Text
+          value={form.title}
+          onChange={(v) => setForm({ ...form, title: v })}
+          placeholder={t('setAnnouncementTitle')}
+        />
+        <textarea
+          value={form.body}
+          onChange={(e) => setForm({ ...form, body: e.target.value })}
+          placeholder={t('setAnnouncementBody')}
+          rows={3}
+          className={`${inputCls} w-full`}
+        />
+        <Toggle
+          checked={form.active}
+          onChange={(v) => setForm({ ...form, active: v })}
+          label={t('setAnnouncementActive')}
+        />
+        <SaveBar
+          pending={pending}
+          msg={msg}
+          err={err}
+          onSave={save}
+          label={editId ? t('setAnnouncementUpdate') : t('setAnnouncementAdd')}
+        />
+      </div>
+      {announcements.length === 0 && <p className="text-xs text-zinc-500">{t('setAnnouncementEmpty')}</p>}
+      <ul className="flex flex-col gap-2">
+        {announcements.map((a) => (
+          <li
+            key={a.id}
+            className="flex items-center justify-between gap-2 rounded-lg border border-zinc-200 p-2 text-sm dark:border-zinc-800"
+          >
+            <div className="flex flex-col">
+              <span className="text-sm">{a.title}</span>
+              <span className="text-xs text-zinc-500">
+                {a.active ? t('setAnnouncementActiveYes') : t('setAnnouncementActiveNo')}
+                {a.locale ? ` · ${a.locale}` : ''}
+              </span>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => startEdit(a)} className={btnCls}>
+                {t('setAnnouncementEdit')}
+              </button>
+              <button onClick={() => onDelete(a.id)} className={dangerBtnCls}>
+                {t('setAnnouncementDelete')}
+              </button>
+            </div>
+          </li>
+        ))}
+      </ul>
     </Card>
   )
 }

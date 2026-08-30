@@ -600,6 +600,19 @@
     "setApiKeyRevoked": "Ditarik balik",
     "setApiKeyScope": "Skop",
     "setApiKeysEmpty": "Tiada kunci API",
+    "setAnnouncements": "Pengumuman",
+    "setAnnouncementsHint": "Pengumuman platform (notifikasi dalam aplikasi; paparan pelanggan akan datang)",
+    "setAnnouncementTitle": "Tajuk",
+    "setAnnouncementBody": "Kandungan",
+    "setAnnouncementActive": "Diaktifkan",
+    "setAnnouncementActiveYes": "Diaktifkan",
+    "setAnnouncementActiveNo": "Dilumpuhkan",
+    "setAnnouncementAdd": "Tambah pengumuman",
+    "setAnnouncementUpdate": "Kemas kini",
+    "setAnnouncementEdit": "Sunting",
+    "setAnnouncementDelete": "Padam",
+    "setAnnouncementDeleteConfirm": "Padam pengumuman ini?",
+    "setAnnouncementEmpty": "Tiada pengumuman",
     "setAudit": "Log audit",
     "setAuditHint": "Rekod operasi utama (log masuk / pengurusan kedai / biling / perubahan konfigurasi)",
     "setAuditAllActions": "Semua tindakan",
@@ -626,6 +639,7 @@
     "visitCountryTop": "Negara teratas",
     "visitPathTop": "Halaman popular",
     "visitRecent": "Lawatan terkini",
-    "visitEmpty": "Tiada lawatan"
+    "visitEmpty": "Tiada lawatan",
+    "visitTrendTitle": "Trend lawatan (30 hari)"
   }
 }

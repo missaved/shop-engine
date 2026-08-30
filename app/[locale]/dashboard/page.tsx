@@ -1,6 +1,7 @@
 import { getTranslations } from 'next-intl/server'
 import { requireOwner } from '@/lib/dal'
 import { prisma } from '@/lib/prisma'
+import { resolveImageUrl } from '@/lib/storage'
 import { signOut } from '@/auth'
 import { formatPrice } from '@/lib/format'
 import { isShopExpired } from '@/lib/billing'
@@ -153,7 +154,7 @@ export default async function DashboardPage() {
       emoji: cfg?.emoji ?? '🍽️',
       unit: p.unit,
       category: p.category,
-      image: cfg?.image ?? '',
+      image: resolveImageUrl(cfg?.image ?? ''),
       nameZh: cfg?.nameI18n?.zh ?? '',
       nameEn: cfg?.nameI18n?.en ?? '',
       descVi: cfg?.descI18n?.vi ?? '',
@@ -217,7 +218,7 @@ export default async function DashboardPage() {
         optionGroups: it.optionGroups ?? [],
         allergens: it.allergens ?? [],
         dietaryTags: it.dietaryTags ?? [],
-        imageUrl: it.imageUrl ?? '',
+        imageUrl: resolveImageUrl(it.imageUrl ?? ''),
         categoryI18n: it.categoryI18n,
       }))
     : []

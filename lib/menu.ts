@@ -4,6 +4,7 @@
 // 纯服务端模块，禁止被任何 client 组件 import（内部使用 prisma）。
 import { prisma } from '@/lib/prisma'
 import { getShopBySlug } from '@/lib/tenant'
+import { resolveImageUrl } from '@/lib/storage'
 import type { MenuProduct } from '@/components/shop/menu-order'
 
 // 商品描述缺当前语种时回退到任一已有语种（主文案一般取 vi），避免只配部分语言的商品详情无简介
@@ -67,7 +68,7 @@ export function serializeMenuProduct(
     // 多语言整改：单位/分类按语种取（自动归类 categoryI18n），缺则回退 DB 列
     unit: pickI18n(cfg?.unitI18n, locale, p.unit),
     category: pickI18n(cfg?.categoryI18n, locale, p.category),
-    image: cfg?.image ?? '',
+    image: resolveImageUrl(cfg?.image ?? ''),
     emoji: cfg?.emoji ?? '🍽️',
     desc: cfg?.descI18n?.[locale] ?? fallbackDesc(cfg?.descI18n),
     extras: (cfg?.extras ?? []).map((ex) => ({

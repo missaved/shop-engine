@@ -1,0 +1,18 @@
+# Vercel 部署时排除的文件（独立于 .gitignore，只影响 Vercel 上传）
+# 测试/调试临时产物，不该上传到 Vercel
+tests/
+logs/
+public/test/
+_a4-cleanup.ts
+scripts/migrate-uploads-to-r2.mts
+# 锚定根(前导 /)：只排除顶层重复的旧版 admin/，不匹配核心 app/admin（否则后台整体 404）
+/admin/
+
+# 本地生成的图片（运行时写 public/uploads，Vercel 用 R2 存储）
+public/uploads/
+
+# 本地 build 产物 / 依赖（Vercel 云端重新 build）
+.next/
+out/
+build/
+node_modules/

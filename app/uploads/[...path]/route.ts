@@ -1,6 +1,8 @@
 // 兜底静态服务（2026-08-29 修复）：Next 生产模式 public 静态服务只认「启动时快照」内的文件，
 // 运行期新增的图片（admin 重新生成 / 后台脚本生成）不在快照 → 404「图片出不来」。
 // 此 route handler 实时读盘兜底：旧文件仍走 serveStatic（快照内优先），新文件命中这里 → 200。URL 不变、存量零迁移。
+// 2026-08-30 加 S3 分支：STORAGE_DRIVER=s3 时从对象存储读（对冲漏 resolve 的相对 URL 请求），
+// s3 模式文件系统只读，不能依赖 readFile；local 模式保持读盘逻辑不变。
 import { readFile } from 'fs/promises'
 import path from 'path'
 
@@ -16,6 +18,7 @@ const MIME: Record<string, string> = {
 }
 
 const UPLOADS_ROOT = path.join(process.cwd(), 'public', 'uploads')
+const STORAGE_DRIVER = process.env.STORAGE_DRIVER ?? 'local'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,6 +33,38 @@ export async function GET(
       return new Response('Bad Request', { status: 400 })
     }
   }
+
+  const key = segments.join('/') // uploads/... → 对象存储 key（无前导斜杠）
+  const ext = path.extname(key).toLowerCase()
+  const contentType = MIME[ext] ?? 'application/octet-stream'
+
+  // S3 模式：从对象存储读（防御兜底），文件系统只读读不了盘
+  if (STORAGE_DRIVER === 's3') {
+    try {
+      const { S3Client, GetObjectCommand } = await import('@aws-sdk/client-s3')
+      const endpoint = process.env.S3_ENDPOINT
+      const bucket = process.env.S3_BUCKET
+      const region = process.env.S3_REGION ?? 'auto'
+      const akid = process.env.S3_ACCESS_KEY_ID ?? ''
+      const secret = process.env.S3_SECRET_ACCESS_KEY ?? ''
+      if (!endpoint || !bucket || !akid || !secret) return new Response('Not Found', { status: 404 })
+      const client = new S3Client({
+        endpoint,
+        region,
+        credentials: { accessKeyId: akid, secretAccessKey: secret },
+      })
+      const obj = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key }))
+      const buf = Buffer.from(await obj.Body!.transformToByteArray())
+      return new Response(new Uint8Array(buf), {
+        headers: { 'Content-Type': contentType, 'Cache-Control': 'public, max-age=0' },
+      })
+    } catch (e) {
+      console.error('兜底 S3 读取失败（%s）:', key, e)
+      return new Response('Not Found', { status: 404 })
+    }
+  }
+
+  // Local 模式：读盘兜底（现状逻辑不变）
   const filePath = path.join(UPLOADS_ROOT, ...segments)
   // 归一化后必须仍落在 UPLOADS_ROOT 内
   if (!filePath.startsWith(UPLOADS_ROOT + path.sep)) {
@@ -37,10 +72,9 @@ export async function GET(
   }
   try {
     const buf = await readFile(filePath)
-    const ext = path.extname(filePath).toLowerCase()
     return new Response(new Uint8Array(buf), {
       headers: {
-        'Content-Type': MIME[ext] ?? 'application/octet-stream',
+        'Content-Type': contentType,
         // 文件名含时间戳、可被重新生成覆盖，客户端缓存需 revalidate
         'Cache-Control': 'public, max-age=0',
       },

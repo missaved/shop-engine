@@ -14,9 +14,10 @@ const securityHeaders = {
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: blob:",
+    "img-src 'self' data: blob: https://img.spotnear.me",
     "font-src 'self' data:",
-    "connect-src 'self'",
+    // PWA service worker 用 fetch 拦截图片做缓存，跨域图走 connect-src，必须放行图片域（否则 SW fetch 被 CSP 拦 → 图裂）
+    "connect-src 'self' https://img.spotnear.me",
     "media-src 'self' blob:",
     "frame-ancestors 'none'",
     "form-action 'self'",

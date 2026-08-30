@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma'
 import { FOOD_SUBCATEGORIES } from '@/lib/llm/prompts'
 import { PresetGrid, type GridItem } from '@/components/admin/preset-grid'
 import { PLACEHOLDER_URL } from '@/lib/llm/image'
+import { resolveImageUrl } from '@/lib/storage'
 
 // 页面级 force-dynamic：依赖 FoodPreset 最新 items（剔除/重生成后刷新可见）
 export const dynamic = 'force-dynamic'
@@ -32,7 +33,7 @@ export default async function AdminPresetDetailPage({
     nameZh: String(it.name_zh ?? ''),
     nameEn: String(it.name_en ?? ''),
     defaultPrice: Number(it.defaultPrice ?? 0),
-    imageUrl: String(it.imageUrl ?? ''),
+    imageUrl: resolveImageUrl(String(it.imageUrl ?? '')),
     imagePrompt: String(it.imagePrompt ?? ''),
   }))
   const title = meta ? `${meta.vi} · ${meta.zh}` : cat ? `${cat.nameVi} · ${cat.nameZh}` : subcategory

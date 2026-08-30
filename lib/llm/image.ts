@@ -1,12 +1,8 @@
 // 文生图（第 19 批 A3）：minimax image-01 出图 → 存 public/uploads/presets/{country}/{subcategory}/{slug}.jpg → 返回公开 URL
 // 约束（用户 2026-08-28）：出图只用 minimax；限流（1004/1042）退避重试，超额（1008/持续限流）报 QUOTA 等复位，不造假占位
 // minimax 有限流（8.1）：并发 1 + 请求间隔；失败按错误类型处置（下一步由调用方决定）
-import { promises as fs } from 'node:fs'
-import path from 'node:path'
 import { getAiConfig } from '@/lib/platform-settings'
-
-// 输出根目录：与 /api/upload 同目录（9.6 单实例可写；生产 CF 隧道下 imageUrl 已是 URL 抽象，预留对象存储）
-const OUT_DIR = path.join(process.cwd(), 'public', 'uploads', 'presets')
+import { save } from '@/lib/storage'
 
 // 占位图兜底（10.2）：非限流/余额类偶发失败时用；QUOTA 类失败不走占位（等复位重跑）
 export const PLACEHOLDER_URL = '/uploads/presets/placeholder.jpg'
@@ -84,11 +80,11 @@ export async function generateImage(prompt: string, meta?: GenerateImageMeta): P
       return { ok: false, error: `minimax 无图返回: ${JSON.stringify(j).slice(0, 200)}` }
     }
 
-    await fs.mkdir(path.join(OUT_DIR, country, sub), { recursive: true })
+    // 统一走 storage 抽象：local 写 public/uploads，s3 写对象存储（key 无前导斜杠）
     const filename = `${slug}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`
-    const filePath = path.join(OUT_DIR, country, sub, filename)
-    await fs.writeFile(filePath, Buffer.from(b64, 'base64'))
-    return { ok: true, url: `/uploads/presets/${country}/${sub}/${filename}`, filePath }
+    const key = `uploads/presets/${country}/${sub}/${filename}`
+    const saved = await save(Buffer.from(b64, 'base64'), key)
+    return { ok: true, url: saved.url, filePath: saved.filePath }
   } catch (e) {
     return { ok: false, error: `minimax 出图异常: ${e instanceof Error ? e.message.slice(0, 160) : String(e).slice(0, 160)}` }
   }

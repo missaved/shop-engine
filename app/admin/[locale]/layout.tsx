@@ -3,6 +3,7 @@ import { NextIntlClientProvider, hasLocale } from 'next-intl'
 import { setRequestLocale } from 'next-intl/server'
 import { notFound } from 'next/navigation'
 import { routing } from '@/i18n/routing'
+import { getSetting } from '@/lib/platform-settings'
 import zh from '@/messages/zh.json'
 import zhHant from '@/messages/zh-Hant.json'
 import en from '@/messages/en.json'
@@ -42,7 +43,13 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>
 }) {
   const { locale } = await params
-  return { title: TITLES[locale] ?? 'shop-engine' }
+  // Site 接线（2026-08-30）：设置中心 site.name 替换品牌前缀（保留 locale 后缀本地化）；
+  // 未配置回退硬编码，不回归
+  const site = await getSetting<{ name?: string }>('site')
+  const name = site?.name?.trim()
+  if (!name) return { title: TITLES[locale] ?? 'shop-engine' }
+  const suffix = (TITLES[locale] ?? 'shop-engine').split('· ').slice(1).join('· ')
+  return { title: suffix ? `${name} · ${suffix}` : name }
 }
 
 // admin 树 locale 层：校验 locale → 设 request locale → 加载该语言 messages。

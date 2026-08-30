@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react'
 import '../globals.css'
 
+// 说明：title 实际由 admin/[locale]/layout.tsx 的 generateMetadata 按 locale 覆盖（Site 接线在那边做），
+// 此处静态 metadata 仅作兜底
 export const metadata = {
   title: 'shop-engine · 平台运营后台',
   description: 'SaaS 平台运营管理端（管理员电脑用）',

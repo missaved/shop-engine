@@ -33,7 +33,15 @@ const NAV_GROUPS = [
   },
 ]
 
-export function AdminShell({ children }: { children: React.ReactNode }) {
+export function AdminShell({
+  children,
+  siteName,
+  siteLogo,
+}: {
+  children: React.ReactNode
+  siteName: string | null
+  siteLogo: string | null
+}) {
   const t = useTranslations('admin')
   // admin 树 locale 在第 2 段（/admin/{locale}），从 useParams 取；路径手动拼 /admin/{locale}/...
   const params = useParams<{ locale: string }>()
@@ -54,8 +62,13 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       {/* 纯桌面固定侧边栏（管理端电脑用，不做移动端抽屉） */}
       <aside className="fixed inset-y-0 left-0 flex w-56 flex-col border-r border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
         <div className="flex items-center gap-2 border-b border-zinc-100 px-5 py-4 dark:border-zinc-800">
-          <span className="text-lg leading-none text-amber-500">☰</span>
-          <span className="text-lg font-semibold">{t('title')}</span>
+          {siteLogo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={siteLogo} alt="" className="h-6 w-6 rounded object-cover" />
+          ) : (
+            <span className="text-lg leading-none text-amber-500">☰</span>
+          )}
+          <span className="truncate text-lg font-semibold">{siteName ?? t('title')}</span>
         </div>
 
         <nav className="flex flex-col gap-3 p-3">

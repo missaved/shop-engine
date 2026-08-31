@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useTransition } from 'react'
 import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import { createOrder, callWaiter, addItemsToMyOrder } from '@/lib/shop-actions'
-import { getGuestActiveOrder } from '@/lib/actions'
+import { getGuestActiveOrder, getOccupiedTables } from '@/lib/actions'
 import { formatPrice } from '@/lib/format'
 import { LocaleSwitcher } from '@/components/locale-switcher'
 import type { ShopTheme } from '@/lib/theme'
@@ -132,6 +132,7 @@ export function MenuOrder({
       {t('activeOrderHint')} ▸
     </Link>
   ) : null
+
   const [qty, setQty] = useState<Record<string, number>>({})
   const [extras, setExtras] = useState<Record<string, string[]>>({})
   const [orderType, setOrderType] = useState<OrderType>('dine_in')
@@ -156,6 +157,16 @@ export function MenuOrder({
   // continue 加菜模式的本地可写镜像：prop 是只读 URL 参数；订单已完结等业务拒绝时置空，
   // 让「继续加菜」失效后可正常下新单（2026-08-30 修复生产 500 时引入）
   const [continueNo, setContinueNo] = useState<string | undefined>(continueOrderNo)
+
+  // 加菜模式提示（2026-08-31 堂食桌号锁定）：continueNo 非空说明本单在加菜/继续点菜流程，
+  // 顶部明示「正在向订单 X 加菜」，避免客户误以为在下新单（提交按钮不走 createOrder 只加菜）。
+  // 放在 continueNo 声明之后，避免「声明前使用」的 TS 错误。
+  const addModeBanner = continueNo ? (
+    <div className="mb-2 flex w-full items-center justify-center gap-1.5 rounded-[var(--theme-radius)] bg-soft px-4 py-2 text-center text-sm font-medium text-primary">
+      {t('addModeHint', { orderNo: continueNo })} ▸
+    </div>
+  ) : null
+
   const [callSent, setCallSent] = useState(false) // 呼叫服务员成功提示
   const [callTooFrequent, setCallTooFrequent] = useState(false) // 第18批 频率限制提示
   const [callCooldown, setCallCooldown] = useState(false) // 第18批 冷却：呼叫后 60s 禁点（防连点）
@@ -276,7 +287,15 @@ export function MenuOrder({
         if (continueNo) {
           // 继续点菜：提交合并进现有订单（加菜不建新单），复用 addItemsToMyOrder
           // （服务端按 orderNo 锁单 + 计价 + 校验订单未结束/READY 阶段可追加）
-          const res = await addItemsToMyOrder({ slug, orderNo: continueNo, items, phone, guestKey })
+          // 桌号锁定：加菜模式把当前 tableNo 一并传，供「扫桌贴码但 guestKey 不同」的同桌设备靠桌号命中本桌单加菜
+          const res = await addItemsToMyOrder({
+            slug,
+            orderNo: continueNo,
+            items,
+            phone,
+            guestKey,
+            tableNo: orderType === 'dine_in' ? tableNo || undefined : undefined,
+          })
           if (!res.ok) {
             // 业务拒绝（2026-08-30）：订单已完结/不存在 → 明确提示 + 退出 continue 模式（可下新单）。
             // 走结构化结果而非 catch：生产构建下 throw 的业务码 message 被剥离 → 前端只会 500 无提示
@@ -322,7 +341,12 @@ export function MenuOrder({
         // 继续点菜分支：服务端抛稳定错误码（ORDER_NOT_ADDABLE 等），不向客户直出，显示通用文案
         const msg = err instanceof Error ? err.message : ''
         const isNetwork = /fetch|network|failed to connect|ECONN|ERR_/i.test(msg)
-        setError(isNetwork || (continueNo && /^[A-Z_]+$/.test(msg)) ? t('error') : msg || t('error'))
+        // 堂食桌号锁定：桌已占，不能开新单 → 明确提示（2026-08-31）
+        if (msg === 'TABLE_OCCUPIED') {
+          setError(t('tableOccupied'))
+        } else {
+          setError(isNetwork || (continueNo && /^[A-Z_]+$/.test(msg)) ? t('error') : msg || t('error'))
+        }
       }
     })
   }
@@ -443,6 +467,7 @@ export function MenuOrder({
         {/* 毛玻璃内容卡：店名+语言切换一行 + 欢迎语 + 三选用餐方式浮于图上 */}
         <div className="relative z-10 flex flex-col gap-3 rounded-2xl bg-surface/75 p-5 shadow-2xl shadow-black/20 backdrop-blur-xl">
           {activeBanner}
+          {addModeBanner}
           {/* 店名 + 语言切换同一行（2026-08-29 用户需求） */}
           <div className="flex items-center justify-between gap-3">
             <h1 className="min-w-0 flex-1 truncate text-2xl font-bold">{shopName}</h1>
@@ -502,6 +527,7 @@ export function MenuOrder({
 
         {/* 桌号选择抽屉（欢迎页强制流程：选完桌号才进菜单，与菜单页共用组件） */}
         <TablePicker
+          slug={slug}
           open={tablePickerOpen}
           value={tableNo}
           onChange={setTableNo}
@@ -545,9 +571,10 @@ export function MenuOrder({
       </div>
 
       {activeBanner}
+      {addModeBanner}
 
-      {/* 用餐方式返回 + 呼叫服务员：一行 2 列加间隙，避免上下挤占误触（2026-08-29 用户需求） */}
-      <div className={`grid gap-2 ${canOrder ? 'grid-cols-2' : 'grid-cols-1'}`}>
+      {/* 用餐方式返回 + 呼叫服务员：一行 2 列加间隙（2026-08-29 用户需求）；mt-3 与上方店头/横幅拉开竖向距离（2026-08-31 防误触） */}
+      <div className={`mt-3 grid gap-2 ${canOrder ? 'grid-cols-2' : 'grid-cols-1'}`}>
         <button
           type="button"
           onClick={() => setSelected(false)}
@@ -605,7 +632,7 @@ export function MenuOrder({
       {/* 吸顶分类栏（2026-08-29 用户需求）：仅滚动停止后淡入，点击标签平滑跳转到对应分类；滚动中隐藏不挡菜 */}
       <nav
         aria-label={t('categoryNavLabel')}
-        className={`sticky top-0 z-20 -mx-3 mb-1 flex flex-wrap justify-center gap-1.5 border-b border-line bg-surface/95 px-3 py-2 backdrop-blur transition-opacity duration-200 ${
+        className={`sticky top-0 z-20 -mx-3 mb-3 mt-3 flex flex-wrap justify-center gap-1.5 border-b border-line bg-surface/95 px-3 py-2 backdrop-blur transition-opacity duration-200 ${
           catNavVisible ? 'opacity-100' : 'pointer-events-none opacity-0'
         }`}
       >
@@ -940,7 +967,7 @@ export function MenuOrder({
                   }
                   className="rounded-[var(--theme-radius-btn)] bg-gradient-to-r from-primary to-primary-hover px-5 py-2 text-lg font-semibold text-primary-fg shadow-md shadow-primary/25 transition-transform hover:brightness-105 active:scale-[0.98] disabled:opacity-50"
                 >
-                  {pending ? '…' : t('submit')}
+                  {pending ? '…' : continueNo ? t('addNow') : t('submit')}
                 </button>
               </div>
             </form>
@@ -1180,13 +1207,17 @@ export function AddToCartSheet({
 
 // 桌号选择抽屉（2026-08-29 用户需求）：欢迎页堂食强制先选桌号（选完 onConfirm 才进菜单）；
 // 点背景 onDismiss 留在当前页（欢迎页则不进菜单）。仅欢迎页渲染此弹层。
+// 2026-08-31 堂食桌号锁定：打开时拉取本店「进行中」桌号集合，把已被占用的桌置灰不可点；
+// 自定义输入若命中占用桌 → 提示「该桌已被占用」阻止进入——杜绝门头码误选已被占的桌。
 function TablePicker({
+  slug,
   open,
   value,
   onChange,
   onConfirm,
   onDismiss,
 }: {
+  slug: string
   open: boolean
   value: string
   onChange: (v: string) => void
@@ -1194,6 +1225,21 @@ function TablePicker({
   onDismiss: () => void
 }) {
   const t = useTranslations('menu')
+  const [occupied, setOccupied] = useState<Set<string>>(new Set())
+  const [customErr, setCustomErr] = useState(false)
+  // 打开时拉一次占用桌集合（量小、低频，可直接查询；失败静默回退可全选）
+  useEffect(() => {
+    if (!open) return
+    let cancelled = false
+    getOccupiedTables(slug)
+      .then((tables) => {
+        if (!cancelled) setOccupied(new Set(tables))
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [open, slug])
   if (!open) return null
   return (
     <div
@@ -1207,42 +1253,60 @@ function TablePicker({
         <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-line" />
         <h3 className="text-center font-semibold">{t('chooseTable')}</h3>
 
-        {/* 常用桌号 1-12：点选即回填关闭 */}
+        {/* 常用桌号 1-12：点选即回填关闭；已被占用的桌置灰不可点 */}
         <div className="mt-4 grid grid-cols-4 gap-2">
-          {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => (
-            <button
-              key={n}
-              type="button"
-              onClick={() => {
-                onChange(String(n))
-                onConfirm()
-              }}
-              className="rounded-lg border border-line bg-tile py-2.5 text-sm font-medium transition-colors hover:bg-primary/10"
-            >
-              {n}
-            </button>
-          ))}
+          {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => {
+            const isOcc = occupied.has(String(n))
+            return (
+              <button
+                key={n}
+                type="button"
+                disabled={isOcc}
+                onClick={() => {
+                  onChange(String(n))
+                  onConfirm()
+                }}
+                className={
+                  isOcc
+                    ? 'cursor-not-allowed rounded-lg border border-line bg-tile/50 py-2.5 text-sm font-medium text-sub/50 line-through'
+                    : 'rounded-lg border border-line bg-tile py-2.5 text-sm font-medium transition-colors hover:bg-primary/10'
+                }
+              >
+                {n}
+              </button>
+            )
+          })}
         </div>
 
-        {/* 自定义桌号：手动输入，确认后回填关闭 */}
+        {/* 自定义桌号：手动输入，确认后回填关闭；输入的是已被占用的桌 → 提示并阻止 */}
         <div className="mt-4 flex items-center gap-2">
           <input
             type="text"
             value={value}
-            onChange={(e) => onChange(e.target.value)}
+            onChange={(e) => {
+              onChange(e.target.value)
+              setCustomErr(false)
+            }}
             placeholder={t('tableCustom')}
             className="min-w-0 flex-1 rounded-md border border-line px-3 py-2 text-lg"
           />
           <button
             type="button"
             onClick={() => {
-              if (value.trim()) onConfirm()
+              const v = value.trim()
+              if (!v) return
+              if (occupied.has(v)) {
+                setCustomErr(true)
+                return
+              }
+              onConfirm()
             }}
             className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-fg"
           >
             {t('submit')}
           </button>
         </div>
+        {customErr && <p className="mt-2 text-center text-sm text-red-600">{t('tableOccupied')}</p>}
       </div>
     </div>
   )

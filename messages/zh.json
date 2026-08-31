@@ -238,7 +238,10 @@
     "bestseller": "热卖",
     "combo": "套餐包含",
     "trackHintNoPhone": "请用订单号 {orderNo} 查询订单状态",
-    "callTooFrequent": "呼叫过于频繁，请稍候"
+    "callTooFrequent": "呼叫过于频繁，请稍候",
+    "tableOccupied": "该桌已有进行中的订单，请确认后继续加菜",
+    "addModeHint": "正在向订单 {orderNo} 加菜",
+    "addNow": "加菜"
   },
   "track": {
     "addMore": "加菜",

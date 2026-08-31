@@ -179,7 +179,8 @@ export default async function TrackOrderPage({
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-col gap-3 px-3 py-6">
-      <h1 className="text-center text-2xl font-semibold">{t('title')}</h1>
+      {/* 「查询订单」标题：未命中订单（表单态）时保留作页面标题；命中订单时并入结果卡作次级标题，避免独立大字突兀（2026-08-31） */}
+      {!order && <h1 className="text-center text-2xl font-semibold">{t('title')}</h1>}
 
       {/* 查询表单：仅无命中订单时显示（用户反馈：订单已显示详情，上方查询选项隐藏）；
           查失败（notFound/rateLimited）时表单保留可重试，文案在表单下方 */}
@@ -226,6 +227,9 @@ export default async function TrackOrderPage({
 
       {order && (
         <div className="flex flex-col gap-2 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+          <p className="text-center text-xs uppercase tracking-widest text-zinc-400 dark:text-zinc-500">
+            {t('title')}
+          </p>
           <div className="flex items-center justify-between">
             <span className="text-lg font-medium">{order.displayNo}</span>
             <span className="text-lg text-zinc-600 dark:text-zinc-400">

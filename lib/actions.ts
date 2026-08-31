@@ -650,6 +650,47 @@ export async function getGuestActiveOrder(input: {
   return { orderNo: order.displayNo, status: order.status }
 }
 
+// 2026-08-31 堂食桌号锁定：查某桌是否有进行中的单（PENDING/IN_PROGRESS/READY），供
+// ① 扫码桌贴码进入 → 命中即进加菜模式（只能加菜不能下新单）；② 加菜时旧设备桌号兜底。
+export async function getTableActiveOrder(input: {
+  slug: string
+  tableNo: string
+}): Promise<{ orderNo: string; status: string } | null> {
+  const tableNo = input.tableNo?.trim() ?? ''
+  if (!tableNo) return null
+  const shop = await getShopBySlug(input.slug)
+  const order = await prisma.order.findFirst({
+    where: {
+      shopId: shop.id,
+      status: { in: ['PENDING', 'IN_PROGRESS', 'READY'] },
+      config: { path: ['tableNo'], equals: tableNo },
+    },
+    orderBy: { createdAt: 'desc' },
+    select: { displayNo: true, status: true },
+  })
+  if (!order) return null
+  return { orderNo: order.displayNo, status: order.status }
+}
+
+// 2026-08-31 堂食桌号锁定：返回该店所有「进行中」餐桌号集合，供 TablePicker（门头码入口）挂载时
+// 一次拉取，把已被占用的桌号置灰不可点——杜绝门头码误选已被占用的桌。
+export async function getOccupiedTables(slug: string): Promise<string[]> {
+  const shop = await getShopBySlug(slug)
+  const orders = await prisma.order.findMany({
+    where: {
+      shopId: shop.id,
+      status: { in: ['PENDING', 'IN_PROGRESS', 'READY'] },
+    },
+    select: { config: true },
+  })
+  const tables = new Set<string>()
+  for (const o of orders) {
+    const cfg = (o.config as { tableNo?: string } | null) ?? {}
+    if (cfg.tableNo?.trim()) tables.add(cfg.tableNo.trim())
+  }
+  return [...tables]
+}
+
 // 第 3 批-12：老板端对已建订单加菜（服务端重算新商品价，费用守恒）
 // M2 并发安全：FOR UPDATE 锁 Order 行 + 锁内重读（防与客户加菜并发丢更新）；已处理客户加菜则 dismiss 其 FOOD_ADD
 export async function addItemsToOrder(input: {

@@ -238,7 +238,10 @@
     "bestseller": "Terlaris",
     "combo": "Kombo termasuk",
     "trackHintNoPhone": "Semak pesanan anda dengan nombor pesanan {orderNo}",
-    "callTooFrequent": "Sila tunggu sebentar sebelum memanggil lagi"
+    "callTooFrequent": "Sila tunggu sebentar sebelum memanggil lagi",
+    "tableOccupied": "Meja ini ada pesanan aktif — teruskan tambah item",
+    "addModeHint": "Menambah item ke pesanan {orderNo}",
+    "addNow": "Tambah item"
   },
   "track": {
     "addMore": "Tambah lagi",

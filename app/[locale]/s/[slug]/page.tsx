@@ -7,6 +7,7 @@ import { MenuOrder } from '@/components/shop/menu-order'
 import type { MenuProduct } from '@/components/shop/menu-order'
 import { serializeMenuProduct, getRecommendedProducts } from '@/lib/menu'
 import { normalizeTheme } from '@/lib/theme'
+import { getTableActiveOrder } from '@/lib/actions'
 
 export default async function ShopMenuPage({
   params,
@@ -44,6 +45,16 @@ export default async function ShopMenuPage({
     where: { shopId: shop.id, active: true },
     orderBy: { sortOrder: 'asc' },
   })
+
+  // 桌面扫码分流（2026-08-31 堂食桌号锁定）：
+  // ① track 页「继续点菜」带 continue 参数 → 直接指向该单，优先；
+  // ② 其余扫桌贴码进入（?table=10，无 continue）→ 查该桌进行中单，命中即进加菜模式（只能加菜不能下新单）。
+  // 未命中（桌空闲）→ 保持空，正常下新单（开单锁定该桌）。
+  let effectiveContinueNo = continueStr
+  if (!effectiveContinueNo && tableStr) {
+    const tableActive = await getTableActiveOrder({ slug, tableNo: tableStr })
+    if (tableActive) effectiveContinueNo = tableActive.orderNo
+  }
 
   // 商品 config：三语名/描述 + 图片 URL（有图）/emoji 图标（无图占位）+ canAddOn（出餐后可追加）
   const plain: MenuProduct[] = products.map((p) => serializeMenuProduct(p, locale))
@@ -103,7 +114,7 @@ export default async function ShopMenuPage({
       recommended={recommended}
       initialTableNo={tableStr}
       initialOrderType={typeStr}
-      continueOrderNo={continueStr}
+      continueOrderNo={effectiveContinueNo}
     />
   )
 }

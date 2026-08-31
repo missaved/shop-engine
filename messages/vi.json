@@ -238,7 +238,10 @@
     "bestseller": "Bán chạy",
     "combo": "Combo gồm",
     "trackHintNoPhone": "Tra cứu đơn hàng bằng mã đơn {orderNo}",
-    "callTooFrequent": "Vui lòng chờ một lúc trước khi gọi lại"
+    "callTooFrequent": "Vui lòng chờ một lúc trước khi gọi lại",
+    "tableOccupied": "Bàn này đã có đơn đang xử lý — tiếp tục thêm món",
+    "addModeHint": "Đang thêm món vào đơn {orderNo}",
+    "addNow": "Thêm món"
   },
   "track": {
     "addMore": "Gọi thêm",

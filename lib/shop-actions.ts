@@ -21,6 +21,9 @@ import {
 
 export type OrderType = 'dine_in' | 'takeaway' | 'delivery'
 
+// 需要做「桌号互斥锁定」的订单类型：只有堂食会被一张桌子占住，外送/外带不锁桌号
+const ORDER_TABLE_LOCKED_ORDER_TYPES = new Set<OrderType>(['dine_in'])
+
 // 下单安全上限（防伪造/异常输入，P0-3）
 // 手机号正则：归一化后纯数字，兼容越南 0 开头 10 位 / 中国 11 位 / 国际号（+86/+84 在 normalizePhone 已换算）
 const PHONE_RE = /^\d{7,15}$/
@@ -138,6 +141,20 @@ export async function createOrder(input: {
     // P1-3 并发安全：事务 + FOR UPDATE 锁 shop 行，串行化同店「取号 + 建单」（create 也在锁内，防取号与建单之间被插队撞号 P2002）
     const order = await prisma.$transaction(async (tx) => {
       await tx.$queryRaw`SELECT id FROM "Shop" WHERE id = ${shop.id} FOR UPDATE`
+      // 堂食桌号互斥（2026-08-31）：同店同桌号已有进行中单（PENDING/IN_PROGRESS/READY）→ 拒绝再建新单。
+      // 现实中 10 桌客人一直坐在那，不该出现「10 桌重复下第二个订单」；任何人扫 10 桌码只能加菜不能出新单。
+      // 放事务锁内串行化，防并发两单同抢一桌；外送/外带 tableNo 为 undefined 不参与。
+      if (ORDER_TABLE_LOCKED_ORDER_TYPES.has(orderType) && tableNo) {
+        const occupied = await tx.order.findFirst({
+          where: {
+            shopId: shop.id,
+            status: { in: ['PENDING', 'IN_PROGRESS', 'READY'] },
+            config: { path: ['tableNo'], equals: tableNo },
+          },
+          select: { id: true },
+        })
+        if (occupied) throw new Error('TABLE_OCCUPIED')
+      }
       const max = await tx.order.aggregate({
         where: { shopId: shop.id },
         _max: { orderNo: true },
@@ -345,6 +362,8 @@ export async function addItemsToMyOrder(input: {
   items: CartItem[]
   phone?: string
   guestKey?: string
+  // 扫桌贴码进入加菜模式时携带：同设备不同客（guestKey 不匹配）也可靠桌号命中本桌当前单加菜（2026-08-31 敲定）
+  tableNo?: string
 }): Promise<AddItemsResult> {
   const shop = await getShopBySlug(input.slug)
   if (shop.platformSuspended) return { ok: false, code: 'ORDER_NOT_ADDABLE' }
@@ -353,8 +372,11 @@ export async function addItemsToMyOrder(input: {
   const gk = input.guestKey?.trim() ?? ''
   const p = input.phone ? normalizePhone(input.phone) : ''
   const no = input.orderNo?.trim() ?? ''
+  const tableNo = input.tableNo?.trim() ?? ''
+  const hasTableCred = Boolean(tableNo)
   // M3 空凭证守卫：防 Prisma 忽略 undefined → 退化成「无凭证匹配任意该 displayNo 订单」
-  if (!no || (!gk && !p)) return { ok: false, code: 'ORDER_NOT_FOUND' }
+  // 桌号凭证仅在堂食（加菜模式）可信；无 guestKey/手机号但带桌号时允许走桌号分支
+  if (!no || (!gk && !p && !hasTableCred)) return { ok: false, code: 'ORDER_NOT_FOUND' }
 
   // 限流：IP + 凭证双 key（防枚举/刷单，复用查单同一套计数，5 次失败/60s）
   const h = await headers()
@@ -371,15 +393,32 @@ export async function addItemsToMyOrder(input: {
 
   try {
     // 定位订单（凭证匹配本人订单）；未命中记录失败（防枚举）
-    const matched = await prisma.order.findFirst({
+    // 匹配次序（2026-08-31 敲定）：① guestKey/手机号命中 → 按本人匹配；② 未命中且带桌号 → 桌号兜底，
+    // 供「扫桌贴码但 guestKey 不同」的同桌设备加菜（10 桌码 → 10 桌当前单，桌号天然隔离不串桌）。
+    let matched = await prisma.order.findFirst({
       where: gk
         ? { shopId: shop.id, displayNo: no, config: { path: ['guestKey'], equals: gk } }
         : { shopId: shop.id, displayNo: no, customerPhone: p },
       select: { id: true },
     })
+    let matchedByTable = false // 是否经桌号兜底命中（桌号是「谁扫谁加」的公开凭证，不算枚举失败）
+    if (!matched && hasTableCred) {
+      matched = await prisma.order.findFirst({
+        where: {
+          shopId: shop.id,
+          displayNo: no,
+          status: { in: ['PENDING', 'IN_PROGRESS', 'READY'] },
+          config: { path: ['tableNo'], equals: tableNo },
+        },
+        select: { id: true },
+      })
+      matchedByTable = Boolean(matched)
+    }
     if (!matched) {
-      recordFailure(keyIp)
-      recordFailure(keyCred)
+      if (!matchedByTable) {
+        recordFailure(keyIp)
+        recordFailure(keyCred)
+      }
       return { ok: false, code: 'ORDER_NOT_FOUND' }
     }
 

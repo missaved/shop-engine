@@ -238,7 +238,10 @@
     "bestseller": "Bestseller",
     "combo": "Combo includes",
     "trackHintNoPhone": "Track your order with order number {orderNo}",
-    "callTooFrequent": "Please wait a moment before calling again"
+    "callTooFrequent": "Please wait a moment before calling again",
+    "tableOccupied": "This table has an active order — continue adding items",
+    "addModeHint": "Adding items to order {orderNo}",
+    "addNow": "Add items"
   },
   "track": {
     "addMore": "Add more",

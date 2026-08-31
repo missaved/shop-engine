@@ -147,8 +147,9 @@ export function AddMoreMenu({
   }
 
   return (
+    // pb-28：给 fixed 吸底「确认加菜」栏预留底部空间，避免遮挡待确认列表/商品
     <section
-      className={`flex flex-col gap-3 rounded-xl border border-line bg-surface p-4 text-fg theme-${theme}`}
+      className={`flex flex-col gap-3 rounded-xl border border-line bg-surface p-4 pb-28 text-fg theme-${theme}`}
     >
       <div className="flex flex-col items-center gap-1.5">
         <h3 className="text-center text-lg font-semibold">{t('addMore')}</h3>
@@ -237,32 +238,34 @@ export function AddMoreMenu({
         </div>
       )}
 
-      {/* 待确认栏：新增合计 + 清空 + 确认加菜 */}
+      {/* 待确认栏：新增合计 + 清空 + 确认加菜（2026-08-31 吸底：fixed bottom，商品多也不用划到底，点菜一样随时可结算） */}
       {pending.length > 0 && (
-        <div className="flex items-center justify-between gap-2 rounded-xl border border-line bg-tile p-3">
-          <div className="min-w-0">
-            <div className="text-xs text-sub">{t('pendingItems', { n: pendingCount })}</div>
-            <div className="text-sm font-semibold">
-              {t('addSubtotal')}: {formatPrice(pendingSubtotal, currency)}
+        <div className="fixed inset-x-0 bottom-0 z-40 p-3">
+          <div className="mx-auto flex max-w-md items-center justify-between gap-2 rounded-xl border border-line bg-surface p-3 shadow-lg shadow-black/10">
+            <div className="min-w-0">
+              <div className="text-xs text-sub">{t('pendingItems', { n: pendingCount })}</div>
+              <div className="text-sm font-semibold">
+                {t('addSubtotal')}: {formatPrice(pendingSubtotal, currency)}
+              </div>
             </div>
-          </div>
-          <div className="flex shrink-0 items-center gap-2">
-            <button
-              type="button"
-              onClick={clearPending}
-              disabled={submitting}
-              className="rounded-md border border-line px-4 py-2.5 text-lg text-sub disabled:opacity-50"
-            >
-              {t('clear')}
-            </button>
-            <button
-              type="button"
-              onClick={confirmAdd}
-              disabled={submitting}
-              className="rounded-[var(--theme-radius-btn)] bg-gradient-to-r from-primary to-primary-hover px-5 py-2.5 text-lg font-semibold text-primary-fg disabled:opacity-50"
-            >
-              {submitting ? '…' : t('confirmAdd')}
-            </button>
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                type="button"
+                onClick={clearPending}
+                disabled={submitting}
+                className="rounded-md border border-line px-4 py-2.5 text-lg text-sub disabled:opacity-50"
+              >
+                {t('clear')}
+              </button>
+              <button
+                type="button"
+                onClick={confirmAdd}
+                disabled={submitting}
+                className="rounded-[var(--theme-radius-btn)] bg-gradient-to-r from-primary to-primary-hover px-5 py-2.5 text-lg font-semibold text-primary-fg disabled:opacity-50"
+              >
+                {submitting ? '…' : t('confirmAdd')}
+              </button>
+            </div>
           </div>
         </div>
       )}

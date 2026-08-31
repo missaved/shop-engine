@@ -15,21 +15,6 @@ import { getRecommendedProducts } from '@/lib/menu'
 import { normalizeTheme } from '@/lib/theme'
 import { formatPrice } from '@/lib/format'
 
-// 订单状态 → 本地化 key（track 段）
-const STATUS_KEY: Record<string, string> = {
-  PENDING: 'statusPending',
-  IN_PROGRESS: 'statusInProgress',
-  READY: 'statusReady',
-  COMPLETED: 'statusCompleted',
-  CANCELLED: 'statusCancelled',
-}
-
-// 堂食店内用餐：READY 不显示「待取」，改「已上桌」；外带/外送维持「待取」
-function statusKey(status: string, orderType: string): string {
-  if (status === 'READY' && orderType === 'dine_in') return 'statusReadyDineIn'
-  return STATUS_KEY[status] ?? 'statusPending'
-}
-
 export default async function TrackOrderPage({
   params,
   searchParams,
@@ -232,57 +217,20 @@ export default async function TrackOrderPage({
           </p>
           <div className="flex items-center justify-between">
             <span className="text-lg font-medium">{order.displayNo}</span>
-            <span className="text-lg text-zinc-600 dark:text-zinc-400">
-              {t(statusKey(order.status, orderType))}
-            </span>
           </div>
 
-          {/* 订单进度条：已下单 → 制作中 → 待取餐 → 完成（取消单停止在第一步并置灰） */}
-          {order.status !== 'CANCELLED' && (
-            <div className="mt-1">
-              <div className="flex items-center">
-                {[
-                  { key: 'PENDING', labelKey: 'statusPending' },
-                  { key: 'IN_PROGRESS', labelKey: 'statusInProgress' },
-                  { key: 'READY', labelKey: statusKey('READY', orderType) },
-                  { key: 'COMPLETED', labelKey: 'statusCompleted' },
-                ].map((step, i, arr) => {
-                  const stepIdx = ['PENDING', 'IN_PROGRESS', 'READY', 'COMPLETED'].indexOf(order.status)
-                  const reached = i <= stepIdx
-                  const isLast = i === arr.length - 1
-                  return (
-                    <div key={step.key} className="flex flex-1 items-center last:flex-none">
-                      <div className="flex items-center justify-center rounded-full text-xs font-semibold" style={{ width: 30, height: 30, background: reached ? '#f59e0b' : '#e4e4e7', color: reached ? '#fff' : '#9ca3af' }}>
-                        {i + 1}
-                      </div>
-                      {!isLast && (
-                        <div className="mx-1 h-0.5 flex-1 rounded" style={{ background: i < stepIdx ? '#f59e0b' : '#e4e4e7' }} />
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-              <div className="mt-1 flex justify-between text-sm text-zinc-400">
-                <span>{t('statusPending')}</span>
-                <span className="flex-1 text-center">{t('statusInProgress')}</span>
-                <span className="flex-1 text-center">{t(statusKey('READY', orderType))}</span>
-                <span>{t('statusCompleted')}</span>
-              </div>
-            </div>
-          )}
-
-          {/* 实时状态：出餐(READY)时语音 + 横幅提示（客户端打开接收提醒）；无号单新设备无凭证 → 仅静态查看不轮询 */}
-          {trackPhone || guestKey || ipMatched ? (
-            <TrackStatus
-              slug={slug}
-              orderNo={order.displayNo}
-              phone={trackPhone}
-              guestKey={guestKey}
-              byIp={ipMatched}
-              initialStatus={order.status}
-              orderType={orderType}
-            />
-          ) : null}
+          {/* 状态区（顶部状态文字 + 进度条 + 出餐横幅）：单源驱动，见 track-status.tsx；
+              pollActive = 有凭证（phone/guestKey/ip）才轮询并显示横幅；无凭证仅静态查看不轮询 */}
+          <TrackStatus
+            slug={slug}
+            orderNo={order.displayNo}
+            phone={trackPhone}
+            guestKey={guestKey}
+            byIp={ipMatched}
+            initialStatus={order.status}
+            orderType={orderType}
+            pollActive={Boolean(trackPhone || guestKey || ipMatched)}
+          />
 
           {/* 订单类型徽章 + 桌号（堂食）/ 地址（外送）：居中显示（2026-08-29 需求7 变大居中） */}
           <div className="flex flex-wrap items-center justify-center gap-2 text-lg">

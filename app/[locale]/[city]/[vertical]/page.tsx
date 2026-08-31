@@ -51,8 +51,15 @@ export default async function VerticalHomePage({
                 href={shopUrl({ vertical, slug: card.slug, city })}
                 className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white px-4 py-3 transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
               >
-                <span className="text-lg font-medium">{card.title}</span>
-                <span className="text-sm text-zinc-500 dark:text-zinc-400">
+                <span className="flex min-w-0 flex-col">
+                  <span className="text-lg font-medium">{card.title}</span>
+                  {card.subtitle && (
+                    <span className="truncate text-xs text-zinc-400 dark:text-zinc-500">
+                      {card.subtitle}
+                    </span>
+                  )}
+                </span>
+                <span className="shrink-0 text-sm text-zinc-500 dark:text-zinc-400">
                   {card.badge === 'open' ? td('open') : td('closed')}
                 </span>
               </Link>

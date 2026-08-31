@@ -33,6 +33,8 @@ export interface AggShopInput {
   currency: string
   open: boolean
   featured: boolean
+  /** 垂直 config（差异化卡读：food 简介 / moto 服务范围等）；JsonValue 强转而入 */
+  config?: Record<string, unknown> | null
 }
 
 // 聚合卡片投影结果：聚合页按此字段渲染（统一卡片模型）。
@@ -71,9 +73,48 @@ function noopModule<V extends Vertical>(vertical: V): VerticalModule<V> {
   return { vertical }
 }
 
+// 聚合卡共用投影：badge=营业态（页面映射 open/closed），差异化卡需保留（否则页面误判为 closed）
+function aggBase(shop: AggShopInput): AggCard {
+  return {
+    title: shop.name,
+    slug: shop.slug,
+    vertical: shop.vertical,
+    open: shop.open,
+    currency: shop.currency,
+    badge: shop.open ? 'open' : 'closed',
+  }
+}
+
+// FOOD 聚合卡：subtitle = 店简介（config.description，截断；空则不显示）
+function foodAggregation(): VerticalAggregation<'FOOD'> {
+  return {
+    vertical: 'FOOD',
+    card(shop) {
+      const cfg = (shop.config ?? {}) as Record<string, unknown>
+      const desc = typeof cfg.description === 'string' ? cfg.description : ''
+      return { ...aggBase(shop), subtitle: desc ? desc.slice(0, 40) : undefined }
+    },
+  }
+}
+
+// MOTO 聚合卡：subtitle = 服务范围（config.presets 的 category 去重汇总，如「维修 · 保养」）
+function motoAggregation(): VerticalAggregation<'MOTO'> {
+  return {
+    vertical: 'MOTO',
+    card(shop) {
+      const cfg = (shop.config ?? {}) as Record<string, unknown>
+      const presets = Array.isArray(cfg.presets)
+        ? (cfg.presets as Array<{ category?: string }>)
+        : []
+      const cats = [...new Set(presets.map((p) => p.category).filter(Boolean))] as string[]
+      return { ...aggBase(shop), subtitle: cats.length ? cats.slice(0, 2).join(' · ') : undefined }
+    },
+  }
+}
+
 const MODULES: Record<Vertical, VerticalModule> = {
-  FOOD: noopModule('FOOD'),
-  MOTO: noopModule('MOTO'),
+  FOOD: { vertical: 'FOOD', aggregation: foodAggregation() },
+  MOTO: { vertical: 'MOTO', aggregation: motoAggregation() },
   SALON: noopModule('SALON'),
   PET: noopModule('PET'),
   LAUNDRY: noopModule('LAUNDRY'),

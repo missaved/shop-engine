@@ -24,9 +24,11 @@ export async function listVerifiedShops(vertical: Vertical, city?: CitySlug): Pr
       currency: true,
       open: true,
       featured: true,
+      config: true, // 差异化卡读（food 简介 / moto 服务范围）
     },
   })
-  return shops
+  // config 是 Prisma JsonValue，ShopPublic.config 声明为 Record| null，需强转（结构兼容）
+  return shops as unknown as ShopPublic[]
 }
 
 // 默认卡片投影（垂直未实现 aggregation.card 时兜底）：title=店名，badge=营业态。

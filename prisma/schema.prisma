@@ -344,7 +344,7 @@ model Customer {
   phone        String?   @unique // 归一化手机号；username 与 phone 至少其一来登录（先验后取其一）
   passwordHash String?          // bcrypt；纯 OAuth(google/fb) 客户可为 null
   name         String?
-  email        String?   @unique // OAuth 客户邮箱（FB 纯移动端可能不返回，允许 null）
+  email        String?          // OAuth 客户邮箱（FB 纯移动端可能不返回，允许 null）；不设 @unique——同一邮箱可跨 provider 各建一个 Customer，幂等锚是 @@unique([provider,providerId])
   image        String?          // OAuth 头像（本期首字母色块兜底，不渲染外部头像）
   provider     String    @default("password") // 登录来源留痕："password"|"google"|"facebook"
   providerId   String?          // google sub / fb id；password/uname 客户为 null

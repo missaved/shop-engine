@@ -830,7 +830,8 @@
     "invalid": "Số điện thoại hoặc mật khẩu không hợp lệ",
     "registered": "Số điện thoại này đã đăng ký",
     "notFound": "Không tìm thấy xe này",
-    "phoneMismatch": "Số điện thoại không khớp, vui lòng liên hệ cửa hàng"
+    "phoneMismatch": "Số điện thoại không khớp, vui lòng liên hệ cửa hàng",
+    "signOut": "Đăng xuất"
   },
   "ticket": {
     "title": "Phiếu xác nhận",
@@ -847,5 +848,11 @@
     "copyFailed": "Sao chép thất bại, hãy thử lại",
     "shareWhatsapp": "Chia sẻ WhatsApp",
     "shareZalo": "Chia sẻ Zalo"
+  },
+  "brand": {
+    "name": "SpotNear",
+    "tagline": "Công cụ mở đơn tối giản cho tiệm nhỏ Đông Nam Á",
+    "domain": "spotnear.me",
+    "imageDomain": "img.spotnear.me"
   }
 }

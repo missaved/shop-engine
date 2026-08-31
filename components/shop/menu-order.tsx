@@ -7,6 +7,7 @@ import { createOrder, callWaiter, addItemsToMyOrder } from '@/lib/shop-actions'
 import { getGuestActiveOrder, getOccupiedTables } from '@/lib/actions'
 import { formatPrice } from '@/lib/format'
 import { LocaleSwitcher } from '@/components/locale-switcher'
+import { CustomerAuthBadge } from '@/components/shop/customer-auth-badge'
 import type { ShopTheme } from '@/lib/theme'
 import { shopSubUrl } from '@/lib/urls'
 import type { Vertical } from '@/lib/vertical'
@@ -85,10 +86,14 @@ export function MenuOrder({
   recommended = [],
   continueOrderNo,
   city = DEFAULT_CITY,
+  isLoggedIn = false,
+  customerName = null,
 }: {
   vertical: Vertical
   slug: string
   city: CitySlug
+  isLoggedIn?: boolean
+  customerName?: string | null
   shopName: string
   shopDesc: string
   open: boolean
@@ -488,6 +493,13 @@ export function MenuOrder({
               <span className="shrink-0 text-sm text-red-600 dark:text-red-400">{t(blocked)}</span>
             ) : null}
             <LocaleSwitcher />
+            <CustomerAuthBadge
+              vertical={vertical}
+              slug={slug}
+              city={city}
+              isLoggedIn={!!isLoggedIn}
+              customerName={customerName ?? null}
+            />
           </div>
 
           <h2 className="text-center text-2xl font-bold">{t('welcome')}</h2>
@@ -577,6 +589,13 @@ export function MenuOrder({
         <h1 className="text-xl font-semibold">{shopName}</h1>
         <div className="flex items-center gap-3">
           <LocaleSwitcher />
+          <CustomerAuthBadge
+            vertical={vertical}
+            slug={slug}
+            city={city}
+            isLoggedIn={!!isLoggedIn}
+            customerName={customerName ?? null}
+          />
           {blocked && (
             <span className="text-sm text-red-600 dark:text-red-400">{t(blocked)}</span>
           )}

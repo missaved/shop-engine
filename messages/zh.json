@@ -830,7 +830,8 @@
     "invalid": "手机号或密码格式不正确",
     "registered": "该手机号已注册",
     "notFound": "未找到该车辆",
-    "phoneMismatch": "手机号不匹配，请联系门店"
+    "phoneMismatch": "手机号不匹配，请联系门店",
+    "signOut": "退出登录"
   },
   "ticket": {
     "title": "维修凭证",
@@ -847,5 +848,11 @@
     "copyFailed": "复制失败，请重试",
     "shareWhatsapp": "WhatsApp 分享",
     "shareZalo": "Zalo 分享"
+  },
+  "brand": {
+    "name": "SpotNear",
+    "tagline": "东南亚小商户的极简开单工具",
+    "domain": "spotnear.me",
+    "imageDomain": "img.spotnear.me"
   }
 }

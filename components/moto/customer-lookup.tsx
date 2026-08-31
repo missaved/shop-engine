@@ -132,26 +132,29 @@ export function CustomerLookup({
         </div>
       ) : (
         <>
-          {/* OAuth 主通道（用户拍板）：configured → 可点原生 <a> 走 GET /api/auth/signin/{provider} 302 流程，
-              勿用 next-auth/react signIn（模块级 __NEXTAUTH 单例污染坑）；未配置 → disabled 占位（用户拍板显示占位）。
-              callbackUrl 显式带当前 locale + 回 /my（与手机号登录一致）。 */}
+          {/* OAuth 主通道（定案：主实例 /api/auth，与老板同 basePath）：configured → signIn()（POST+CSRF）。
+              next-auth v5 禁 GET 启动 OAuth（GET 走 renderPage，带 providerId 必抛 Unsupported action），
+              GET 锚点已作废；未配置 → disabled 占位（用户拍板显示占位）。callbackUrl 传未编码本地路径（signIn 自编码）。 */}
           <div className="flex flex-col gap-2">
             {oauth.map((p) => {
-              const cb = encodeURIComponent(
-                localizedUrl(shopSubUrl({ vertical, slug, city }, 'my'), locale as Locale),
+              // signIn 会对 callbackUrl 自行编码/解析，这里传未编码的本地路径（双重 encode 会导致回跳 URL 错）
+              const cb = localizedUrl(
+                shopSubUrl({ vertical, slug, city }, 'my'),
+                locale as Locale,
               )
               const label =
                 p.id === 'google' ? t('continueGoogle') : t('continueFacebook')
               const btn =
                 'flex w-full items-center justify-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors'
               return p.configured ? (
-                <a
+                <button
                   key={p.id}
-                  href={`/api/auth/signin/${p.id}?callbackUrl=${cb}`}
+                  type="button"
+                  onClick={() => signIn(p.id, { callbackUrl: cb })}
                   className={`${btn} border-zinc-300 text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800`}
                 >
                   {label}
-                </a>
+                </button>
               ) : (
                 <button
                   key={p.id}

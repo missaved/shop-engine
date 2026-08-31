@@ -830,7 +830,8 @@
     "invalid": "手機號碼或密碼格式不正確",
     "registered": "此手機號碼已註冊",
     "notFound": "找不到該車輛",
-    "phoneMismatch": "手機號碼不匹配，請聯絡店家"
+    "phoneMismatch": "手機號碼不匹配，請聯絡店家",
+    "signOut": "登出"
   },
   "ticket": {
     "title": "維修憑證",
@@ -847,5 +848,11 @@
     "copyFailed": "複製失敗，請重試",
     "shareWhatsapp": "WhatsApp 分享",
     "shareZalo": "Zalo 分享"
+  },
+  "brand": {
+    "name": "SpotNear",
+    "tagline": "東南亞小商戶的極簡開單工具",
+    "domain": "spotnear.me",
+    "imageDomain": "img.spotnear.me"
   }
 }

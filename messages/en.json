@@ -830,7 +830,8 @@
     "invalid": "Invalid phone number or password",
     "registered": "This phone number is already registered",
     "notFound": "Vehicle not found",
-    "phoneMismatch": "Phone number mismatch, please contact the shop"
+    "phoneMismatch": "Phone number mismatch, please contact the shop",
+    "signOut": "Sign out"
   },
   "ticket": {
     "title": "Service receipt",
@@ -847,5 +848,11 @@
     "copyFailed": "Copy failed, please retry",
     "shareWhatsapp": "Share on WhatsApp",
     "shareZalo": "Share on Zalo"
+  },
+  "brand": {
+    "name": "SpotNear",
+    "tagline": "Lightweight POS for SEA street shops",
+    "domain": "spotnear.me",
+    "imageDomain": "img.spotnear.me"
   }
 }

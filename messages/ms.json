@@ -830,7 +830,8 @@
     "invalid": "Nombor telefon atau kata laluan tidak sah",
     "registered": "Nombor telefon ini sudah didaftar",
     "notFound": "Kenderaan tidak dijumpai",
-    "phoneMismatch": "Nombor telefon tidak padan, sila hubungi kedai"
+    "phoneMismatch": "Nombor telefon tidak padan, sila hubungi kedai",
+    "signOut": "Log keluar"
   },
   "ticket": {
     "title": "Resit servis",
@@ -847,5 +848,11 @@
     "copyFailed": "Gagal menyalin, cuba lagi",
     "shareWhatsapp": "Kongsi WhatsApp",
     "shareZalo": "Kongsi Zalo"
+  },
+  "brand": {
+    "name": "SpotNear",
+    "tagline": "Alat jualan ringan untuk kedai kecil Asia Tenggara",
+    "domain": "spotnear.me",
+    "imageDomain": "img.spotnear.me"
   }
 }

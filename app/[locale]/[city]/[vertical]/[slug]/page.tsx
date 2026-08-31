@@ -3,6 +3,7 @@
 import { redirect, notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { getShopBySlug, ShopUnavailableError } from '@/lib/tenant'
+import { getCurrentUser } from '@/lib/dal'
 import { parseVerticalSlug } from '@/lib/vertical'
 import { getVerticalModule } from '@/lib/vertical-modules'
 import { parseCitySlug } from '@/lib/city'
@@ -134,6 +135,8 @@ export default async function ShopMenuPage({
   // 营业三态：订阅到期 / 平台停用（老板打烊 open 已有），传给客户菜单渲染
   const expired = await isShopExpired(shop)
   const suspended = shop.platformSuspended
+  // 登录身份（food 菜单页徽章）：只写不强制，游客返回 null 照常匿名下单
+  const user = await getCurrentUser()
   return (
     <MenuOrder
       vertical={shop.vertical}
@@ -155,6 +158,8 @@ export default async function ShopMenuPage({
       initialTableNo={tableStr}
       initialOrderType={typeStr}
       continueOrderNo={effectiveContinueNo}
+      isLoggedIn={Boolean(user?.customerId)}
+      customerName={user?.name ?? null}
     />
   )
 }

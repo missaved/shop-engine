@@ -830,7 +830,8 @@
     "invalid": "เบอร์โทรหรือรหัสผ่านไม่ถูกต้อง",
     "registered": "เบอร์โทรนี้ลงทะเบียนแล้ว",
     "notFound": "ไม่พบรถคันนี้",
-    "phoneMismatch": "เบอร์โทรไม่ตรง กรุณาติดต่อร้าน"
+    "phoneMismatch": "เบอร์โทรไม่ตรง กรุณาติดต่อร้าน",
+    "signOut": "ออกจากระบบ"
   },
   "ticket": {
     "title": "ใบเสร็จการซ่อม",
@@ -847,5 +848,11 @@
     "copyFailed": "คัดลอกไม่สำเร็จ กรุณาลองใหม่",
     "shareWhatsapp": "แชร์ WhatsApp",
     "shareZalo": "แชร์ Zalo"
+  },
+  "brand": {
+    "name": "SpotNear",
+    "tagline": "เครื่องมือเปิดบิลเรียบง่ายสำหรับร้านเล็กในอาเซียน",
+    "domain": "spotnear.me",
+    "imageDomain": "img.spotnear.me"
   }
 }

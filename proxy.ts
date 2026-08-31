@@ -1,5 +1,5 @@
 // Next 16 中 Middleware 更名为 Proxy。
-// 主路径（客户 /s/xxx、boss /dashboard 等）走 next-intl 的 locale 前缀逻辑（/{locale}/...）；
+// 主路径（客户 /{locale}/{vertical}/{slug}/...、boss /dashboard 等）走 next-intl 的 locale 前缀逻辑（/{locale}/...）；
 // admin 段（SaaS 管理后台，管理员电脑用）独立处理：admin 在前、locale 在后（/admin/{locale}/...），
 // 脱离 next-intl 的 locale 前缀重定向，由 app/admin/[locale] 路由自己读 locale（第 20 批定案）。
 import createMiddleware from 'next-intl/middleware'

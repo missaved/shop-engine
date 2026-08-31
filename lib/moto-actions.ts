@@ -11,9 +11,14 @@ import { normalizePhone } from '@/lib/phone'
 import { normalizePlate } from '@/lib/plate'
 import { vietnamTodayStartUtc } from '@/lib/dashboard-orders'
 import { extractVehicleFromPhoto } from './ocr'
+import {
+  MAX_ORDER_AMOUNT,
+  lockShopForUpdate,
+  nextOrderNumbers,
+  findIdempotentOrder,
+} from '@/lib/order-shared'
 
 // —— 常量与类型 ——
-const MAX_ORDER_AMOUNT = 50_000_000 // 单订单金额上限（VND，同 food）
 // moto 细化进度流（唯一权威，见计划 10.6）；取消单走公共 Order.status=CANCELLED，motoProgress 置空
 const PROGRESS_SEQ = [
   'queued',
@@ -185,33 +190,14 @@ export async function createMotoOrder(input: {
   try {
     // 幂等去重（防双击/重放，同 food）
     if (idempotencyKey) {
-      const existing = await prisma.order.findUnique({
-        where: { shopId_idempotencyKey: { shopId: user.shopId, idempotencyKey } },
-      })
+      const existing = await findIdempotentOrder(user.shopId, idempotencyKey)
       if (existing) return { orderNo: existing.orderNo, displayNo: existing.displayNo }
     }
 
     const order = await prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM "Shop" WHERE id = ${user.shopId} FOR UPDATE`
-      const max = await tx.order.aggregate({
-        where: { shopId: user.shopId },
-        _max: { orderNo: true },
-      })
-      const orderNo = (max._max.orderNo ?? 0) + 1
-      const now = new Date()
-      const dayPrefix =
-        String(now.getFullYear()).slice(-2) +
-        String(now.getMonth() + 1).padStart(2, '0') +
-        String(now.getDate()).padStart(2, '0')
-      const lastOrder = await tx.order.findFirst({
-        where: { shopId: user.shopId, displayNo: { startsWith: `MT-${dayPrefix}-` } },
-        orderBy: { displayNo: 'desc' },
-        select: { displayNo: true },
-      })
-      const lastSeq = lastOrder?.displayNo
-        ? Number(lastOrder.displayNo.split('-').pop() ?? '0')
-        : 0
-      const displayNo = `MT-${dayPrefix}-${String(lastSeq + 1).padStart(3, '0')}`
+      await lockShopForUpdate(tx, user.shopId)
+      // 取号 + 对外单号（orderNo = max+1；displayNo = MT-YYMMDD-NNN，序号从当日最后一张 displayNo 解析防撞号 P2002）
+      const { orderNo, displayNo } = await nextOrderNumbers(tx, user.shopId, 'MT')
 
       // 建档（开单即建档）：有 vehicleId 则用向导最新值更新档案；无则按 plate 查，查不到创建
       let vehicleId = input.vehicleId ?? null
@@ -291,9 +277,7 @@ export async function createMotoOrder(input: {
       e instanceof Prisma.PrismaClientKnownRequestError &&
       e.code === 'P2002'
     ) {
-      const existing = await prisma.order.findUnique({
-        where: { shopId_idempotencyKey: { shopId: user.shopId, idempotencyKey } },
-      })
+      const existing = await findIdempotentOrder(user.shopId, idempotencyKey)
       if (existing) return { orderNo: existing.orderNo, displayNo: existing.displayNo, vehicleId: null }
     }
     console.error('moto 开单失败（plate=%s）:', plate, e)

@@ -10,7 +10,7 @@ import { requireAdmin } from '@/lib/dal'
 import { compare, hash } from 'bcryptjs'
 import { addMonths } from '@/lib/billing'
 import { validateAdminPassword, validateOwnerPassword } from '@/lib/password-policy'
-import { type Vertical, VERTICALS } from './vertical'
+import { type Vertical, VERTICALS, RESERVED_SHOP_SLUGS } from './vertical'
 import {
   encryptSecret,
   decryptSecret,
@@ -20,24 +20,6 @@ import {
 } from '@/lib/totp'
 import { getSetting } from '@/lib/platform-settings'
 import { writeAudit, AUDIT_ACTION, AUDIT_TARGET } from '@/lib/audit'
-
-// slug 保留字黑名单：与路由 / 静态资源名冲突的词（/s/[slug] 客户菜单、/admin、/login 等）
-const RESERVED_SLUGS = new Set([
-  'admin',
-  'login',
-  'dashboard',
-  'api',
-  's',
-  'track',
-  'zh',
-  'zh-hant',
-  'en',
-  'vi',
-  'ms',
-  'th',
-  'manifest',
-  'sw',
-])
 
 // 垂直类目（SaaS 附加的 App = 这些垂直；FOOD 先行，其余为模板扩展位）
 // 注意：'use server' 文件只能导出 async 函数，对象/常量只能内部用（type 导出不受限）
@@ -50,7 +32,7 @@ function assertValidSlug(slug: string): void {
     throw new Error('slug 只能是小写字母、数字、连字符，且不以连字符开头或结尾')
   }
   if (slug.length < 3 || slug.length > 30) throw new Error('slug 长度须为 3–30 位')
-  if (RESERVED_SLUGS.has(slug)) throw new Error('该 slug 为保留字，请换一个')
+  if (RESERVED_SHOP_SLUGS.has(slug)) throw new Error('该 slug 为保留字，请换一个')
 }
 
 // 建店 + 老板账号（一个事务）：校验 slug/phone 唯一，试用期天数 >0 时设 subscribedUntil

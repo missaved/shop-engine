@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
 import { createShop } from '@/lib/admin-actions'
-import { type Vertical } from '@/lib/vertical'
+import { type Vertical, RESERVED_SHOP_SLUGS } from '@/lib/vertical'
 import { routing } from '@/i18n/routing'
 import { useToast, ToastView } from '../dashboard/use-toast'
 
@@ -21,24 +21,6 @@ const VERTICAL_OPTIONS: { value: Vertical; labelKey: string }[] = [
   { value: 'PET', labelKey: 'verticalPet' },
   { value: 'LAUNDRY', labelKey: 'verticalLaundry' },
 ]
-
-// slug 保留字（前端即时校验，与服务端 admin-actions 保持一致）
-const RESERVED_SLUGS = new Set([
-  'admin',
-  'login',
-  'dashboard',
-  'api',
-  's',
-  'track',
-  'zh',
-  'zh-hant',
-  'en',
-  'vi',
-  'ms',
-  'th',
-  'manifest',
-  'sw',
-])
 
 const inputCls =
   'rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800'
@@ -72,7 +54,7 @@ export function AddShopForm({ defaultTrialDays }: { defaultTrialDays?: number })
     /^[a-z0-9]+(-[a-z0-9]+)*$/.test(slug) &&
     slug.length >= 3 &&
     slug.length <= 30 &&
-    !RESERVED_SLUGS.has(slug)
+    !RESERVED_SHOP_SLUGS.has(slug)
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault()

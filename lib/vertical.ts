@@ -37,3 +37,24 @@ export function parseVerticalSlug(s: string): Vertical | null {
 export function isVerticalSlug(s: string): s is VerticalSlug {
   return parseVerticalSlug(s) !== null
 }
+
+// 店 slug 保留字：单点定义（原 admin-actions.ts / add-shop-form.tsx 各一份，受旧 /s 架构污染：含已删除的 s、缺垂直短码）。
+// 与 URL 段位同名/同义的词，防店 slug 造成语义混淆（店 slug 落 [vertical]/[slug] depth-2，无硬性路由冲突，此为卫生保留）。
+// 垂直短码从 VERTICAL_SLUG 派生；locale/静态段/子路径为固定清单（不 import routing，保持叶子模块纯）。
+export const RESERVED_SHOP_SLUGS: ReadonlySet<string> = new Set([
+  'admin',
+  'login',
+  'dashboard',
+  'api',
+  'manifest',
+  'sw',
+  'zh',
+  'zh-hant',
+  'en',
+  'vi',
+  'ms',
+  'th',
+  ...Object.values(VERTICAL_SLUG),
+  'lookup',
+  'track',
+])

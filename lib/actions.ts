@@ -26,6 +26,7 @@ import {
   vietnamTodayStartUtc,
   type OrderPlain,
 } from '@/lib/dashboard-orders'
+import { lockOrderForUpdate, dismissOrderReminders } from '@/lib/order-shared'
 // 待办提醒序列化类型（与 page.tsx / reminder-list 共享，避免漂移）
 import type { ReminderPlain } from '@/components/dashboard/reminder-list'
 
@@ -45,14 +46,7 @@ async function finalizeOrder(
       payload: { displayNo: order.displayNo, customerPhone: order.customerPhone },
     },
   })
-  await prisma.reminder.updateMany({
-    where: {
-      orderId: order.id,
-      templateKey: { in: ['FOOD_NEW_ORDER', 'FOOD_READY', 'FOOD_ADD'] },
-      status: 'PENDING',
-    },
-    data: { status: 'DISMISSED' },
-  })
+  await dismissOrderReminders(order.id, ['FOOD_NEW_ORDER', 'FOOD_READY', 'FOOD_ADD'])
 }
 
 // 推进订单状态（2026-08-31 用户需求：逐步推进，待处理→处理中→已上桌；README 后主按钮变「收款」，
@@ -143,14 +137,7 @@ export async function cancelOrder(orderId: string): Promise<void> {
       data: { status: 'CANCELLED' },
     })
     // 取消订单：清理关联的待办提醒（新单/出餐），避免已取消订单仍冒泡
-    await prisma.reminder.updateMany({
-      where: {
-        orderId,
-        templateKey: { in: ['FOOD_NEW_ORDER', 'FOOD_READY', 'FOOD_ADD'] },
-        status: 'PENDING',
-      },
-      data: { status: 'DISMISSED' },
-    })
+    await dismissOrderReminders(orderId, ['FOOD_NEW_ORDER', 'FOOD_READY', 'FOOD_ADD'])
     revalidatePath('/[locale]/dashboard', 'page')
   } catch (e) {
     console.error('取消订单失败（orderId=%s）:', orderId, e)
@@ -712,7 +699,7 @@ export async function addItemsToOrder(input: {
 
     const order = await prisma.$transaction(async (tx) => {
       // 锁订单行（与客户 addItemsToMyOrder / removeItemFromOrder 同一把锁，串行化同单读写）
-      await tx.$queryRaw`SELECT id FROM "Order" WHERE id = ${input.orderId} FOR UPDATE`
+      await lockOrderForUpdate(tx, input.orderId)
       const cur = await tx.order.findUnique({ where: { id: input.orderId } })
       if (!cur) throw new Error('订单不存在')
       if (cur.shopId !== user.shopId) throw new Error('无权操作该订单')
@@ -736,10 +723,7 @@ export async function addItemsToOrder(input: {
     })
 
     // 老板已处理客户加菜：dismiss 该单 PENDING FOOD_ADD（防陈旧待办滞留到终态）
-    await prisma.reminder.updateMany({
-      where: { orderId: order.id, templateKey: 'FOOD_ADD', status: 'PENDING' },
-      data: { status: 'DISMISSED' },
-    })
+    await dismissOrderReminders(order.id, ['FOOD_ADD'])
     revalidatePath('/[locale]/dashboard', 'page')
   } catch (e) {
     console.error('订单加菜失败（orderId=%s）:', input.orderId, e)
@@ -756,7 +740,7 @@ export async function removeItemFromOrder(input: {
   const user = await requireOwner()
   try {
     await prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM "Order" WHERE id = ${input.orderId} FOR UPDATE`
+      await lockOrderForUpdate(tx, input.orderId)
       const cur = await tx.order.findUnique({ where: { id: input.orderId } })
       if (!cur) throw new Error('订单不存在')
       if (cur.shopId !== user.shopId) throw new Error('无权操作该订单')

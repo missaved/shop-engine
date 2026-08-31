@@ -320,7 +320,7 @@ export default async function TrackOrderPage({
             </span>
           </div>
 
-          {/* 未结束订单：显示「继续点菜」返回按钮——真正返回点菜页（/s/{slug}）继续点菜，提交时合并进现有订单；
+          {/* 未结束订单：显示「继续点菜」返回按钮——真正返回点菜页（/{locale}/{vertical}/{slug}）继续点菜，提交时合并进现有订单；
               已结束订单：P2-1 PDPD 一键删除我的数据；无号单新设备无凭证 → 不显示（仅静态查看）；
               ipMatched（IP+30min 兜底命中，可能是他人匿名单）→ 仅静态查看，不显示继续点菜/删除我的数据 */}
           {!ipMatched && (trackPhone || guestKey) ? (

@@ -19,6 +19,13 @@ import {
   type CartItem,
   type StoredOrderItem,
 } from '@/lib/cart-pricing'
+import {
+  MAX_ORDER_AMOUNT,
+  lockShopForUpdate,
+  nextOrderNumbers,
+  findIdempotentOrder,
+  lockOrderForUpdate,
+} from '@/lib/order-shared'
 
 export type OrderType = 'dine_in' | 'takeaway' | 'delivery'
 
@@ -28,7 +35,6 @@ const ORDER_TABLE_LOCKED_ORDER_TYPES = new Set<OrderType>(['dine_in'])
 // 下单安全上限（防伪造/异常输入，P0-3）
 // 手机号正则：归一化后纯数字，兼容越南 0 开头 10 位 / 中国 11 位 / 国际号（+86/+84 在 normalizePhone 已换算）
 const PHONE_RE = /^\d{7,15}$/
-const MAX_ORDER_AMOUNT = 50_000_000 // 单订单金额上限（VND，防伪造巨款单）
 
 // 营业时间是否在营业中（openHours 字符串 "07:00-22:00"，支持跨午夜）
 function isOpenNow(openHours?: string): boolean {
@@ -109,9 +115,7 @@ export async function createOrder(input: {
   try {
     // P0-7 幂等去重：同一键的重复提交直接返回已建订单（防双击/请求重放）
     if (idempotencyKey) {
-      const existing = await prisma.order.findUnique({
-        where: { shopId_idempotencyKey: { shopId: shop.id, idempotencyKey } },
-      })
+      const existing = await findIdempotentOrder(shop.id, idempotencyKey)
       if (existing) return { orderNo: existing.orderNo, displayNo: existing.displayNo }
     }
 
@@ -137,16 +141,12 @@ export async function createOrder(input: {
       throw new Error(`未达起送价 ${formatPrice(minOrderAmount, shop.currency)}`)
     }
 
-    // 对外订单号 CP-YYMMDD-NNN（NNN 当日自增，按 displayNo 前缀统计）
+    // 对外订单号 CP-YYMMDD-NNN（NNN 当日自增，按 displayNo 前缀统计；now 复用于下方建单提醒 dueAt）
     const now = new Date()
-    const dayPrefix =
-      String(now.getFullYear()).slice(-2) +
-      String(now.getMonth() + 1).padStart(2, '0') +
-      String(now.getDate()).padStart(2, '0')
 
     // P1-3 并发安全：事务 + FOR UPDATE 锁 shop 行，串行化同店「取号 + 建单」（create 也在锁内，防取号与建单之间被插队撞号 P2002）
     const order = await prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM "Shop" WHERE id = ${shop.id} FOR UPDATE`
+      await lockShopForUpdate(tx, shop.id)
       // 堂食桌号互斥（2026-08-31）：同店同桌号已有进行中单（PENDING/IN_PROGRESS/READY）→ 拒绝再建新单。
       // 现实中 10 桌客人一直坐在那，不该出现「10 桌重复下第二个订单」；任何人扫 10 桌码只能加菜不能出新单。
       // 放事务锁内串行化，防并发两单同抢一桌；外送/外带 tableNo 为 undefined 不参与。
@@ -161,21 +161,8 @@ export async function createOrder(input: {
         })
         if (occupied) throw new Error('TABLE_OCCUPIED')
       }
-      const max = await tx.order.aggregate({
-        where: { shopId: shop.id },
-        _max: { orderNo: true },
-      })
-      const orderNo = (max._max.orderNo ?? 0) + 1
-      // 当日序号取「当日最大 displayNo 序号 + 1」，而非 count+1（订单有空洞/删除时会撞号 P2002）
-      const lastOrder = await tx.order.findFirst({
-        where: { shopId: shop.id, displayNo: { startsWith: `CP-${dayPrefix}-` } },
-        orderBy: { displayNo: 'desc' },
-        select: { displayNo: true },
-      })
-      const lastSeq = lastOrder?.displayNo
-        ? Number(lastOrder.displayNo.split('-').pop() ?? '0')
-        : 0
-      const displayNo = `CP-${dayPrefix}-${String(lastSeq + 1).padStart(3, '0')}`
+      // 取号 + 对外单号（orderNo = max+1；displayNo = CP-YYMMDD-NNN，序号从当日最后一张 displayNo 解析防撞号 P2002）
+      const { orderNo, displayNo } = await nextOrderNumbers(tx, shop.id, 'CP', now)
       // 游客标识：guestKey（cookie）+ guestIp（下单网络），供查单锁定本人订单（免填订单号）
       const h = await headers()
       const fwd = h.get('x-forwarded-for')
@@ -243,9 +230,7 @@ export async function createOrder(input: {
       e instanceof Prisma.PrismaClientKnownRequestError &&
       e.code === 'P2002'
     ) {
-      const existing = await prisma.order.findUnique({
-        where: { shopId_idempotencyKey: { shopId: shop.id, idempotencyKey } },
-      })
+      const existing = await findIdempotentOrder(shop.id, idempotencyKey)
       if (existing) return { orderNo: existing.orderNo, displayNo: existing.displayNo }
     }
     console.error('点单失败（slug=%s）:', input.slug, e)
@@ -454,7 +439,7 @@ export async function addItemsToMyOrder(input: {
 
     // 事务锁单重读（M2）：锁 Order 行 + 锁内重读状态/items/total，防与老板侧/并发加菜丢更新
     const order = await prisma.$transaction(async (tx) => {
-      await tx.$queryRaw`SELECT id FROM "Order" WHERE id = ${matched.id} FOR UPDATE`
+      await lockOrderForUpdate(tx, matched.id)
       const cur = await tx.order.findUnique({
         where: { id: matched.id },
         select: { id: true, displayNo: true, status: true, items: true, total: true },

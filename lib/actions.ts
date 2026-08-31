@@ -100,9 +100,8 @@ export async function setOrderPaidAmount(
   }
 }
 
-// 推进订单状态（2026-08-29 用户需求修正：一次性推进到「已上桌/待取」，省去 处理中 中间态；
-// 推进只到 READY，不自动收款、不完结——收钱是老板确认实收后的独立动作（setOrderPaidAmount）。
-// 不建 FOOD_READY 提醒：推进是老板主动操作（餐已上桌/备好），无需再提醒自己）
+// 推进订单状态（2026-08-31 用户需求：逐步推进，待处理→处理中→已上桌；README 后主按钮变「收款」，
+// 收款结单走 settleOrder，不再推进。不建 FOOD_READY 提醒：推进是老板主动操作，无需再提醒自己）
 export async function advanceOrderStatus(orderId: string): Promise<void> {
   const user = await requireOwner()
   try {
@@ -111,18 +110,62 @@ export async function advanceOrderStatus(orderId: string): Promise<void> {
       await prisma.order.findUnique({ where: { id: orderId } }),
     )
 
-    // 仅待处理/处理中可推进到已上桌/待取（READY）；READY 之后只剩收钱，不再推进
-    if (!['PENDING', 'IN_PROGRESS'].includes(order.status)) {
-      throw new Error('当前状态无法推进')
+    // 逐步推进：待处理→处理中；处理中→已上桌/待取；READY 之后只收款（settleOrder），不再推进
+    const next: Record<string, string> = {
+      PENDING: 'IN_PROGRESS',
+      IN_PROGRESS: 'READY',
     }
+    if (!next[order.status]) throw new Error('当前状态无法推进')
 
     await prisma.order.update({
       where: { id: orderId },
-      data: { status: 'READY' },
+      data: { status: next[order.status] as 'IN_PROGRESS' | 'READY' },
     })
     revalidatePath('/[locale]/dashboard', 'page')
   } catch (e) {
     console.error('推进状态失败（orderId=%s）:', orderId, e)
+    throw e
+  }
+}
+
+// 2026-08-31 收款结单（推进主线最后一步）：设置实收 + 支付方式 + 直接完结订单。
+// 与 setOrderPaidAmount 不同：不要求实收≥总额——抹零/协商少收也照样结单（status=COMPLETED），
+// 这是 boss「收全款 / 抹零 / 改实收结束订单」的统一入口。
+export async function settleOrder(
+  orderId: string,
+  paidAmount: number,
+  paymentMethod: 'cash' | 'qr' | 'other',
+): Promise<void> {
+  const user = await requireOwner()
+  try {
+    const order = assertShopOwned(
+      user.shopId,
+      await prisma.order.findUnique({ where: { id: orderId } }),
+    )
+    // 终态订单禁止再结单（防重复完结/翻回已取消单）
+    if (order.status === 'COMPLETED' || order.status === 'CANCELLED') {
+      throw new Error('已结单/已取消订单不可收款')
+    }
+
+    const amount = Number(paidAmount)
+    if (!Number.isFinite(amount) || amount < 0) throw new Error('实收金额无效')
+
+    const oldCfg = (order.config as Record<string, unknown> | null) ?? {}
+    await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        paidAmount: amount,
+        status: 'COMPLETED' as const,
+        config: {
+          ...oldCfg,
+          paymentMethod,
+        } as Prisma.InputJsonValue,
+      },
+    })
+    await finalizeOrder(order, user.shopId)
+    revalidatePath('/[locale]/dashboard', 'page')
+  } catch (e) {
+    console.error('收款结单失败（orderId=%s）:', orderId, e)
     throw e
   }
 }

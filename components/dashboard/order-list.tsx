@@ -12,7 +12,7 @@ import {
   getLatestCallTs,
   getDashboardOrders,
   removeItemFromOrder,
-  setOrderPaidAmount,
+  settleOrder,
 } from '@/lib/actions'
 import { useToast, ToastView } from './use-toast'
 import { formatPrice } from '@/lib/format'
@@ -149,6 +149,8 @@ export function OrderList({
   const [paidInput, setPaidInput] = useState<Record<string, string>>({})
   // 支付方式（现金/扫码/其他），按订单存，默认现金
   const [paymentMethod, setPaymentMethod] = useState<Record<string, string>>({})
+  // 收款面板展开状态（点「收款」展开，一次只展开一个订单；样式同加菜面板）
+  const [settleOpenId, setSettleOpenId] = useState<string | null>(null)
   const [pending, startTransition] = useTransition()
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
   const [query, setQuery] = useState('')
@@ -411,8 +413,6 @@ export function OrderList({
       {todayList.map((order) => {
         const state = paymentState(order)
         const debt = Math.max(0, Number(order.total) - Number(order.paidAmount))
-        // 推进到已上桌/待取（READY）后可推进；READY 之后只收钱，不再显示推进按钮
-        const canAdvance = ['PENDING', 'IN_PROGRESS'].includes(order.status)
         const canCancel = !['COMPLETED', 'CANCELLED'].includes(order.status)
         const typeStyle = order.orderType
           ? ORDER_TYPE_STYLE[order.orderType]
@@ -555,9 +555,20 @@ export function OrderList({
               </span>
             </div>
 
-            {/* 收款：支付方式 3 选 + 实收金额 + 快捷收全款（终态订单已结/已取消，不可改实收，不渲染） */}
-            {!['COMPLETED', 'CANCELLED'].includes(order.status) && (
-              <div className="mb-3">
+            {/* 收款面板（已上桌点「收款」展开；选方式 + 实收 + 抹零/收全款 结单，样式同加菜面板） */}
+            {settleOpenId === order.id && !['COMPLETED', 'CANCELLED'].includes(order.status) && (
+              <div className="mb-3 rounded-lg border border-dashed border-amber-300 bg-amber-50/50 p-3 dark:border-amber-700 dark:bg-amber-950/20">
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-sm font-semibold text-zinc-600 dark:text-zinc-300">
+                    {t('settleTitle')}
+                  </span>
+                  <button
+                    onClick={() => setSettleOpenId(null)}
+                    className="text-xs text-zinc-400 hover:text-zinc-600"
+                  >
+                    {t('cancel')}
+                  </button>
+                </div>
                 <div className="mb-2 flex gap-2">
                   {(['cash', 'qr', 'other'] as const).map((m) => (
                     <button
@@ -566,7 +577,7 @@ export function OrderList({
                       onClick={() =>
                         setPaymentMethod((prev) => ({ ...prev, [order.id]: m }))
                       }
-                      className={`flex-1 rounded-md border px-2.5 text-xs transition-colors min-h-[40px] ${
+                      className={`flex-1 rounded-md border px-2.5 py-2 text-xs transition-colors ${
                         (paymentMethod[order.id] ?? 'cash') === m
                           ? 'border-amber-500 bg-amber-500 text-white'
                           : 'border-zinc-300 text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800'
@@ -579,7 +590,7 @@ export function OrderList({
                 <div className="flex items-center gap-2">
                   <input
                     type="number"
-                    value={paidInput[order.id] ?? order.paidAmount}
+                    value={paidInput[order.id] ?? String(order.total)}
                     onChange={(e) =>
                       setPaidInput((prev) => ({
                         ...prev,
@@ -587,84 +598,87 @@ export function OrderList({
                       }))
                     }
                     placeholder={t('paidAmount')}
-                    className="w-28 rounded-md border border-zinc-300 px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-800"
+                    className="w-24 rounded-md border border-zinc-300 px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-800"
                   />
                   <button
                     onClick={() =>
-                      run(
-                        () =>
-                          setOrderPaidAmount(
-                            order.id,
-                            Number(paidInput[order.id] ?? order.paidAmount),
-                            (paymentMethod[order.id] as
-                              | 'cash'
-                              | 'qr'
-                              | 'other'
-                              | undefined) ?? 'cash',
-                          ),
-                        t('toastPaid'),
-                      )
+                      setPaidInput((prev) => ({
+                        ...prev,
+                        [order.id]: String(Math.max(0, Math.floor(Number(order.total)))),
+                      }))
                     }
-                    disabled={pending}
-                    className="rounded-md border border-zinc-300 px-3 text-sm transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800 min-h-[44px]"
+                    className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
                   >
-                    {t('collect')}
+                    {t('settleRound')}
+                  </button>
+                  <button
+                    onClick={() =>
+                      setPaidInput((prev) => ({
+                        ...prev,
+                        [order.id]: String(order.total),
+                      }))
+                    }
+                    className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                  >
+                    {t('collectFull')}
                   </button>
                   <button
                     onClick={() =>
                       run(
                         () =>
-                          setOrderPaidAmount(
+                          settleOrder(
                             order.id,
-                            Number(order.total),
-                            (paymentMethod[order.id] as
-                              | 'cash'
-                              | 'qr'
-                              | 'other'
-                              | undefined) ?? 'cash',
+                            Number(paidInput[order.id] ?? order.total),
+                            (paymentMethod[order.id] as 'cash' | 'qr' | 'other') ?? 'cash',
                           ),
                         t('toastPaid'),
                       )
                     }
                     disabled={pending}
-                    className="rounded-md border border-zinc-300 px-3 text-xs transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800 min-h-[44px]"
+                    className="ml-auto rounded-md border border-amber-500 bg-amber-500 px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:brightness-105 disabled:opacity-60"
                   >
-                    {t('collectFull')}
+                    {t('settleConfirm')}
                   </button>
                 </div>
               </div>
             )}
 
-            <div className="flex gap-2">
-              {canAdvance && (
-                <button
-                  onClick={() =>
-                    run(
-                      () => advanceOrderStatus(order.id),
-                      t('toastAdvanced'),
-                    )
+            {/* 主按钮：推进（待处理/处理中）/ 收款（已上桌）；终态不显示，收尾走 settleOrder */}
+            {canCancel && (
+              <button
+                onClick={() => {
+                  if (order.status === 'READY') {
+                    setSettleOpenId(settleOpenId === order.id ? null : order.id)
+                  } else {
+                    run(() => advanceOrderStatus(order.id), t('toastAdvanced'))
                   }
-                  disabled={pending}
-                  className="flex-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 px-4 text-sm font-semibold text-white shadow-md shadow-amber-500/25 transition-transform hover:brightness-105 active:scale-[0.98] disabled:opacity-60 min-h-[44px]"
-                >
-                  {t('advance')}
-                </button>
-              )}
+                }}
+                disabled={pending}
+                className="mb-2 flex w-full items-center justify-center rounded-full bg-gradient-to-r from-amber-500 to-amber-600 px-4 text-sm font-semibold text-white shadow-md shadow-amber-500/25 transition-transform hover:brightness-105 active:scale-[0.98] disabled:opacity-60 min-h-[44px]"
+              >
+                {order.status === 'READY' ? t('collect') : t('advance')}
+              </button>
+            )}
+
+            {/* 取消订单：独立一行红色，与推进/收款主按钮分流 */}
+            {canCancel && (
+              <button
+                onClick={() => {
+                  // P1-4 破坏性操作先确认（原生 confirm，简洁）
+                  if (window.confirm(t('confirmCancel'))) {
+                    run(() => cancelOrder(order.id))
+                  }
+                }}
+                disabled={pending}
+                className="mb-2 w-full rounded-md border border-red-300 px-3 text-sm text-red-700 transition-colors hover:bg-red-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950 min-h-[44px]"
+              >
+                {t('cancelOrder')}
+              </button>
+            )}
+
+            {/* 次要操作：加菜(非终态) / 复制摘要 / 发Zalo */}
+            <div className="flex gap-2">
               {canCancel && (
-                <button
-                  onClick={() => {
-                    // P1-4 破坏性操作先确认（原生 confirm，简洁）
-                    if (window.confirm(t('confirmCancel'))) {
-                      run(() => cancelOrder(order.id))
-                    }
-                  }}
-                  disabled={pending}
-                  className="flex-1 rounded-md border border-red-300 px-3 text-sm text-red-700 transition-colors hover:bg-red-50 dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950 min-h-[44px]"
-                >
-                  {t('cancelOrder')}
-                </button>
-              )}
-              {!['COMPLETED', 'CANCELLED'].includes(order.status) && (
                 <button
                   onClick={() => {
                     setAddOpenId(addOpenId === order.id ? null : order.id)

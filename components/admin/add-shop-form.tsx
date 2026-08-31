@@ -4,7 +4,7 @@ import { useState, useTransition } from 'react'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
 import { createShop } from '@/lib/admin-actions'
-import { type Vertical, RESERVED_SHOP_SLUGS } from '@/lib/vertical'
+import { type Vertical, VERTICALS, RESERVED_SHOP_SLUGS } from '@/lib/vertical'
 import { CITY_OPTIONS, DEFAULT_CITY, type CitySlug } from '@/lib/city'
 import { routing } from '@/i18n/routing'
 import { useToast, ToastView } from '../dashboard/use-toast'
@@ -14,14 +14,11 @@ const CURRENCIES = ['VND', 'USD', 'EUR', 'SGD', 'CNY'] as const
 const PLANS = ['TRIAL', 'BASIC', 'PRO'] as const
 
 // 垂直类目（SaaS 附加的 App 即这些垂直；FOOD 先行，其余为模板扩展位）
-// value 以 Vertical 类型约束（与 lib/vertical.ts 同源）；labelKey 走 admin namespace 多语
-const VERTICAL_OPTIONS: { value: Vertical; labelKey: string }[] = [
-  { value: 'FOOD', labelKey: 'verticalFood' },
-  { value: 'MOTO', labelKey: 'verticalMoto' },
-  { value: 'SALON', labelKey: 'verticalSalon' },
-  { value: 'PET', labelKey: 'verticalPet' },
-  { value: 'LAUNDRY', labelKey: 'verticalLaundry' },
-]
+// 从 VERTICALS 注册表推导（加垂直零改），labelKey 与全仓一致：'vertical' + 首字母大写 + 其余小写
+const VERTICAL_OPTIONS: { value: Vertical; labelKey: string }[] = VERTICALS.map((v) => ({
+  value: v,
+  labelKey: 'vertical' + v[0] + v.slice(1).toLowerCase(),
+}))
 
 const inputCls =
   'rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800'

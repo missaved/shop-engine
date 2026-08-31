@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { getShopBySlug, ShopUnavailableError } from '@/lib/tenant'
 import { ShopUnavailableView } from '@/components/shop/shop-unavailable'
 import { parseVerticalSlug } from '@/lib/vertical'
+import { parseCitySlug } from '@/lib/city'
 import { MotoTicket } from '@/components/moto/moto-ticket'
 
 type PaymentConfig = {
@@ -15,12 +16,14 @@ type PaymentConfig = {
 export default async function MotoTicketPage({
   params,
 }: {
-  params: Promise<{ locale: string; vertical: string; slug: string; ticketId: string }>
+  params: Promise<{ locale: string; city: string; vertical: string; slug: string; ticketId: string }>
 }) {
-  const { slug, vertical: verticalParam, ticketId } = await params
+  const { slug, city: cityParam, vertical: verticalParam, ticketId } = await params
   // 凭证路由为 moto 专属：URL 垂直段必须是 moto，否则 404（收敛 assertMotoShop）
   const vertical = parseVerticalSlug(verticalParam)
   if (vertical !== 'MOTO') notFound()
+  const city = parseCitySlug(cityParam)
+  if (!city) notFound()
   let shop: Awaited<ReturnType<typeof getShopBySlug>>
   try {
     shop = await getShopBySlug(slug, { expectVertical: vertical })

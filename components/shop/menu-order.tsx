@@ -10,6 +10,7 @@ import { LocaleSwitcher } from '@/components/locale-switcher'
 import type { ShopTheme } from '@/lib/theme'
 import { shopSubUrl } from '@/lib/urls'
 import type { Vertical } from '@/lib/vertical'
+import { DEFAULT_CITY, type CitySlug } from '@/lib/city'
 
 // 菜单商品序列化类型（server component 已把 Decimal/可空字段转基础类型）
 export type MenuProduct = {
@@ -83,9 +84,11 @@ export function MenuOrder({
   products,
   recommended = [],
   continueOrderNo,
+  city = DEFAULT_CITY,
 }: {
   vertical: Vertical
   slug: string
+  city: CitySlug
   shopName: string
   shopDesc: string
   open: boolean
@@ -130,7 +133,7 @@ export function MenuOrder({
   // 进行中订单提示条（welcome 页与菜单列表页共用）
   const activeBanner = guestActive ? (
     <Link
-      href={shopSubUrl({ vertical, slug }, 'track', { orderNo: guestActive })}
+      href={shopSubUrl({ vertical, slug, city }, 'track', { orderNo: guestActive })}
       className="mb-2 block w-full rounded-[var(--theme-radius)] bg-primary px-4 py-2.5 text-center text-sm font-medium text-primary-fg shadow-md shadow-primary/20"
     >
       {t('activeOrderHint')} ▸
@@ -406,7 +409,7 @@ export function MenuOrder({
         {/* 实时查单（主操作）：有手机号时带预填，无手机号直接进查单 */}
         <div className="flex w-full flex-col gap-2.5">
           <Link
-            href={shopSubUrl({ vertical, slug }, 'track', {
+            href={shopSubUrl({ vertical, slug, city }, 'track', {
               orderNo: done.displayNo,
               phone: phone.trim() || undefined,
             })}
@@ -428,7 +431,7 @@ export function MenuOrder({
               {recommended.slice(0, 4).map((p) => (
                 <Link
                   key={p.id}
-                  href={shopSubUrl({ vertical, slug }, 'track', {
+                  href={shopSubUrl({ vertical, slug, city }, 'track', {
               orderNo: done.displayNo,
               phone: phone.trim() || undefined,
             })}

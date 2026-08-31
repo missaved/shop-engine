@@ -6,16 +6,19 @@ import { ShopUnavailableView } from '@/components/shop/shop-unavailable'
 import { getCurrentUser } from '@/lib/dal'
 import { getTranslations } from 'next-intl/server'
 import { parseVerticalSlug } from '@/lib/vertical'
+import { parseCitySlug } from '@/lib/city'
 import { CustomerLookup } from '@/components/moto/customer-lookup'
 
 export default async function CustomerLookupPage({
   params,
 }: {
-  params: Promise<{ locale: string; vertical: string; slug: string }>
+  params: Promise<{ locale: string; city: string; vertical: string; slug: string }>
 }) {
-  const { slug, vertical: verticalParam } = await params
+  const { slug, city: cityParam, vertical: verticalParam } = await params
   const vertical = parseVerticalSlug(verticalParam)
   if (!vertical) notFound()
+  const city = parseCitySlug(cityParam)
+  if (!city) notFound()
   let shop: Awaited<ReturnType<typeof getShopBySlug>>
   try {
     shop = await getShopBySlug(slug, { expectVertical: vertical })

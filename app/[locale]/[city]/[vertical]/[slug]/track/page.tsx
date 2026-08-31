@@ -9,6 +9,7 @@ import { ShopUnavailableView } from '@/components/shop/shop-unavailable'
 import { isRateLimited, recordFailure } from '@/lib/rate-limit'
 import { normalizePhone } from '@/lib/phone'
 import { parseVerticalSlug } from '@/lib/vertical'
+import { parseCitySlug } from '@/lib/city'
 import { Link } from '@/i18n/navigation'
 import { CallWaiterButton } from '@/components/shop/call-waiter-button'
 import { DeleteMyData } from '@/components/shop/delete-my-data'
@@ -23,12 +24,14 @@ export default async function TrackOrderPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ locale: string; vertical: string; slug: string }>
+  params: Promise<{ locale: string; city: string; vertical: string; slug: string }>
   searchParams: Promise<{ orderNo?: string; phone?: string }>
 }) {
-  const { slug, locale, vertical: verticalParam } = await params
+  const { slug, locale, city: cityParam, vertical: verticalParam } = await params
   const vertical = parseVerticalSlug(verticalParam)
   if (!vertical) notFoundPage()
+  const city = parseCitySlug(cityParam)
+  if (!city) notFoundPage()
   const { orderNo: orderNoStr, phone } = await searchParams
   const t = await getTranslations('track')
 
@@ -328,7 +331,7 @@ export default async function TrackOrderPage({
               // 继续点菜：跳菜单页带 type 恢复用餐方式、table 恢复桌号、continue 标记加菜目标单
               // （2026-08-29 用户反馈修复：不再锚点滚到下方加菜栏，而是返回真正的点菜页）
               <Link
-                href={shopSubUrl({ vertical: shop.vertical, slug }, '', {
+                href={shopSubUrl({ vertical: shop.vertical, slug, city }, '', {
                   type: orderType,
                   table: orderCfg.tableNo,
                   continue: order.displayNo,
@@ -376,7 +379,7 @@ export default async function TrackOrderPage({
         />
       )}
 
-      <Link href={shopUrl({ vertical: shop.vertical, slug })} className="text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
+      <Link href={shopUrl({ vertical: shop.vertical, slug, city })} className="text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
         {t('backToMenu')}
       </Link>
     </main>

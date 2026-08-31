@@ -7,6 +7,7 @@ import { getLocale } from 'next-intl/server'
 import { redirect as intlRedirect } from '@/i18n/navigation'
 import { redirect } from 'next/navigation'
 import { type Vertical, verticalSlug } from './vertical'
+import { type CitySlug, DEFAULT_CITY } from './city'
 
 // 当前登录用户（未登录返回 null），React cache 保证单次渲染只查一次
 export const getCurrentUser = cache(async () => {
@@ -52,15 +53,18 @@ export const requireAdmin = cache(async () => {
   return user
 })
 
-// 必须为客户（M6a）：session.customerId 缺失 → 跳转该店客户入口 /{vertical}/{slug}/lookup。
-// 客户入口按店独立（不像 owner/admin 是全局 /login），需显式传 slug + vertical
-export const requireCustomer = cache(async (slug: string, vertical: Vertical) => {
-  const session = await auth()
-  const cid = session?.user?.customerId
-  if (!cid) {
-    const locale = await getLocale()
-    intlRedirect({ href: `/${verticalSlug(vertical)}/${slug}/lookup`, locale })
-    throw new Error('unreachable: redirect did not throw')
-  }
-  return session.user
-})
+// 必须为客户（M6a）：session.customerId 缺失 → 跳转该店客户入口 /{city}/{vertical}/{slug}/lookup。
+// 客户入口按店独立（不像 owner/admin 是全局 /login），需显式传 slug + vertical。
+// city 可选、缺省 DEFAULT_CITY（无城市主数据期兜底；阶段3 城市选择器后传实际值）。
+export const requireCustomer = cache(
+  async (slug: string, vertical: Vertical, city: CitySlug = DEFAULT_CITY) => {
+    const session = await auth()
+    const cid = session?.user?.customerId
+    if (!cid) {
+      const locale = await getLocale()
+      intlRedirect({ href: `/${city}/${verticalSlug(vertical)}/${slug}/lookup`, locale })
+      throw new Error('unreachable: redirect did not throw')
+    }
+    return session.user
+  },
+)

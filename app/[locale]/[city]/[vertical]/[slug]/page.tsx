@@ -4,6 +4,7 @@ import { redirect, notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { getShopBySlug, ShopUnavailableError } from '@/lib/tenant'
 import { parseVerticalSlug } from '@/lib/vertical'
+import { parseCitySlug } from '@/lib/city'
 import { shopSubUrl, localizedUrl } from '@/lib/urls'
 import type { Locale } from '@/i18n/routing'
 import { ShopUnavailableView } from '@/components/shop/shop-unavailable'
@@ -18,17 +19,20 @@ export default async function ShopMenuPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ locale: string; vertical: string; slug: string }>
+  params: Promise<{ locale: string; city: string; vertical: string; slug: string }>
   searchParams: Promise<{
     table?: string | string[]
     type?: string | string[]
     continue?: string | string[]
   }>
 }) {
-  const { locale, vertical: verticalParam, slug } = await params
+  const { locale, city: cityParam, vertical: verticalParam, slug } = await params
   // URL 垂直段必须是合法短码，否则 404；getShopBySlug expectVertical 再校验与店实际垂直一致
   const vertical = parseVerticalSlug(verticalParam)
   if (!vertical) notFound()
+  // 城市段（58 同城式）：非法短码 → 404；当前 Shop 无 city 字段，city 主要用于 URL 形态/生成链接兜底
+  const city = parseCitySlug(cityParam)
+  if (!city) notFound()
   // 桌号预填（扫码点餐）：?table= 非字符串（如重复参数成数组）时忽略
   // 继续点菜（track 页「继续点菜」按钮直达菜单）：?type= 恢复用餐方式（堂食/外带/外送），跳过欢迎页重选
   // ?continue= 标记继续点菜目标订单（提交时合并进现有单，不新建单）
@@ -52,7 +56,7 @@ export default async function ShopMenuPage({
   // 非 FOOD 店铺都有自己的落地子页入口（MOTO=store-code 店码落地 /lookup），根路径重定向过去
   if (shop.vertical !== 'FOOD') {
     redirect(
-      localizedUrl(shopSubUrl({ vertical: shop.vertical, slug }, 'lookup'), locale as Locale),
+      localizedUrl(shopSubUrl({ vertical: shop.vertical, slug, city }, 'lookup'), locale as Locale),
     )
   }
 
@@ -126,6 +130,7 @@ export default async function ShopMenuPage({
   return (
     <MenuOrder
       vertical={shop.vertical}
+      city={city}
       slug={slug}
       shopName={shop.name}
       shopDesc={shopDesc}

@@ -5,18 +5,21 @@ import { ShopUnavailableView } from '@/components/shop/shop-unavailable'
 import { requireCustomer } from '@/lib/dal'
 import { getTranslations } from 'next-intl/server'
 import { parseVerticalSlug } from '@/lib/vertical'
+import { parseCitySlug } from '@/lib/city'
 import { CustomerVehicles } from '@/components/moto/customer-vehicles'
 
 export default async function CustomerMyPage({
   params,
 }: {
-  params: Promise<{ locale: string; vertical: string; slug: string }>
+  params: Promise<{ locale: string; city: string; vertical: string; slug: string }>
 }) {
-  const { slug, vertical: verticalParam } = await params
+  const { slug, city: cityParam, vertical: verticalParam } = await params
   const vertical = parseVerticalSlug(verticalParam)
   if (!vertical) notFound()
+  const city = parseCitySlug(cityParam)
+  if (!city) notFound()
   // 客户守卫：未登录 → 重定向该店 lookup
-  await requireCustomer(slug, vertical)
+  await requireCustomer(slug, vertical, city)
   let shop: Awaited<ReturnType<typeof getShopBySlug>>
   try {
     shop = await getShopBySlug(slug, { expectVertical: vertical })

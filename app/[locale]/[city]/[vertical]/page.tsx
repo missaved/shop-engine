@@ -1,11 +1,13 @@
-// 垂直聚合页（分类页）：/{vertical}。列举该垂直已验证店铺（重构点 #4，从占位升级为真实列表）。
+// 垂直聚合页（分类页）：/{city}/{vertical}。列举该垂直已验证店铺（重构点 #4，从占位升级为真实列表）。
 // 「加垂直零改」：核心逻辑跨垂直通用（listVerifiedShops + 模块 aggregation.card），
 // 加垂直只加 vertical.ts 一项 + vertical-modules 一个模块，本页零改。
-// 段数约定：`/food` → 本页；`/food/{slug}` → [vertical]/[slug] 单店页（Next 按段数区分，不冲突）。
+// 段数约定：`/{city}/food` → 本页；`/{city}/food/{slug}` → [vertical]/[slug] 单店页（Next 按段数区分，不冲突）。
 // 非合法垂直短码（如老式 /en/{slug}）→ 404。
+// 城市段（58 同城式 /{locale}/{city}/{vertical}）：city 为 URL 形态；当前 Shop 无 city 字段，聚合暂不按 city 过滤（阶段3 加字段后）。
 import { notFound } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import { parseVerticalSlug } from '@/lib/vertical'
+import { parseCitySlug } from '@/lib/city'
 import { getVerticalModule } from '@/lib/vertical-modules'
 import { listVerifiedShops, defaultAggCard } from '@/lib/aggs'
 import { shopUrl } from '@/lib/urls'
@@ -14,11 +16,13 @@ import { Link } from '@/i18n/navigation'
 export default async function VerticalHomePage({
   params,
 }: {
-  params: Promise<{ locale: string; vertical: string }>
+  params: Promise<{ locale: string; city: string; vertical: string }>
 }) {
-  const { vertical: verticalParam, locale } = await params
+  const { vertical: verticalParam, city: cityParam, locale } = await params
   const vertical = parseVerticalSlug(verticalParam)
   if (!vertical) notFound()
+  const city = parseCitySlug(cityParam)
+  if (!city) notFound()
 
   const t = await getTranslations('admin')
   const td = await getTranslations('dashboard')
@@ -44,7 +48,7 @@ export default async function VerticalHomePage({
             return (
               <Link
                 key={card.slug}
-                href={shopUrl({ vertical, slug: card.slug })}
+                href={shopUrl({ vertical, slug: card.slug, city })}
                 className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white px-4 py-3 transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
               >
                 <span className="text-lg font-medium">{card.title}</span>

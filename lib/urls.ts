@@ -1,22 +1,28 @@
 // 中央 URL 工厂：消灭散落的 `/s/{slug}` 字符串与 window.location.origin 拼接。
 // 本文件**禁止查 DB**（会被 client component 用）；产物默认**裸路径**（不带 locale），
 // 需要 locale 用 localizedUrl；二维码/分享等外部绝对链接用 absoluteUrl（原生不带 locale，交给 proxy 按浏览器语言适配）。
+// 城市段：URL 形态 /{city}/{vertical}/{slug}（58 同城式）。city 可选、缺省 DEFAULT_CITY（无城市主数据期兜底）。
 import type { Locale } from '@/i18n/routing'
 import type { Vertical } from './vertical'
 import { verticalSlug } from './vertical'
+import type { CitySlug } from './city'
+import { DEFAULT_CITY } from './city'
 
 export interface ShopUrlRef {
   vertical: Vertical
   slug: string
+  /** 城市段（缺省 DEFAULT_CITY）。阶段3 城市选择器/Shop.city 就绪后实际传入。 */
+  city?: CitySlug
 }
 
-/** 单店裸入口：/food/x （food=菜单根；moto 等垂直的落地子路径用 shopSubUrl 显式带 sub） */
+/** 单店裸入口：/hcm/food/x （food=菜单根；moto 等垂直的落地子路径用 shopSubUrl 显式带 sub） */
 export function shopUrl(ref: ShopUrlRef): string {
-  return `/${verticalSlug(ref.vertical)}/${ref.slug}`
+  const city = ref.city ?? DEFAULT_CITY
+  return `/${city}/${verticalSlug(ref.vertical)}/${ref.slug}`
 }
 
-/** 单店子页裸路径：/food/x/track?orderNo=1 （sub 含 ticket/{ticketId} 等带参段）。
- *  sub='' 表示单店根入口（/food/x?type=..），不产生尾斜杠。 */
+/** 单店子页裸路径：/hcm/food/x/track?orderNo=1 （sub 含 ticket/{ticketId} 等带参段）。
+ *  sub='' 表示单店根入口（/hcm/food/x?type=..），不产生尾斜杠。 */
 export function shopSubUrl(
   ref: ShopUrlRef,
   sub: string,
@@ -31,9 +37,9 @@ export function shopSubUrl(
   return qs ? `${base}?${qs}` : base
 }
 
-/** 垂直聚合页（分类页）：/food */
-export function verticalUrl(vertical: Vertical): string {
-  return `/${verticalSlug(vertical)}`
+/** 垂直聚合页（分类页）：/hcm/food */
+export function verticalUrl(vertical: Vertical, city?: CitySlug): string {
+  return `/${city ?? DEFAULT_CITY}/${verticalSlug(vertical)}`
 }
 
 /** 给裸路径加 locale 前缀：/food/x → /zh/food/x。服务端 redirect / 需固定语言用。 */

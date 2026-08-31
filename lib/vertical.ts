@@ -3,6 +3,7 @@
 // Vertical 类型统一取自 prisma 生成 client（@/generated/prisma/client = schema.prisma 的 enum Vertical），
 // 仅 `import type`（编译期擦除，不把 node/prisma runtime 带进 client 组件）。
 import type { Vertical } from '@/generated/prisma/client'
+import { CITY_SLUG } from './city'
 
 export type { Vertical }
 
@@ -57,4 +58,5 @@ export const RESERVED_SHOP_SLUGS: ReadonlySet<string> = new Set([
   ...Object.values(VERTICAL_SLUG),
   'lookup',
   'track',
+  ...Object.values(CITY_SLUG), // 城市短码：防店 slug 撞 city 段（/hcm 等）
 ])

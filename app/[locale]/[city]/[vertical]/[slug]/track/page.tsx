@@ -355,6 +355,7 @@ export default async function TrackOrderPage({
               <DeleteMyData
                 vertical={shop.vertical}
                 slug={slug}
+                city={city}
                 orderNo={order.displayNo}
                 phone={trackPhone}
                 guestKey={guestKey}

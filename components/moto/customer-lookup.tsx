@@ -13,6 +13,7 @@ import {
 import { formatPrice } from '@/lib/format'
 import { shopSubUrl, localizedUrl } from '@/lib/urls'
 import type { Vertical } from '@/lib/vertical'
+import type { CitySlug } from '@/lib/city'
 import type { Locale } from '@/i18n/routing'
 import { useToast, ToastView } from '../dashboard/use-toast'
 
@@ -22,6 +23,7 @@ const inputCls =
 export function CustomerLookup({
   vertical,
   slug,
+  city,
   shopName,
   currency,
   isLoggedIn,
@@ -29,6 +31,7 @@ export function CustomerLookup({
 }: {
   vertical: Vertical
   slug: string
+  city: CitySlug
   shopName: string
   currency: string
   isLoggedIn: boolean
@@ -77,7 +80,7 @@ export function CustomerLookup({
           setErr('loginFailed')
           return
         }
-        router.push(shopSubUrl({ vertical, slug }, 'my'))
+        router.push(shopSubUrl({ vertical, slug, city }, 'my'))
         router.refresh()
       }
     } catch (e) {
@@ -121,7 +124,7 @@ export function CustomerLookup({
         <div className="flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
           <p className="text-sm">{t('loggedInHint')}</p>
           <button
-            onClick={() => router.push(shopSubUrl({ vertical, slug }, 'my'))}
+            onClick={() => router.push(shopSubUrl({ vertical, slug, city }, 'my'))}
             className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-white"
           >
             {t('myVehicles')}
@@ -135,7 +138,7 @@ export function CustomerLookup({
           <div className="flex flex-col gap-2">
             {oauth.map((p) => {
               const cb = encodeURIComponent(
-                localizedUrl(shopSubUrl({ vertical, slug }, 'my'), locale as Locale),
+                localizedUrl(shopSubUrl({ vertical, slug, city }, 'my'), locale as Locale),
               )
               const label =
                 p.id === 'google' ? t('continueGoogle') : t('continueFacebook')

@@ -2,6 +2,7 @@ import { useTranslations } from 'next-intl'
 import { LocaleSwitcher } from '@/components/locale-switcher'
 import { Link } from '@/i18n/navigation'
 import { shopUrl } from '@/lib/urls'
+import { DEFAULT_CITY } from '@/lib/city'
 
 // 落地页：入口（下单界面 + 老板后台）+ 三语切换
 export default function HomePage() {
@@ -18,7 +19,7 @@ export default function HomePage() {
       </p>
       <div className="flex gap-3">
         <Link
-          href={shopUrl({ vertical: 'FOOD', slug: 'demo-pho' })}
+          href={shopUrl({ vertical: 'FOOD', slug: 'demo-pho', city: DEFAULT_CITY })}
           className="rounded-full bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-amber-500/25 transition-transform hover:brightness-105 active:scale-[0.98]"
         >
           {t('shopDemo')}

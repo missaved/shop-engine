@@ -7,6 +7,7 @@ import { formatPrice } from '@/lib/format'
 import { MESSAGE_CHANNELS, channelShareUrl } from '@/lib/message-channel'
 import { absoluteUrl, shopSubUrl } from '@/lib/urls'
 import type { Vertical } from '@/lib/vertical'
+import type { CitySlug } from '@/lib/city'
 import { useToast, ToastView } from '../dashboard/use-toast'
 
 type PaymentConfig = {
@@ -17,6 +18,7 @@ type PaymentConfig = {
 export function MotoTicket({
   vertical,
   slug,
+  city,
   ticketId,
   shopName,
   currency,
@@ -25,6 +27,7 @@ export function MotoTicket({
 }: {
   vertical: Vertical
   slug: string
+  city: CitySlug
   ticketId: string
   shopName: string
   currency: string
@@ -50,7 +53,7 @@ export function MotoTicket({
   // 裸路径交给 proxy 按浏览器语言适配（不烘焙 locale）；绝对链接用当前访问域名，扫码/分享指向本店
   const url =
     typeof window !== 'undefined'
-      ? absoluteUrl(shopSubUrl({ vertical, slug }, 'ticket', { ticketId }))
+      ? absoluteUrl(shopSubUrl({ vertical, slug, city }, 'ticket', { ticketId }))
       : ''
   const shareText = `${shopName} · ${order.plate} · #${order.displayNo}\n${url}`
 

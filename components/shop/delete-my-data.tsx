@@ -6,17 +6,20 @@ import { useRouter } from '@/i18n/navigation'
 import { deleteMyData } from '@/lib/shop-actions'
 import { shopUrl } from '@/lib/urls'
 import type { Vertical } from '@/lib/vertical'
+import type { CitySlug } from '@/lib/city'
 
 // P2-1 PDPD 一键删除：客户删除本单个人数据（手机号/姓名/备注），确认后匿名化
 export function DeleteMyData({
   vertical,
   slug,
+  city,
   orderNo,
   phone,
   guestKey,
 }: {
   vertical: Vertical
   slug: string
+  city: CitySlug
   orderNo: string
   phone: string
   guestKey?: string
@@ -30,7 +33,7 @@ export function DeleteMyData({
     try {
       await deleteMyData({ slug, orderNo, phone, guestKey })
       // 删除成功后立即返回主页面（用户反馈：删除后不应停留在还能看到订单详情的查单页）
-      router.push(shopUrl({ vertical, slug }))
+      router.push(shopUrl({ vertical, slug, city }))
     } catch (err) {
       setError(err instanceof Error ? err.message : t('error'))
     }

@@ -60,6 +60,7 @@ export default async function CustomerLookupPage({
     <CustomerLookup
       vertical={shop.vertical}
       slug={slug}
+      city={city}
       shopName={shop.name}
       currency={shop.currency}
       isLoggedIn={isLoggedIn}

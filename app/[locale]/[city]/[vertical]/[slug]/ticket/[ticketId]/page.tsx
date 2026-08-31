@@ -58,6 +58,7 @@ export default async function MotoTicketPage({
     <MotoTicket
       vertical={shop.vertical}
       slug={slug}
+      city={city}
       ticketId={ticketId}
       shopName={shop.name}
       currency={shop.currency}

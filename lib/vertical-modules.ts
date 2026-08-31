@@ -1,7 +1,9 @@
-// 垂直差异注入点（扩展接口）。只 import 纯层 vertical.ts + prisma 类型（type-only），
-// 不被 tenant.ts 反向 import（防循环）。「加垂直」= 这里注册一个模块，其余代码零改。
-// 分两类注入：① 订单域 hook（validateOrderInput/onOrderCreated/reminderMeta，默认 no-op，YAGNI 用法）；
-// ② 聚合页差异（aggregation，见重构点 #4）——加垂直聚合页零改，需差异化卡片时在此实现。
+// 垂直差异注入点（扩展接口 + 垂直侧实现）。不被 tenant.ts 反向 import（防循环）。
+// 「加垂直」= 这里注册一个模块，其余代码零改。
+// 注入两类：① 订单域副作用（onOrderCreated，createOrder 事务后调用，垂直自定义建单后动作如 food 发新单提醒）；
+// ② 聚合页差异（aggregation，见重构点 #4）。顾客入口由 customerEntry 声明式驱动（见单店页）。
+import { prisma } from '@/lib/prisma'
+import type { StoredOrderItem } from '@/lib/cart-pricing'
 import type { Order, Shop, Vertical } from '@/generated/prisma/client'
 
 // 建单输入（跨垂直的公共子集；细化的垂直校验/副作用在 hook 内部展开）
@@ -9,7 +11,7 @@ export interface RawOrderInput {
   items: Array<{
     productId: string
     qty: number
-    extras?: Record<string, number>
+    extras?: string[]
     options?: Record<string, string>
   }>
   orderType?: string
@@ -59,14 +61,40 @@ export interface VerticalAggregation<V extends Vertical = Vertical> {
 export interface VerticalModule<V extends Vertical = Vertical> {
   /** 该模块所属垂直 */
   vertical: V
-  /** 返 null = 通过；返字符串 = 该垂直自定义的校验失败信息 */
-  validateOrderInput?(input: RawOrderInput): string | null
-  /** 建单成功后的垂直副作用（food 建提醒通知 / moto 建档 Vehicle 等） */
+  /** 顾客单店根入口：'menu' 渲染菜单页（默认）；其它字符串（如 moto 的 'lookup'）把根重定向到该子页。
+   *  新垂直声明即生效，根入口不再是「非 FOOD 一律跳 /lookup」的硬编码死路。 */
+  customerEntry?: 'menu' | string
+  /** 建单成功后的垂直副作用（food 发新单提醒 / 未来垂直建档、发通知等）。由 createOrder 事务后调用。
+   *  垂直决定要写什么（提醒模板/子表/外部通知），只把已落库的 order + shop 交回。 */
   onOrderCreated?(ctx: { order: Order; shop: Shop; input: RawOrderInput }): Promise<void>
-  /** 提醒模板的垂直投影（labelKey/style），无此模板返 null */
-  reminderMeta?(key: string): { labelKey: string; style: string } | null
   /** 聚合页差异注入（重构点 #4）：默认 undefined，由聚合页兜底通用模板 */
   aggregation?: VerticalAggregation<V>
+}
+
+// FOOD 建单副作用：事务后发「新单提醒」（老板一键复制发 Zalo）。原内联在 createOrder，挪此为垂直声明。
+// 数据尽量从已落库的 order 读（真实持久化值），input 供未来垂直参考。
+async function foodOnOrderCreated({ order, shop }: { order: Order; shop: Shop }): Promise<void> {
+  const cfg = (order.config ?? {}) as Record<string, unknown>
+  const items = (order.items as StoredOrderItem[] | null) ?? []
+  await prisma.reminder.create({
+    data: {
+      shopId: shop.id,
+      orderId: order.id,
+      templateKey: 'FOOD_NEW_ORDER',
+      dueAt: order.createdAt,
+      status: 'PENDING',
+      payload: {
+        displayNo: order.displayNo,
+        customerName: order.customerName,
+        customerPhone: order.customerPhone,
+        // total 为 Prisma Decimal，转 number 存入 payload（原 createOrder 传的是计算 number）
+        total: Number(order.total),
+        orderType: cfg.orderType ?? null,
+        tableNo: cfg.tableNo ?? null,
+        items: items.map((it) => ({ name: it.name, qty: it.qty })),
+      },
+    },
+  })
 }
 
 function noopModule<V extends Vertical>(vertical: V): VerticalModule<V> {
@@ -113,8 +141,8 @@ function motoAggregation(): VerticalAggregation<'MOTO'> {
 }
 
 const MODULES: Record<Vertical, VerticalModule> = {
-  FOOD: { vertical: 'FOOD', aggregation: foodAggregation() },
-  MOTO: { vertical: 'MOTO', aggregation: motoAggregation() },
+  FOOD: { vertical: 'FOOD', customerEntry: 'menu', onOrderCreated: foodOnOrderCreated, aggregation: foodAggregation() },
+  MOTO: { vertical: 'MOTO', customerEntry: 'lookup', aggregation: motoAggregation() },
   SALON: noopModule('SALON'),
   PET: noopModule('PET'),
   LAUNDRY: noopModule('LAUNDRY'),

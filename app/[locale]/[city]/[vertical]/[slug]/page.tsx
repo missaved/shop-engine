@@ -4,6 +4,7 @@ import { redirect, notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { getShopBySlug, ShopUnavailableError } from '@/lib/tenant'
 import { parseVerticalSlug } from '@/lib/vertical'
+import { getVerticalModule } from '@/lib/vertical-modules'
 import { parseCitySlug } from '@/lib/city'
 import { shopSubUrl, localizedUrl } from '@/lib/urls'
 import type { Locale } from '@/i18n/routing'
@@ -53,10 +54,16 @@ export default async function ShopMenuPage({
     throw e
   }
 
-  // 非 FOOD 店铺都有自己的落地子页入口（MOTO=store-code 店码落地 /lookup），根路径重定向过去
-  if (shop.vertical !== 'FOOD') {
+  // 顾客单店根入口按垂直模块声明驱动（声明式，非硬编码）：'menu' 渲染菜单页（默认）；
+  // 其它字符串（如 MOTO 的 'lookup' 店码落地）把根重定向到该子页。新垂直声明 customerEntry 即生效，
+  // 不再有「非 FOOD 一律跳 /lookup」的硬编码死路（会把新垂直踢进 MOTO-gated 的 /lookup）。
+  const customerEntry = getVerticalModule(shop.vertical).customerEntry ?? 'menu'
+  if (customerEntry !== 'menu') {
     redirect(
-      localizedUrl(shopSubUrl({ vertical: shop.vertical, slug, city }, 'lookup'), locale as Locale),
+      localizedUrl(
+        shopSubUrl({ vertical: shop.vertical, slug, city }, customerEntry),
+        locale as Locale,
+      ),
     )
   }
 

@@ -26,6 +26,7 @@ import {
   findIdempotentOrder,
   lockOrderForUpdate,
 } from '@/lib/order-shared'
+import { getVerticalModule } from '@/lib/vertical-modules'
 
 export type OrderType = 'dine_in' | 'takeaway' | 'delivery'
 
@@ -73,7 +74,9 @@ export async function createOrder(input: {
   // 无会话 → 静默走 guestKey/guestIp/phone 匿名兜底，**不 throw、不强制登录**。
   const sessionUser = await getCurrentUser()
   const customerId = sessionUser?.customerId ?? null
-  const shop = await getShopBySlug(input.slug, { expectVertical: 'FOOD' })
+  // 通用购物车建单，不绑定垂直（原 expectVertical:'FOOD' 硬编码已移除）。
+  // 垂直差异由 getVerticalModule(shop.vertical).onOrderCreated 承载（建单后副作用），此处只做纯流水。
+  const shop = await getShopBySlug(input.slug)
   if (!shop.open) throw new Error('店铺已打烊')
   if (shop.platformSuspended) throw new Error('店铺暂停营业')
   if (await isShopExpired(shop)) throw new Error('店铺已到期')
@@ -200,27 +203,26 @@ export async function createOrder(input: {
       })
     })
 
-    // D1 新单冒泡：创建到点提醒（老板一键复制发 Zalo）
-    // payload 附带订单类型/桌号/菜品摘要，供待办一目了然 + 点击跳单
-    const itemsSummary = orderItems.map((it) => ({ name: it.name, qty: it.qty }))
-    await prisma.reminder.create({
-      data: {
-        shopId: shop.id,
-        orderId: order.id,
-        templateKey: 'FOOD_NEW_ORDER',
-        dueAt: now,
-        status: 'PENDING',
-        payload: {
-          displayNo: order.displayNo,
-          customerName: input.customerName?.trim() || null,
-          customerPhone: phone ?? null,
-          total,
+    // D1 新单冒泡：交由垂直模块声明（FOOD 发「新单提醒」；购物车型垂直复用 createOrder 时，由自身 onOrderCreated 定义）。
+    // 原内联 FOOD_NEW_ORDER 模板在此移除 → createOrder 不再绑定 FOOD 垂直。
+    const module = getVerticalModule(shop.vertical)
+    if (module.onOrderCreated) {
+      await module.onOrderCreated({
+        order,
+        shop,
+        input: {
+          items: input.items,
           orderType,
-          tableNo: tableNo ?? null,
-          items: itemsSummary,
+          tableNo,
+          address,
+          note: input.note,
+          packing,
+          pickup,
+          customerPhone: phone,
+          customerName: input.customerName,
         },
-      },
-    })
+      })
+    }
     revalidatePath('/[locale]/dashboard', 'page')
     return { orderNo: order.orderNo, displayNo: order.displayNo }
   } catch (e) {

@@ -3,6 +3,7 @@
 // 加垂直只加 vertical.ts 一项 + vertical-modules 一个模块，本文件零改（重构点 #4）。
 import { prisma } from '@/lib/prisma'
 import type { Vertical } from '@/lib/vertical'
+import type { CitySlug } from '@/lib/city'
 import type { AggCard, AggShopInput } from '@/lib/vertical-modules'
 
 // 聚合 feed 的店铺投影（子集，够卡片渲染用；与 vertical-modules 的 AggShopInput 兼容）
@@ -10,9 +11,10 @@ export interface ShopPublic extends AggShopInput {}
 
 // 列出某垂直已验证店铺：approved（入驻审核通过）+ 推荐位置顶（featured，平台推广，聚合排序用）。
 // 不强制 open/platformSuspended/到期——这些属「店是否可用」而非「是否该列」，由卡片标识而非过滤（避免误藏已播报店）。
-export async function listVerifiedShops(vertical: Vertical): Promise<ShopPublic[]> {
+export async function listVerifiedShops(vertical: Vertical, city?: CitySlug): Promise<ShopPublic[]> {
   const shops = await prisma.shop.findMany({
-    where: { vertical, approved: true },
+    // city 可选：传了按城市过滤（阶段3 数据维度）；缺省不筛（门户/通用场景）
+    where: { vertical, approved: true, ...(city ? { city } : {}) },
     orderBy: [{ featured: 'desc' }, { createdAt: 'asc' }],
     select: {
       id: true,

@@ -354,6 +354,7 @@
     "slugInvalid": "slug 格式错误：小写字母数字+连字符，3-30 位，非保留字",
     "vertical": "类目",
     "currency": "币种",
+    "city": "城市",
     "phone": "联系电话",
     "address": "地址",
     "openHours": "营业时间",

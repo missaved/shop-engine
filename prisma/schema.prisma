@@ -58,6 +58,7 @@ model Shop {
   approved          Boolean   @default(true) // 入驻审核：false=待审/被拒（审核开关开启时新建店默认 false，通过后置 true）
   rejectReason      String? // 入驻审核驳回原因（被拒前台显示；审核开关关闭时不使用）
   currency          String    @default("VND") // ISO 4217 货币码，一店一币种（多币种基础）
+  city              String    @default("hcm") // 所属城市短码（CITY_SLUG）；阶段3 后接 City 表外键
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

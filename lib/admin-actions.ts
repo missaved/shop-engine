@@ -11,6 +11,7 @@ import { compare, hash } from 'bcryptjs'
 import { addMonths } from '@/lib/billing'
 import { validateAdminPassword, validateOwnerPassword } from '@/lib/password-policy'
 import { type Vertical, VERTICALS, RESERVED_SHOP_SLUGS } from './vertical'
+import { type CitySlug, DEFAULT_CITY, isCitySlug } from './city'
 import {
   encryptSecret,
   decryptSecret,
@@ -40,6 +41,7 @@ export async function createShop(input: {
   slug: string
   name: string
   vertical: Vertical
+  city?: CitySlug
   currency: string
   phone: string | null
   address: string | null
@@ -56,6 +58,7 @@ export async function createShop(input: {
     slug,
     name,
     vertical,
+    city = DEFAULT_CITY,
     currency,
     phone,
     address,
@@ -72,6 +75,7 @@ export async function createShop(input: {
     assertValidSlug(slug.trim())
     if (!name.trim()) throw new Error('店名不能为空')
     if (!VERTICALS.includes(vertical)) throw new Error('未知垂直类目')
+    if (!isCitySlug(city)) throw new Error('未知城市短码')
     if (!ownerPhone.trim()) throw new Error('老板手机号不能为空')
     // 店主密码走宽松策略（≥8 位，8.2 决策 + 审计对齐拍板：纯 8 位即可，爆破靠登录失败锁定）
     if (!ownerPassword) throw new Error('老板初始密码不能为空')
@@ -111,6 +115,7 @@ export async function createShop(input: {
           slug: slug.trim(),
           name: name.trim(),
           vertical,
+          city,
           currency,
           phone: phone?.trim() || null,
           address: address?.trim() || null,

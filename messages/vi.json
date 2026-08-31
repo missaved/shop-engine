@@ -354,6 +354,7 @@
     "slugInvalid": "slug không hợp lệ: chữ thường/số/gạch nối, 3-30 ký tự, không trùng từ khóa",
     "vertical": "Ngành",
     "currency": "Tiền tệ",
+    "city": "Thành phố",
     "phone": "SĐT",
     "address": "Địa chỉ",
     "openHours": "Giờ mở cửa",

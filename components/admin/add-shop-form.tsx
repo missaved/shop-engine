@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
 import { createShop } from '@/lib/admin-actions'
 import { type Vertical, RESERVED_SHOP_SLUGS } from '@/lib/vertical'
+import { CITY_OPTIONS, DEFAULT_CITY, type CitySlug } from '@/lib/city'
 import { routing } from '@/i18n/routing'
 import { useToast, ToastView } from '../dashboard/use-toast'
 
@@ -36,6 +37,7 @@ export function AddShopForm({ defaultTrialDays }: { defaultTrialDays?: number })
   const [slug, setSlug] = useState('')
   const [name, setName] = useState('')
   const [vertical, setVertical] = useState<Vertical>('FOOD')
+  const [city, setCity] = useState<CitySlug>(DEFAULT_CITY)
   const [currency, setCurrency] = useState<string>('VND')
   const [phone, setPhone] = useState('')
   const [address, setAddress] = useState('')
@@ -68,6 +70,7 @@ export function AddShopForm({ defaultTrialDays }: { defaultTrialDays?: number })
           slug,
           name,
           vertical,
+          city,
           currency,
           phone: phone || null,
           address: address || null,
@@ -143,6 +146,20 @@ export function AddShopForm({ defaultTrialDays }: { defaultTrialDays?: number })
             {VERTICAL_OPTIONS.map((v) => (
               <option key={v.value} value={v.value}>
                 {t(v.labelKey)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1 text-sm">
+          <span className="text-zinc-600 dark:text-zinc-400">{t('city')}</span>
+          <select
+            value={city}
+            onChange={(e) => setCity(e.target.value as CitySlug)}
+            className={inputCls}
+          >
+            {CITY_OPTIONS.map((c) => (
+              <option key={c.value} value={c.value}>
+                {c.label}
               </option>
             ))}
           </select>

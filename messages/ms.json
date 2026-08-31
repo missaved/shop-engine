@@ -354,6 +354,7 @@
     "slugInvalid": "Slug tidak sah: huruf kecil/angka/sempang, 3-30 aksara, bukan perkataan terpelihara",
     "vertical": "Kategori",
     "currency": "Mata wang",
+    "city": "Bandar",
     "phone": "Telefon",
     "address": "Alamat",
     "openHours": "Waktu operasi",

@@ -354,6 +354,7 @@
     "slugInvalid": "Invalid slug: lowercase letters/digits/hyphens, 3-30 chars, not reserved",
     "vertical": "Vertical",
     "currency": "Currency",
+    "city": "City",
     "phone": "Phone",
     "address": "Address",
     "openHours": "Open hours",

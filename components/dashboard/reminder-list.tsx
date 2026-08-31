@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState, useTransition } from 'react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 import { useTranslations } from 'next-intl'
 import { useRouter } from '@/i18n/navigation'
-import { dismissReminder, markReminderSent } from '@/lib/actions'
+import { dismissReminder, getReminders, markReminderSent } from '@/lib/actions'
 import { formatPrice } from '@/lib/format'
 import { useToast, ToastView } from './use-toast'
 
@@ -99,11 +99,11 @@ const ORDER_TYPE_STYLE: Record<string, { border: string; bg: string; badge: stri
 
 // 待办提醒：新单冒泡 / 完成通知 / 复购提醒（一键复制发 Zalo，0 API）
 export function ReminderList({
-  reminders,
+  initialReminders,
   shopName,
   currency,
 }: {
-  reminders: ReminderPlain[]
+  initialReminders: ReminderPlain[]
   shopName: string
   currency: string
 }) {
@@ -113,6 +113,25 @@ export function ReminderList({
   const { msg, show } = useToast()
   // 待办提醒可折叠：默认展开，点击标题收起，避免挤占订单区
   const [collapsed, setCollapsed] = useState(false)
+  // 待办提醒实时性（2026-08-31）：首屏用 props，之后每 5s 轮询 getReminders，
+  // 仅当 id 集合变化才 setState——新单/呼叫提醒自动出现，不再依赖 F5
+  const [reminders, setReminders] = useState<ReminderPlain[]>(initialReminders)
+  const lastReminderIdsRef = useRef(initialReminders.map((r) => r.id).join(','))
+  useEffect(() => {
+    const id = setInterval(async () => {
+      try {
+        const fresh = await getReminders()
+        const key = fresh.map((r) => r.id).join(',')
+        if (key !== lastReminderIdsRef.current) {
+          lastReminderIdsRef.current = key
+          setReminders(fresh)
+        }
+      } catch {
+        // 轮询失败静默，下一轮重试
+      }
+    }, 5000)
+    return () => clearInterval(id)
+  }, [])
   // 实时「下单多久」：每 30s tick 刷新，避免只显示服务端渲染的静态时刻（第16批）
   const [now, setNow] = useState(() => Date.now())
   useEffect(() => {

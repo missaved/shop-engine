@@ -26,6 +26,8 @@ import {
   vietnamTodayStartUtc,
   type OrderPlain,
 } from '@/lib/dashboard-orders'
+// 待办提醒序列化类型（与 page.tsx / reminder-list 共享，避免漂移）
+import type { ReminderPlain } from '@/components/dashboard/reminder-list'
 
 // 完结订单：建复购提醒（21 天后）+ dismiss 过时提醒（新单/出餐）。
 // 收全款自动完结 / 手动推进到 COMPLETED 共用，避免重复建提醒
@@ -539,6 +541,46 @@ export async function getDashboardOrders(): Promise<OrderPlain[]> {
   const user = await requireOwner()
   const orders = await findOrdersForDashboard(user.shopId)
   return serializeOrders(orders, vietnamTodayStartUtc())
+}
+
+// 待办提醒实时性（2026-08-31）：返回本店 PENDING 待办（ReminderPlain[]），供 ReminderList 轮询 setState，
+// 让新单/呼叫服务员提醒自动出现（原来只首屏渲染，必须 F5）。查询与序列化与 page.tsx 首屏保持一致
+export async function getReminders(): Promise<ReminderPlain[]> {
+  const user = await requireOwner()
+  const reminders = await prisma.reminder.findMany({
+    where: { shopId: user.shopId, status: 'PENDING', dueAt: { lte: new Date() } },
+    orderBy: { dueAt: 'asc' },
+    // 带出关联订单状态 + 下单时间（同 page.tsx）
+    include: { order: { select: { status: true, createdAt: true } } },
+  })
+  return reminders
+    .filter((r) => r.order?.status !== 'CANCELLED')
+    .map((r) => {
+      const p = r.payload as {
+        displayNo?: string
+        customerName?: string | null
+        customerPhone?: string | null
+        tableNo?: string | null
+        total?: number
+        orderType?: string | null
+        items?: { name: string; qty: number }[]
+      } | null
+      return {
+        id: r.id,
+        orderId: r.orderId,
+        templateKey: r.templateKey,
+        displayNo: p?.displayNo ?? '',
+        customerPhone: p?.customerPhone ?? null,
+        customerName: p?.customerName ?? null,
+        tableNo: p?.tableNo ?? null,
+        total: p?.total != null ? p.total.toString() : '',
+        orderType: p?.orderType ?? null,
+        orderStatus: r.order?.status ?? null,
+        // 订单下单时间：待办实时显示「下单多久」（第16批，客户端 30s tick 刷新）
+        orderCreatedAt: r.order?.createdAt?.toISOString() ?? null,
+        items: p?.items ?? [],
+      }
+    })
 }
 
 // 呼叫服务员实时性：返回最新 CALL_WAITER 提醒的创建时间戳（轮询判断有无新呼叫）

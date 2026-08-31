@@ -219,21 +219,26 @@ export function OrderList({
       try {
         const latest = await getLatestOrderNo()
         if (latest > maxRef.current) {
+          // 先拉完整列表，成功后再提升水位（maxRef）——若 getDashboardOrders 某次瞬时失败
+          // （生产 serverless 冷启动/连接抖动）被 catch 吞掉，保持旧水位、下一轮 2s 重试，
+          // 防「一次失败永久静默」（水位已提升 → latest <= maxRef 永假 → 新单不再出现）
+          const fresh = await getDashboardOrders()
           maxRef.current = latest
+          setOrders(fresh)
           void playVoice(`/sounds/new-order.${locale}.mp3`)
           show(t('newOrderAlert'))
-          // 拉取完整订单列表 setState（server action 直查库，绕开 router.refresh 的客户端缓存）
-          setOrders(await getDashboardOrders())
         }
         const latestCall = await getLatestCallTs()
         if (firstCall) {
           callTsRef.current = latestCall
           firstCall = false
         } else if (latestCall > callTsRef.current) {
+          // 同「先拉数据成功后再提升水位」
+          const freshCall = await getDashboardOrders()
           callTsRef.current = latestCall
+          setOrders(freshCall)
           void playVoice(`/sounds/call-waiter.${locale}.mp3`)
           show(t('callWaiterAlert'))
-          setOrders(await getDashboardOrders())
         }
       } catch {
         // 轮询失败静默，下一轮重试

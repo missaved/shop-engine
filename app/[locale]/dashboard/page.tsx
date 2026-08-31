@@ -322,7 +322,7 @@ export default async function DashboardPage() {
       </header>
 
       {/* 主页：待办提醒 + 订单列表（核心；营业额/今日统计已移入设置面板，用户反馈不要挤占首页） */}
-      <ReminderList reminders={remindersPlain} shopName={shop.name} currency={shop.currency} />
+      <ReminderList initialReminders={remindersPlain} shopName={shop.name} currency={shop.currency} />
       <OrderList orders={ordersPlain} shop={shopPlain} products={productsPlain} />
 
       {/* 回到顶部浮动按钮 */}

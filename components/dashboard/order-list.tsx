@@ -29,6 +29,8 @@ export type ShopPlain = {
   phone: string | null
   open: boolean
   currency: string
+  /** 城市段（boss 树拼客户 URL 用；一串字符串，工厂兜底 DEFAULT_CITY） */
+  city: string
   config: {
     openHours?: string
     minOrderAmount?: number

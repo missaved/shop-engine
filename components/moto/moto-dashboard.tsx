@@ -111,7 +111,7 @@ export function MotoDashboard({
             }}
           />
           <MotoReminderList shopName={shop.name} />
-          <MotoOrders vertical={shop.vertical} slug={shop.slug} currency={shop.currency} />
+          <MotoOrders vertical={shop.vertical} slug={shop.slug} currency={shop.currency} city={shop.city} />
           {/* M4.2 流水视图：按日收入 / 欠款 / 收回 */}
           <MotoLedger currency={shop.currency} />
         </>

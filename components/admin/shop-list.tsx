@@ -233,6 +233,7 @@ export async function ShopList({
                 approved={s.approved}
                 ownerLocked={ownerLocked}
                 ownerId={owner?.id}
+                city={s.city}
               />
             </div>
           )

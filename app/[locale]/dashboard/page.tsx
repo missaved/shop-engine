@@ -60,6 +60,7 @@ function serializeMotoShop(shop: NonNullable<Awaited<ReturnType<typeof prisma.sh
     name: shop.name,
     phone: shop.phone,
     currency: shop.currency,
+    city: shop.city,
     config: {
       presets: cfg?.presets ?? [],
       commonModels: cfg?.commonModels ?? [],
@@ -127,6 +128,7 @@ export default async function DashboardPage() {
     phone: shop.phone,
     open: shop.open,
     currency: shop.currency,
+    city: shop.city,
     config: shop.config as ShopPlain['config'],
   }
 

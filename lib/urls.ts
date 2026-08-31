@@ -5,14 +5,14 @@
 import type { Locale } from '@/i18n/routing'
 import type { Vertical } from './vertical'
 import { verticalSlug } from './vertical'
-import type { CitySlug } from './city'
 import { DEFAULT_CITY } from './city'
 
 export interface ShopUrlRef {
   vertical: Vertical
   slug: string
-  /** 城市段（缺省 DEFAULT_CITY）。阶段3 城市选择器/Shop.city 就绪后实际传入。 */
-  city?: CitySlug
+  /** 城市段（缺省 DEFAULT_CITY）。用 string 而非 CitySlug：本工厂是纯 URL 拼接器不校验，
+   *  city 校验在边界（页面 parseCitySlug / 建店 isCitySlug）；DB 读出的 shop.city 是 string，直接可传。 */
+  city?: string
 }
 
 /** 单店裸入口：/hcm/food/x （food=菜单根；moto 等垂直的落地子路径用 shopSubUrl 显式带 sub） */
@@ -38,7 +38,7 @@ export function shopSubUrl(
 }
 
 /** 垂直聚合页（分类页）：/hcm/food */
-export function verticalUrl(vertical: Vertical, city?: CitySlug): string {
+export function verticalUrl(vertical: Vertical, city?: string): string {
   return `/${city ?? DEFAULT_CITY}/${verticalSlug(vertical)}`
 }
 

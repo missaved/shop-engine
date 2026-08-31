@@ -337,8 +337,8 @@ export function MotoSettings({ shop, onSaved }: { shop: MotoShop; onSaved: () =>
           <span className="text-xs text-zinc-500">{t('customerLink')}</span>
           <code className="break-all rounded-lg bg-zinc-100 px-2.5 py-1.5 text-xs dark:bg-zinc-800">
             {typeof window !== 'undefined'
-              ? absoluteUrl(shopSubUrl({ vertical: shop.vertical, slug: shop.slug }, 'lookup'))
-              : shopSubUrl({ vertical: shop.vertical, slug: shop.slug }, 'lookup')}
+              ? absoluteUrl(shopSubUrl({ vertical: shop.vertical, slug: shop.slug, city: shop.city }, 'lookup'))
+              : shopSubUrl({ vertical: shop.vertical, slug: shop.slug, city: shop.city }, 'lookup')}
           </code>
         </div>
       </section>

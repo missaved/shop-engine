@@ -14,10 +14,13 @@ export function TableQrGenerator({
   vertical,
   slug,
   shopName,
+  city,
 }: {
   vertical: Vertical
   slug: string
   shopName: string
+  /** 城市段（工厂 DEFAULT_CITY 兜底；DB 读出 shop.city 为 string，父级传 shop.city） */
+  city?: string
 }) {
   const t = useTranslations('dashboard')
   const [tableNo, setTableNo] = useState('')
@@ -29,7 +32,7 @@ export function TableQrGenerator({
   useEffect(() => {
     if (!slug) return
     const no = tableNo.trim()
-    const url = absoluteUrl(shopSubUrl({ vertical, slug }, '', no ? { table: no } : undefined))
+    const url = absoluteUrl(shopSubUrl({ vertical, slug, city }, '', no ? { table: no } : undefined))
     // 400ms 防抖：避免每敲一个字符就重生成二维码闪「…」
     const timer = setTimeout(() => {
       setBusy(true)

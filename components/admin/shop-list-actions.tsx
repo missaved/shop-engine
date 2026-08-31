@@ -28,6 +28,7 @@ export function ShopListActions({
   approved,
   ownerLocked,
   ownerId,
+  city,
 }: {
   shopId: string
   vertical: Vertical
@@ -38,6 +39,8 @@ export function ShopListActions({
   approved: boolean
   ownerLocked: boolean
   ownerId?: string
+  /** 城市段（工厂 DEFAULT_CITY 兜底；DB 读出 shop.city 为 string，由 shop-list 传 s.city） */
+  city?: string
 }) {
   const t = useTranslations('admin')
   const router = useRouter()
@@ -115,7 +118,7 @@ export function ShopListActions({
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Link
-        href={shopUrl({ vertical, slug })}
+        href={shopUrl({ vertical, slug, city })}
         target="_blank"
         className="rounded-md border border-zinc-300 px-3 py-1.5 text-xs transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
       >

@@ -29,10 +29,13 @@ export function MotoOrders({
   vertical,
   slug,
   currency,
+  city,
 }: {
   vertical: Vertical
   slug: string
   currency: string
+  /** 城市段（工厂 DEFAULT_CITY 兜底；DB 读出 shop.city 为 string，父级传 shop.city） */
+  city?: string
 }) {
   const t = useTranslations('moto')
   const router = useRouter()
@@ -64,7 +67,7 @@ export function MotoOrders({
       const r = await updateMotoOrderProgress(o.id, next as never)
       await load()
       if (next === 'picked_up' && r?.ticketId) {
-        router.push(shopSubUrl({ vertical, slug }, 'ticket', { ticketId: r.ticketId }))
+        router.push(shopSubUrl({ vertical, slug, city }, 'ticket', { ticketId: r.ticketId }))
       }
     } finally {
       setBusyId('')

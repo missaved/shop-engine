@@ -55,6 +55,18 @@ export default async function ShopMenuPage({
     const tableActive = await getTableActiveOrder({ slug, tableNo: tableStr })
     if (tableActive) effectiveContinueNo = tableActive.orderNo
   }
+  // 2026-08-31 已结束订单不得进加菜模式：continue 单若已 COMPLETED/CANCELLED（或不存在），
+  // 置空让它退化为正常下新单（不显示「正在向订单加菜」提示）。
+  // 根因：track 页「继续点菜」按钮在订单被后台结单后点击（页面未刷新）→ 带出已结束单的 ?continue= 仍进加菜模式。
+  if (effectiveContinueNo) {
+    const contOrder = await prisma.order.findFirst({
+      where: { shopId: shop.id, displayNo: effectiveContinueNo },
+      select: { status: true },
+    })
+    if (!contOrder || contOrder.status === 'COMPLETED' || contOrder.status === 'CANCELLED') {
+      effectiveContinueNo = ''
+    }
+  }
 
   // 商品 config：三语名/描述 + 图片 URL（有图）/emoji 图标（无图占位）+ canAddOn（出餐后可追加）
   const plain: MenuProduct[] = products.map((p) => serializeMenuProduct(p, locale))

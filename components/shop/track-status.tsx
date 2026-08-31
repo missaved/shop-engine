@@ -48,6 +48,17 @@ export function TrackStatus({
     }
   }
 
+  // TEMP 定位日志：对比「轮询值」vs「服务端实际渲染值」，确认文案/进度条不同步根因。修复后删除。
+  const prevRenderedRef = useRef(initialStatus)
+  useEffect(() => {
+    if (prevRenderedRef.current !== initialStatus) {
+      console.log(
+        `[track-status] ${orderNo} renderedStatus=${initialStatus} (was ${prevRenderedRef.current})`,
+      )
+      prevRenderedRef.current = initialStatus
+    }
+  }, [initialStatus])
+
   useEffect(() => {
     if (initialStatus === 'READY') setReady(true)
     if (initialStatus === 'COMPLETED' || initialStatus === 'CANCELLED') return
@@ -55,6 +66,10 @@ export function TrackStatus({
       try {
         const s = await getTrackStatus(slug, orderNo, phone, guestKey, byIp)
         if (!s) return
+        // TEMP 定位日志：各值前后对照，修复后删除
+        console.log(
+          `[track-status] ${orderNo} poll=${s} rendered=${initialStatus} ref=${statusRef.current} ready=${ready}`,
+        )
         if (s !== statusRef.current) {
           statusRef.current = s
           // 状态变化（含 boss 推进/结账/取消）→ 刷新整页主数据（状态标签/进度条/加菜区/继续点菜按钮）。

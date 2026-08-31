@@ -7,6 +7,7 @@ import { headers } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
 import { getShopBySlug } from '@/lib/tenant'
+import { getCurrentUser } from '@/lib/dal'
 import { isShopExpired } from '@/lib/billing'
 import { formatPrice } from '@/lib/format'
 import { isRateLimited, recordFailure } from '@/lib/rate-limit'
@@ -61,6 +62,11 @@ export async function createOrder(input: {
   pickup?: boolean
   guestKey?: string
 }): Promise<{ orderNo: number; displayNo: string }> {
+  // 身份融合（2026-08-31 用户拍板「登录就记身份，游客照常匿名下单」）：
+  // 有 CUSTOMER 会话 → 写 order.customerId + customerName（老板端看昵称、track 按账号锁单）；
+  // 无会话 → 静默走 guestKey/guestIp/phone 匿名兜底，**不 throw、不强制登录**。
+  const sessionUser = await getCurrentUser()
+  const customerId = sessionUser?.customerId ?? null
   const shop = await getShopBySlug(input.slug)
   if (!shop.open) throw new Error('店铺已打烊')
   if (shop.platformSuspended) throw new Error('店铺暂停营业')
@@ -185,7 +191,12 @@ export async function createOrder(input: {
           items: orderItems as Prisma.InputJsonValue,
           total,
           paidAmount: 0,
-          customerName: input.customerName?.trim() || null,
+          customerId,
+          // 登录客户用会话名（昵称/用户名）优先；未登录仍用单内填写的 customerName（手机号单）
+          customerName:
+            customerId && sessionUser?.name
+              ? sessionUser.name
+              : input.customerName?.trim() || null,
           customerPhone: phone ?? null,
           note: input.note?.trim() || null,
           idempotencyKey,

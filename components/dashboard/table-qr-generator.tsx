@@ -4,14 +4,18 @@
 import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { generateShopQr } from '@/lib/qr-actions'
+import { absoluteUrl, shopSubUrl } from '@/lib/urls'
+import type { Vertical } from '@/lib/vertical'
 
 // 引导图三语固定文案（打印物，不跟随界面语言），分行渲染避免长文案溢出
 const TRILINGUAL_LINES = ['扫码点单', 'Quét mã gọi món', 'Scan to order']
 
 export function TableQrGenerator({
+  vertical,
   slug,
   shopName,
 }: {
+  vertical: Vertical
   slug: string
   shopName: string
 }) {
@@ -25,9 +29,7 @@ export function TableQrGenerator({
   useEffect(() => {
     if (!slug) return
     const no = tableNo.trim()
-    const url = no
-      ? `${window.location.origin}/s/${slug}?table=${encodeURIComponent(no)}`
-      : `${window.location.origin}/s/${slug}`
+    const url = absoluteUrl(shopSubUrl({ vertical, slug }, '', no ? { table: no } : undefined))
     // 400ms 防抖：避免每敲一个字符就重生成二维码闪「…」
     const timer = setTimeout(() => {
       setBusy(true)

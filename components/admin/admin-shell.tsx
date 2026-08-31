@@ -25,7 +25,11 @@ const NAV_GROUPS = [
   },
   {
     labelKey: 'navGroupContent',
-    items: [{ rel: '/presets', key: 'navPresets' }],
+    items: [
+      { rel: '/presets', key: 'navPresets' },
+      // M4.4 moto 中台预设库（MotoPreset 独立页）
+      { rel: '/moto-presets', key: 'navMotoPresets' },
+    ],
   },
   {
     labelKey: 'navGroupSystem',

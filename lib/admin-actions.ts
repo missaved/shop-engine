@@ -10,6 +10,7 @@ import { requireAdmin } from '@/lib/dal'
 import { compare, hash } from 'bcryptjs'
 import { addMonths } from '@/lib/billing'
 import { validateAdminPassword, validateOwnerPassword } from '@/lib/password-policy'
+import { type Vertical, VERTICALS } from './vertical'
 import {
   encryptSecret,
   decryptSecret,
@@ -40,8 +41,8 @@ const RESERVED_SLUGS = new Set([
 
 // 垂直类目（SaaS 附加的 App = 这些垂直；FOOD 先行，其余为模板扩展位）
 // 注意：'use server' 文件只能导出 async 函数，对象/常量只能内部用（type 导出不受限）
-export type Vertical = 'FOOD' | 'MOTO' | 'SALON' | 'PET' | 'LAUNDRY'
-const VERTICALS: Vertical[] = ['FOOD', 'MOTO', 'SALON', 'PET', 'LAUNDRY']
+// Vertical 类型与 VERTICALS 统一来源 lib/vertical.ts（唯一真源）；此处仅 re-export 供下游 import
+export type { Vertical }
 
 // slug 服务端校验：小写字母数字 + 连字符、不以连字符开头/结尾、长度 3–30、不含保留字
 function assertValidSlug(slug: string): void {

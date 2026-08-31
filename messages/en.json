@@ -794,6 +794,10 @@
   "customer": {
     "title": "Vehicle lookup",
     "login": "Sign in",
+    "continueGoogle": "Continue with Google",
+    "continueFacebook": "Continue with Facebook",
+    "socialLoginUnavailable": "Unavailable",
+    "socialLoginHint": "or",
     "register": "Sign up",
     "name": "Full name",
     "phone": "Phone number",

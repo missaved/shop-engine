@@ -55,51 +55,6 @@ async function finalizeOrder(
   })
 }
 
-// 设置实收（E2 支付三态：0=未付，0<实收<total=部分付，≥total=已付；欠款=total-实收）
-// paymentMethod：支付方式（现金/扫码/其他），写 order.config.paymentMethod；收全款自动完结订单
-export async function setOrderPaidAmount(
-  orderId: string,
-  paidAmount: number,
-  paymentMethod?: 'cash' | 'qr' | 'other',
-): Promise<void> {
-  const user = await requireOwner()
-  try {
-    const order = assertShopOwned(
-      user.shopId,
-      await prisma.order.findUnique({ where: { id: orderId } }),
-    )
-    // 终态订单（已结单/已取消）禁止改实收：防「收全款」把已取消单翻回 COMPLETED 并建复购提醒
-    if (order.status === 'CANCELLED' || order.status === 'COMPLETED') {
-      throw new Error('已结单/已取消订单不可改实收')
-    }
-
-    const amount = Number(paidAmount)
-    if (!Number.isFinite(amount) || amount < 0) throw new Error('实收金额无效')
-
-    const total = Number(order.total)
-    const oldCfg = (order.config as Record<string, unknown> | null) ?? {}
-    // 收全款（实收 ≥ total）→ 自动完结；终态守卫在上方已排除 COMPLETED/CANCELLED，此处直接按金额判断
-    const willComplete = amount >= total
-
-    await prisma.order.update({
-      where: { id: orderId },
-      data: {
-        paidAmount: amount,
-        ...(willComplete ? { status: 'COMPLETED' as const } : {}),
-        config: {
-          ...oldCfg,
-          ...(paymentMethod ? { paymentMethod } : {}),
-        } as Prisma.InputJsonValue,
-      },
-    })
-    if (willComplete) await finalizeOrder(order, user.shopId)
-    revalidatePath('/[locale]/dashboard', 'page')
-  } catch (e) {
-    console.error('设置实收失败（orderId=%s）:', orderId, e)
-    throw e
-  }
-}
-
 // 推进订单状态（2026-08-31 用户需求：逐步推进，待处理→处理中→已上桌；README 后主按钮变「收款」，
 // 收款结单走 settleOrder，不再推进。不建 FOOD_READY 提醒：推进是老板主动操作，无需再提醒自己）
 export async function advanceOrderStatus(orderId: string): Promise<void> {
@@ -129,7 +84,7 @@ export async function advanceOrderStatus(orderId: string): Promise<void> {
 }
 
 // 2026-08-31 收款结单（推进主线最后一步）：设置实收 + 支付方式 + 直接完结订单。
-// 与 setOrderPaidAmount 不同：不要求实收≥总额——抹零/协商少收也照样结单（status=COMPLETED），
+// 不要求实收≥总额——抹零/协商少收也照样结单（status=COMPLETED），
 // 这是 boss「收全款 / 抹零 / 改实收结束订单」的统一入口。
 export async function settleOrder(
   orderId: string,
@@ -881,27 +836,3 @@ export async function searchOrderHistory(input: {
   }))
 }
 
-// 店主改密（8.2 决策 + 审计对齐拍板：店主宽松策略 ≥8 位 + 旧密码校验）
-export async function changeOwnerPassword(
-  oldPassword: string,
-  newPassword: string,
-): Promise<void> {
-  const user = await requireOwner()
-  try {
-    if (!oldPassword || !newPassword) throw new Error('旧密码与新密码不能为空')
-    if (validateOwnerPassword(newPassword)) throw new Error('新密码至少 8 位')
-    // requireOwner 只给 session user（无 passwordHash），改密需重查 DB 校验旧密码
-    const owner = await prisma.user.findUnique({ where: { id: user.id } })
-    if (!owner) throw new Error('账号不存在')
-    const ok = await compare(oldPassword, owner.passwordHash)
-    if (!ok) throw new Error('旧密码不正确')
-    await prisma.user.update({
-      where: { id: owner.id },
-      data: { passwordHash: await hash(newPassword, 10) },
-    })
-    revalidatePath('/[locale]/dashboard', 'page')
-  } catch (e) {
-    console.error('店主改密失败:', e)
-    throw e
-  }
-}

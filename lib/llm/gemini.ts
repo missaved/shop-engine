@@ -12,10 +12,20 @@ export const gemini: LLMProvider = {
     // 拆分 system 消息 → systemInstruction；其余 → contents
     const systemText = messages.filter((m) => m.role === 'system').map((m) => m.content).join('\n\n')
     const rest: ChatMessage[] = messages.filter((m) => m.role !== 'system')
-    const contents = rest.map((m) => ({
-      role: m.role === 'assistant' ? 'model' : 'user', // Gemini 角色名：user / model
-      parts: [{ text: m.content }],
-    }))
+    const contents = rest.map((m) => {
+      const parts: { text?: string; inline_data?: { mime_type: string; data: string } }[] = []
+      parts.push({ text: m.content })
+      // 视觉扩展（moto OCR）：user 消息带 imageDataUrl → inline_data（Gemini 原生支持）
+      if (m.imageDataUrl) {
+        const mime = m.imageDataUrl.match(/^data:([^;,]+)/)?.[1] ?? 'image/jpeg'
+        const data = m.imageDataUrl.split(',')[1] ?? ''
+        if (data) parts.push({ inline_data: { mime_type: mime, data } })
+      }
+      return {
+        role: m.role === 'assistant' ? 'model' : 'user', // Gemini 角色名：user / model
+        parts,
+      }
+    })
     const body: Record<string, unknown> = { contents }
     if (systemText) body.systemInstruction = { parts: [{ text: systemText }] }
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`

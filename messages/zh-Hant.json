@@ -794,6 +794,10 @@
   "customer": {
     "title": "車輛查詢",
     "login": "登入",
+    "continueGoogle": "使用 Google 登入",
+    "continueFacebook": "使用 Facebook 登入",
+    "socialLoginUnavailable": "暫不可用",
+    "socialLoginHint": "或",
     "register": "註冊",
     "name": "姓名",
     "phone": "手機號碼",

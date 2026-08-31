@@ -4,6 +4,7 @@
 import { prisma } from './prisma'
 import { notFound } from 'next/navigation'
 import { getSetting } from './platform-settings'
+import type { Vertical } from './vertical'
 
 // 顾客端店铺不可用错误（2026-08-29 用户拍板）：
 // - reason='maintenance'：维护模式全拦（含查单）——维护开启时所有顾客端访问显示维护页
@@ -24,11 +25,13 @@ export class ShopUnavailableError extends Error {
 // 按 slug 取店铺，找不到即 404
 // 顾客端统一拦截点：维护模式全拦（含查单）+ 入驻审核（开时 approved=false 拒绝）。
 // 8 个调用点（菜单/查单/下单 action/推荐菜）全为顾客端；boss/admin 后台（dashboard）不经过本函数，天然放行。
-export async function getShopBySlug(slug: string) {
+export async function getShopBySlug(slug: string, options?: { expectVertical?: Vertical }) {
   const shop = await prisma.shop.findUnique({
     where: { slug },
   })
   if (!shop) notFound()
+  // 多垂直门：URL 垂直段与 shop 实际垂直不符 → 404（收敛各页散落的 assertMotoShop / if vertical!=='MOTO'）
+  if (options?.expectVertical && shop.vertical !== options.expectVertical) notFound()
   const [maintenance, onboarding] = await Promise.all([
     getSetting<{ mode?: boolean }>('maintenance'),
     getSetting<{ reviewRequired?: boolean }>('onboarding'),

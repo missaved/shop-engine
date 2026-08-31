@@ -67,6 +67,7 @@ model Shop {
   users     User[]
   billings  Billing[]
   shopDrafts ShopDraft[]
+  vehicles  Vehicle[]
 }
 
 // 商品 / 服务项（快捷开单大按钮即预置 product）
@@ -100,6 +101,8 @@ model Order {
   paidAmount Decimal    @default(0) @db.Decimal(12, 2) // 实收：0=未付，0<实收<total=部分付，≥total=已付；欠款=total-paidAmount
   customerName  String?
   customerPhone String?
+  customerId    String? // 身份融合（2026-08-31）：登录客户下单写入；游客匿名单为 null
+  customer      Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
   note      String?
   idempotencyKey String? // 下单幂等键（客户端 uuid，防双击/重放重复建单）
   config    Json? // 垂直专属：预约时间 / 寄养天数 / 公斤数 / 标签码 / 次卡扣减等
@@ -112,6 +115,7 @@ model Order {
   @@unique([shopId, displayNo])
   @@unique([shopId, idempotencyKey])
   @@index([shopId, createdAt])
+  @@index([customerId]) // 「我的订单」按账号列出的查询键
 }
 
 // 半自动到点提醒（到点冒泡，老板一键复制发 Zalo，0 API）
@@ -298,4 +302,81 @@ model VisitLog {
 
   @@index([createdAt])
   @@index([path])
+}
+
+// ---- MOTO 垂直（plans/12-moto-implementation.md M1，2026-08-31 执行）----
+
+// 摩托车辆档案（M1）：车牌唯一 + 履历 + 下次保养 + 同手机号其他车
+// 约定：plate 一律存 normalize 后格式（去空格/连字符/大写，见 lib/plate.ts），查询先 normalize 再精确匹配
+// 保养字段更新时机 = picked_up（交接）时，见计划 8.2（createMotoOrder 只开单不写保养，取消单不算）
+model Vehicle {
+  id               String    @id @default(cuid())
+  shopId           String
+  shop             Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  plate            String // 车牌（normalize 后，如 29A112345）
+  brand            String? // 品牌（如 Honda）
+  model            String? // 型号（如 Wave Alpha）
+  year             Int? // 年份
+  mileage          Int? // 里程（可空：新车建档无里程）
+  ownerName        String? // 车主姓名
+  ownerPhone       String? // 车主手机号（入库前 lib/phone.ts 归一化，同 User 表）
+  notes            String? // 备注（车况/特殊事项）
+  lastServiceAt    DateTime? // 最近一次保养时间（picked_up 交接时更新）
+  nextServiceKm    Int? // 下次保养里程（OIL 双维度；交接时更新）
+  nextServiceDue   DateTime? // 下次保养到期日（OIL/PERIODIC；交接时更新）
+  lastIntervalDays Int? // 上次保养间隔天数（算法参考，老板可调）
+  ownerCustomerId  String? // 认领客户（一客户多车）
+  ownerCustomer    Customer? @relation(fields: [ownerCustomerId], references: [id], onDelete: SetNull)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@unique([shopId, plate])
+  @@index([shopId, ownerPhone])
+}
+
+// 客户账号（M6a 用，M1 建表）：手机号+密码登录（复用 Auth.js 加 customer provider）
+// 认领绑定：Customer → Vehicle.ownerCustomerId（一客户多车）；phone 入库前 lib/phone.ts 归一化
+// 身份融合（2026-08-31 用户拍板，多垂直地基）：预留 username @unique + OAuth 字段（provider/providerId/email/image）。
+// phone/passwordHash 改可空——纯 OAuth(google/fb) 客户无手机号/无密码；loginKey 登录键统一 OR[username,phone]（同 User 先例）。
+model Customer {
+  id           String    @id @default(cuid())
+  username     String?   @unique // 自定义用户名（无手机号客户主登录键）；纯手机号客户 null。本期只预留，登录 UI 后置
+  phone        String?   @unique // 归一化手机号；username 与 phone 至少其一来登录（先验后取其一）
+  passwordHash String?          // bcrypt；纯 OAuth(google/fb) 客户可为 null
+  name         String?
+  email        String?   @unique // OAuth 客户邮箱（FB 纯移动端可能不返回，允许 null）
+  image        String?          // OAuth 头像（本期首字母色块兜底，不渲染外部头像）
+  provider     String    @default("password") // 登录来源留痕："password"|"google"|"facebook"
+  providerId   String?          // google sub / fb id；password/uname 客户为 null
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  vehicles Vehicle[]
+  orders   Order[]
+
+  @@unique([provider, providerId]) // 仅 OAuth 幂等锚（password 客户 providerId=null，Postgres 唯一索引视 NULL 互异不生效）
+  @@index([phone])
+}
+
+// moto 服务预设库（中台维护/下发，仿 FoodPreset 但独立表）：一服务一行
+// 不复用 FoodPreset（其结构=子分类含 items 数组，moto=一服务一行，不匹配）
+model MotoPreset {
+  id              String   @id @default(cuid())
+  serviceKey      String   @unique // 唯一 key，如 oil_change
+  nameVi          String // 越南语服务名（如 Thay nhớt máy）
+  nameZh          String // 中文服务名（如 换机油）
+  nameEn          String // 英文服务名
+  defaultPrice    Decimal  @db.Decimal(12, 2) // 默认价（进件时可改）
+  unit            String? // 单位（次/升/个）
+  category        String // 分类：保养|维修|检查（bảo dưỡng|sửa chữa|kiểm tra）
+  maintenanceType String // 保养类型：OIL|PERIODIC|REPAIR（REPAIR 不写保养）
+  intervalKm      Int? // 保养间隔里程（OIL 2000 / PERIODIC 默认 4000）
+  intervalDays    Int? // 保养间隔天数（OIL 180 / PERIODIC 120）
+  active          Boolean  @default(true) // 启用/停用（admin 可切）
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([category, active])
+  @@index([maintenanceType, active])
 }

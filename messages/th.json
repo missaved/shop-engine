@@ -794,6 +794,10 @@
   "customer": {
     "title": "ตรวจสอบรถ",
     "login": "เข้าสู่ระบบ",
+    "continueGoogle": "ดำเนินการต่อกับ Google",
+    "continueFacebook": "ดำเนินการต่อกับ Facebook",
+    "socialLoginUnavailable": "ยังไม่พร้อมใช้งาน",
+    "socialLoginHint": "หรือ",
     "register": "สมัครสมาชิก",
     "name": "ชื่อ-นามสกุล",
     "phone": "เบอร์โทรศัพท์",

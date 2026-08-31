@@ -6,6 +6,7 @@ import { auth } from '@/auth'
 import { getLocale } from 'next-intl/server'
 import { redirect as intlRedirect } from '@/i18n/navigation'
 import { redirect } from 'next/navigation'
+import { type Vertical, verticalSlug } from './vertical'
 
 // 当前登录用户（未登录返回 null），React cache 保证单次渲染只查一次
 export const getCurrentUser = cache(async () => {
@@ -49,4 +50,17 @@ export const requireAdmin = cache(async () => {
     throw new Error('unreachable: redirect did not throw')
   }
   return user
+})
+
+// 必须为客户（M6a）：session.customerId 缺失 → 跳转该店客户入口 /{vertical}/{slug}/lookup。
+// 客户入口按店独立（不像 owner/admin 是全局 /login），需显式传 slug + vertical
+export const requireCustomer = cache(async (slug: string, vertical: Vertical) => {
+  const session = await auth()
+  const cid = session?.user?.customerId
+  if (!cid) {
+    const locale = await getLocale()
+    intlRedirect({ href: `/${verticalSlug(vertical)}/${slug}/lookup`, locale })
+    throw new Error('unreachable: redirect did not throw')
+  }
+  return session.user
 })

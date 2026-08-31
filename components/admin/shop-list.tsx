@@ -3,6 +3,7 @@
 import { getTranslations } from 'next-intl/server'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
+import { type Vertical, VERTICALS } from '@/lib/vertical'
 import { ShopListActions } from './shop-list-actions'
 
 export type SubStatus = 'trial' | 'active' | 'expired' | 'suspended'
@@ -20,9 +21,6 @@ export function subStatus(shop: {
 }
 
 const PAGE_SIZE = 20
-
-const VERTICALS = ['FOOD', 'MOTO', 'SALON', 'PET', 'LAUNDRY'] as const
-type VerticalValue = (typeof VERTICALS)[number]
 
 // 订阅状态 → Prisma where（与 subStatus 判定一致，4 类互斥；pending = 入驻审核待审，独立维度）
 function statusWhere(status: string): Prisma.ShopWhereInput | null {
@@ -91,7 +89,7 @@ export async function ShopList({
         }
       : {}),
     ...(vertical && vertical !== 'all'
-      ? { vertical: vertical as VerticalValue }
+      ? { vertical: vertical as Vertical }
       : {}),
     ...(statusWhere(status) ?? {}),
   }
@@ -227,6 +225,7 @@ export async function ShopList({
               )}
               <ShopListActions
                 shopId={s.id}
+                vertical={s.vertical}
                 slug={s.slug}
                 plan={s.plan}
                 suspended={s.platformSuspended}

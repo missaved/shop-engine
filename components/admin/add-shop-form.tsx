@@ -3,7 +3,8 @@
 import { useState, useTransition } from 'react'
 import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
-import { createShop, type Vertical } from '@/lib/admin-actions'
+import { createShop } from '@/lib/admin-actions'
+import { type Vertical } from '@/lib/vertical'
 import { routing } from '@/i18n/routing'
 import { useToast, ToastView } from '../dashboard/use-toast'
 
@@ -12,13 +13,14 @@ const CURRENCIES = ['VND', 'USD', 'EUR', 'SGD', 'CNY'] as const
 const PLANS = ['TRIAL', 'BASIC', 'PRO'] as const
 
 // 垂直类目（SaaS 附加的 App 即这些垂直；FOOD 先行，其余为模板扩展位）
-const VERTICALS = [
+// value 以 Vertical 类型约束（与 lib/vertical.ts 同源）；labelKey 走 admin namespace 多语
+const VERTICAL_OPTIONS: { value: Vertical; labelKey: string }[] = [
   { value: 'FOOD', labelKey: 'verticalFood' },
   { value: 'MOTO', labelKey: 'verticalMoto' },
   { value: 'SALON', labelKey: 'verticalSalon' },
   { value: 'PET', labelKey: 'verticalPet' },
   { value: 'LAUNDRY', labelKey: 'verticalLaundry' },
-] as const
+]
 
 // slug 保留字（前端即时校验，与服务端 admin-actions 保持一致）
 const RESERVED_SLUGS = new Set([
@@ -156,7 +158,7 @@ export function AddShopForm({ defaultTrialDays }: { defaultTrialDays?: number })
             onChange={(e) => setVertical(e.target.value as Vertical)}
             className={inputCls}
           >
-            {VERTICALS.map((v) => (
+            {VERTICAL_OPTIONS.map((v) => (
               <option key={v.value} value={v.value}>
                 {t(v.labelKey)}
               </option>

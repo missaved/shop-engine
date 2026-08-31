@@ -7,6 +7,8 @@ export type LLMProviderName = 'ds' | 'minimax' | 'gemini'
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant'
   content: string
+  /** 可选图片（data:image/xxx;base64,...），仅 gemini 视觉支持（moto OCR 用，见 lib/ocr.ts） */
+  imageDataUrl?: string
 }
 
 export interface ChatOptions {

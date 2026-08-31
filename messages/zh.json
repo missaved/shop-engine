@@ -794,6 +794,10 @@
   "customer": {
     "title": "车辆查询",
     "login": "登录",
+    "continueGoogle": "使用 Google 登录",
+    "continueFacebook": "使用 Facebook 登录",
+    "socialLoginUnavailable": "暂不可用",
+    "socialLoginHint": "或",
     "register": "注册",
     "name": "姓名",
     "phone": "手机号",

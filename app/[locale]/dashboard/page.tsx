@@ -17,6 +17,9 @@ import type { ReminderPlain } from '@/components/dashboard/reminder-list'
 import { FOOD_SUBCATEGORIES } from '@/lib/llm/prompts'
 import type { PresetOption } from '@/components/dashboard/preset-onboarding'
 import type { DraftItem } from '@/lib/preset-actions'
+// M2.5 MOTO 垂直分流：moto 老板端独立组件（food 分支零改动）
+import { MotoDashboard } from '@/components/moto/moto-dashboard'
+import type { MotoShop } from '@/components/moto/types'
 
 // FoodPreset.items 单道菜（生成结构；第 20 批含酒水规格 optionGroups；多语言整改加三语字段）
 type PresetDishItem = {
@@ -47,6 +50,24 @@ const STATUS_KEY: Record<string, string> = {
   CANCELLED: 'statusCancelled',
 }
 
+// M2.5 MOTO 老板端 shop 序列化：只传 moto 用到的字段（presets 大按钮/常见车型/收款配置）
+function serializeMotoShop(shop: NonNullable<Awaited<ReturnType<typeof prisma.shop.findUnique>>>): MotoShop {
+  const cfg = (shop.config as NonNullable<MotoShop['config']> | null) ?? {}
+  return {
+    id: shop.id,
+    slug: shop.slug,
+    vertical: shop.vertical,
+    name: shop.name,
+    phone: shop.phone,
+    currency: shop.currency,
+    config: {
+      presets: cfg?.presets ?? [],
+      commonModels: cfg?.commonModels ?? [],
+      payment: cfg?.payment,
+    },
+  }
+}
+
 // 老板侧一页后台：今日概览 + 桌台简表 + 待办提醒 + 订单列表 + 设置
 // 订单实时性（2026-08-30）：订单列表首屏由本页渲染传入，之后 order-list 轮询 server action
 // getDashboardOrders() setState 更新（server action 直查库，绕开 router.refresh 的客户端 Router Cache 旧快照）
@@ -56,8 +77,25 @@ export default async function DashboardPage() {
   const shopId = user.shopId
   const t = await getTranslations('dashboard')
 
-  const [shop, orders, products, reminders, presets, categories, shopDraft] = await Promise.all([
-    prisma.shop.findUnique({ where: { id: shopId } }),
+  // M2.5 垂直分流：先单独查 shop，MOTO 直接走独立老板端组件（以下 food 分支代码零改动）
+  const shop = await prisma.shop.findUnique({ where: { id: shopId } })
+  if (!shop) return null
+  // 订阅到期判断（M5.2b）：MOTO 分流提前 return，food 分支的横幅逻辑到不了，这里统一先算，MOTO 分支也带上
+  const subscriptionExpired = await isShopExpired(shop)
+  if (shop.vertical === 'MOTO') {
+    return (
+      <MotoDashboard
+        shop={serializeMotoShop(shop)}
+        subscriptionExpired={subscriptionExpired}
+        onLogout={async () => {
+          'use server'
+          await signOut({ redirectTo: '/login' })
+        }}
+      />
+    )
+  }
+
+  const [orders, products, reminders, presets, categories, shopDraft] = await Promise.all([
     findOrdersForDashboard(shopId),
 
     prisma.product.findMany({
@@ -78,14 +116,13 @@ export default async function DashboardPage() {
     prisma.shopDraft.findUnique({ where: { shopId } }),
   ])
 
-  if (!shop) return null
-
   // 订阅到期判断：老板后台顶部横幅提示（客户侧已同步拦截下单）
-  const subscriptionExpired = await isShopExpired(shop)
+  // 已在 MOTO 分流前统一计算（M5.2b），food 分支这里直接复用
 
   const shopPlain: ShopPlain = {
     id: shop.id,
     slug: shop.slug,
+    vertical: shop.vertical,
     name: shop.name,
     phone: shop.phone,
     open: shop.open,

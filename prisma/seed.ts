@@ -168,6 +168,151 @@ async function main() {
     },
   })
   console.log(`平台运营账号就绪：${admin.phone} / demo1234（ADMIN）`)
+
+  // ================= MOTO 垂直（M1 种子，见 plans/12-moto-implementation.md）=================
+
+  // moto Demo 店（显式 vertical=MOTO；config 从 MotoPreset 预设库拉取写入）
+  const motoShop = await prisma.shop.upsert({
+    where: { slug: 'demo-moto' },
+    update: {},
+    create: {
+      slug: 'demo-moto',
+      name: 'Demo Moto 88',
+      vertical: 'MOTO',
+      phone: '0901122334',
+      address: '45 Trần Hưng Đạo, Q5, TP.HCM',
+      config: {
+        openHours: '07:00-19:00',
+        // 常见车型（开单分步向导点选，老板可在设置页自定义）
+        commonModels: [
+          'Honda Wave Alpha',
+          'Honda Blade',
+          'Honda Lead',
+          'Honda Air Blade',
+          'Yamaha Sirius',
+          'Yamaha Jupiter',
+          'Yamaha Exciter',
+          'SYM Attila',
+          'Piaggio Vespa',
+        ],
+      },
+    },
+  })
+
+  // MotoPreset 中台预设库种子（8.2 服务清单，按越南现实高频；价格参考可改）
+  const motoPresetsData = [
+    // 保养类（bảo dưỡng）
+    { serviceKey: 'oil_change', nameVi: 'Thay nhớt máy', nameZh: '换机油', nameEn: 'Engine Oil Change', price: 150000, unit: 'lần', category: '保养', maintenanceType: 'OIL', intervalKm: 2000, intervalDays: 180, sortOrder: 10 },
+    { serviceKey: 'maintenance_periodic', nameVi: 'Bảo dưỡng định kỳ', nameZh: '定期保养', nameEn: 'Periodic Maintenance', price: 250000, unit: 'lần', category: '保养', maintenanceType: 'PERIODIC', intervalKm: 4000, intervalDays: 120, sortOrder: 20 },
+    { serviceKey: 'injector_clean', nameVi: 'Vệ sinh phun xăng', nameZh: '清洗电喷', nameEn: 'Fuel Injector Cleaning', price: 200000, unit: 'lần', category: '保养', maintenanceType: 'REPAIR', sortOrder: 30 },
+    // 维修类（sửa chữa）
+    { serviceKey: 'tire_patch', nameVi: 'Vá lốp', nameZh: '补胎', nameEn: 'Tire Patch', price: 50000, unit: 'lỗ', category: '维修', maintenanceType: 'REPAIR', sortOrder: 100 },
+    { serviceKey: 'tire_change', nameVi: 'Thay lốp', nameZh: '换胎', nameEn: 'Tire Replacement', price: 350000, unit: 'cái', category: '维修', maintenanceType: 'REPAIR', sortOrder: 110 },
+    { serviceKey: 'brake_change', nameVi: 'Thay phanh', nameZh: '换刹车', nameEn: 'Brake Pad Replacement', price: 150000, unit: 'cái', category: '维修', maintenanceType: 'REPAIR', sortOrder: 120 },
+    { serviceKey: 'brake_repair', nameVi: 'Sửa phanh', nameZh: '修刹车', nameEn: 'Brake Repair', price: 80000, unit: 'lần', category: '维修', maintenanceType: 'REPAIR', sortOrder: 130 },
+    { serviceKey: 'battery_change', nameVi: 'Thay bình ắc quy', nameZh: '换电池', nameEn: 'Battery Replacement', price: 500000, unit: 'cái', category: '维修', maintenanceType: 'REPAIR', sortOrder: 140 },
+    { serviceKey: 'spark_change', nameVi: 'Thay bugi', nameZh: '换火花塞', nameEn: 'Spark Plug Replacement', price: 120000, unit: 'cái', category: '维修', maintenanceType: 'REPAIR', sortOrder: 150 },
+    { serviceKey: 'chain_change', nameVi: 'Thay xích nhông', nameZh: '换链条齿轮', nameEn: 'Chain & Sprocket Replacement', price: 400000, unit: 'bộ', category: '维修', maintenanceType: 'REPAIR', sortOrder: 160 },
+    { serviceKey: 'belt_change', nameVi: 'Thay dây curoa', nameZh: '换皮带', nameEn: 'Belt Replacement', price: 250000, unit: 'cái', category: '维修', maintenanceType: 'REPAIR', sortOrder: 170 },
+    { serviceKey: 'electric_repair', nameVi: 'Sửa điện', nameZh: '修线路', nameEn: 'Electrical Repair', price: 150000, unit: 'lần', category: '维修', maintenanceType: 'REPAIR', sortOrder: 180 },
+    { serviceKey: 'starter_repair', nameVi: 'Sửa khởi động', nameZh: '修电启动', nameEn: 'Starter Repair', price: 200000, unit: 'lần', category: '维修', maintenanceType: 'REPAIR', sortOrder: 190 },
+    // 检查类（kiểm tra）
+    { serviceKey: 'general_check', nameVi: 'Kiểm tra tổng quát', nameZh: '全面检查', nameEn: 'General Inspection', price: 100000, unit: 'lần', category: '检查', maintenanceType: 'REPAIR', sortOrder: 300 },
+  ]
+  for (const p of motoPresetsData) {
+    await prisma.motoPreset.upsert({
+      where: { serviceKey: p.serviceKey },
+      update: { active: true },
+      create: {
+        serviceKey: p.serviceKey,
+        nameVi: p.nameVi,
+        nameZh: p.nameZh,
+        nameEn: p.nameEn,
+        defaultPrice: p.price,
+        unit: p.unit,
+        category: p.category,
+        maintenanceType: p.maintenanceType,
+        intervalKm: p.intervalKm ?? null,
+        intervalDays: p.intervalDays ?? null,
+        sortOrder: p.sortOrder,
+      },
+    })
+  }
+  console.log(`MotoPreset 预设库就绪：${motoPresetsData.length} 个服务预设`)
+
+  // Demo 店从预设库拉取 active 预设 → Shop.config.presets（老板开单大按钮数据源）
+  const activeMotoPresets = await prisma.motoPreset.findMany({
+    where: { active: true },
+    orderBy: { sortOrder: 'asc' },
+  })
+  const motoCfg = (motoShop.config as Record<string, unknown> | null) ?? {}
+  await prisma.shop.update({
+    where: { id: motoShop.id },
+    data: {
+      config: {
+        ...motoCfg,
+        presets: activeMotoPresets.map((mp) => ({
+          serviceKey: mp.serviceKey,
+          name: mp.nameVi,
+          nameZh: mp.nameZh,
+          nameEn: mp.nameEn,
+          price: mp.defaultPrice.toString(),
+          unit: mp.unit,
+          category: mp.category,
+          maintenanceType: mp.maintenanceType,
+          intervalKm: mp.intervalKm,
+          intervalDays: mp.intervalDays,
+        })),
+      },
+    },
+  })
+  console.log(`Demo moto 店「${motoShop.name}」预设大按钮 ${activeMotoPresets.length} 个已就绪`)
+
+  // 测试车 2 台（真实越南车牌格式 59-X1 234.56 → normalize 存 59X123456；ownerPhone 归一化）
+  const vehicles = [
+    {
+      plate: '59X123456',
+      brand: 'Honda',
+      model: 'Wave Alpha',
+      year: 2019,
+      mileage: 12000,
+      ownerName: 'Nguyễn Văn An',
+      ownerPhone: '0923456789',
+      notes: '首次建档',
+    },
+    {
+      plate: '59A678123',
+      brand: 'Yamaha',
+      model: 'Sirius',
+      year: 2021,
+      mileage: null, // 可空：新车建档无里程
+      ownerName: 'Trần Thị Bích',
+      ownerPhone: '0934567890',
+      notes: '',
+    },
+  ]
+  for (const v of vehicles) {
+    await prisma.vehicle.upsert({
+      where: { shopId_plate: { shopId: motoShop.id, plate: v.plate } },
+      update: {},
+      create: { shopId: motoShop.id, ...v },
+    })
+  }
+  console.log(`moto Demo 店测试车 ${vehicles.length} 台就绪（59X123456 / 59A678123）`)
+
+  // moto 店老板账号（手机号登录，与 demo-moto 店 phone 一致；密码同 food demo）
+  const motoOwner = await prisma.user.upsert({
+    where: { phone: '0901122334' },
+    update: {},
+    create: {
+      shopId: motoShop.id,
+      phone: '0901122334',
+      passwordHash: await hash('demo1234', 10),
+      name: 'Chủ tiệm moto',
+      role: 'OWNER',
+    },
+  })
+  console.log(`moto 店老板账号就绪：${motoOwner.phone} / demo1234`)
 }
 
 main()

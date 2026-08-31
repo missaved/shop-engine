@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, useTransition } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
 import { routing } from '@/i18n/routing'
 import type { ShopTheme } from '@/lib/theme'
+import type { Vertical } from '@/lib/vertical'
 import {
   addItemsToOrder,
   advanceOrderStatus,
@@ -23,6 +24,7 @@ export type { OrderItem, OrderPlain }
 export type ShopPlain = {
   id: string
   slug: string
+  vertical: Vertical
   name: string
   phone: string | null
   open: boolean

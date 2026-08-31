@@ -8,6 +8,8 @@ import { getGuestActiveOrder, getOccupiedTables } from '@/lib/actions'
 import { formatPrice } from '@/lib/format'
 import { LocaleSwitcher } from '@/components/locale-switcher'
 import type { ShopTheme } from '@/lib/theme'
+import { shopSubUrl } from '@/lib/urls'
+import type { Vertical } from '@/lib/vertical'
 
 // 菜单商品序列化类型（server component 已把 Decimal/可空字段转基础类型）
 export type MenuProduct = {
@@ -63,6 +65,7 @@ function ensureGuestKey(): string {
 
 // 客户侧点单表单：逐项加减数量 + 加料 + 点单类型 + 手机号 + 一键下单
 export function MenuOrder({
+  vertical,
   slug,
   shopName,
   shopDesc,
@@ -81,6 +84,7 @@ export function MenuOrder({
   recommended = [],
   continueOrderNo,
 }: {
+  vertical: Vertical
   slug: string
   shopName: string
   shopDesc: string
@@ -126,7 +130,7 @@ export function MenuOrder({
   // 进行中订单提示条（welcome 页与菜单列表页共用）
   const activeBanner = guestActive ? (
     <Link
-      href={`/s/${slug}/track?orderNo=${guestActive}`}
+      href={shopSubUrl({ vertical, slug }, 'track', { orderNo: guestActive })}
       className="mb-2 block w-full rounded-[var(--theme-radius)] bg-primary px-4 py-2.5 text-center text-sm font-medium text-primary-fg shadow-md shadow-primary/20"
     >
       {t('activeOrderHint')} ▸
@@ -402,7 +406,10 @@ export function MenuOrder({
         {/* 实时查单（主操作）：有手机号时带预填，无手机号直接进查单 */}
         <div className="flex w-full flex-col gap-2.5">
           <Link
-            href={`/s/${slug}/track?orderNo=${done.displayNo}${phone.trim() ? `&phone=${encodeURIComponent(phone.trim())}` : ''}`}
+            href={shopSubUrl({ vertical, slug }, 'track', {
+              orderNo: done.displayNo,
+              phone: phone.trim() || undefined,
+            })}
             className="flex w-full items-center justify-center gap-2 rounded-[var(--theme-radius-btn)] bg-gradient-to-r from-primary to-primary-hover px-4 py-3 text-lg font-semibold text-primary-fg shadow-md shadow-primary/25 transition-transform hover:brightness-105 active:scale-[0.98]"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 5h18M9 3v2M15 3v2M3 5l2 14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2l2-14"/><path d="M9 12a3 3 0 0 1 6 0"/></svg>
@@ -421,7 +428,10 @@ export function MenuOrder({
               {recommended.slice(0, 4).map((p) => (
                 <Link
                   key={p.id}
-                  href={`/s/${slug}/track?orderNo=${done.displayNo}${phone.trim() ? `&phone=${encodeURIComponent(phone.trim())}` : ''}`}
+                  href={shopSubUrl({ vertical, slug }, 'track', {
+              orderNo: done.displayNo,
+              phone: phone.trim() || undefined,
+            })}
                   className="relative flex flex-col overflow-hidden rounded-[var(--theme-radius-card)] border border-line bg-surface text-left shadow-sm transition-transform active:scale-[0.98]"
                 >
                   {p.image ? (

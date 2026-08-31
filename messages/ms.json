@@ -794,6 +794,10 @@
   "customer": {
     "title": "Semak kenderaan",
     "login": "Log masuk",
+    "continueGoogle": "Teruskan dengan Google",
+    "continueFacebook": "Teruskan dengan Facebook",
+    "socialLoginUnavailable": "Tidak tersedia",
+    "socialLoginHint": "atau",
     "register": "Daftar",
     "name": "Nama penuh",
     "phone": "Nombor telefon",

@@ -1,6 +1,11 @@
-// 客户侧菜单页：/s/[slug]，公开访问（未登录），按 slug 派生租户
+// 客户侧单店入口页：/{vertical}/{slug}（公开访问，未登录），按 slug 派生租户
+// 多垂直门：vertical 段识别 + 垂直不符→404；非 FOOD 店铺（如 MOTO）落地自己的子页入口
+import { redirect, notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { getShopBySlug, ShopUnavailableError } from '@/lib/tenant'
+import { parseVerticalSlug } from '@/lib/vertical'
+import { shopSubUrl, localizedUrl } from '@/lib/urls'
+import type { Locale } from '@/i18n/routing'
 import { ShopUnavailableView } from '@/components/shop/shop-unavailable'
 import { isShopExpired } from '@/lib/billing'
 import { MenuOrder } from '@/components/shop/menu-order'
@@ -13,14 +18,17 @@ export default async function ShopMenuPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ locale: string; slug: string }>
+  params: Promise<{ locale: string; vertical: string; slug: string }>
   searchParams: Promise<{
     table?: string | string[]
     type?: string | string[]
     continue?: string | string[]
   }>
 }) {
-  const { locale, slug } = await params
+  const { locale, vertical: verticalParam, slug } = await params
+  // URL 垂直段必须是合法短码，否则 404；getShopBySlug expectVertical 再校验与店实际垂直一致
+  const vertical = parseVerticalSlug(verticalParam)
+  if (!vertical) notFound()
   // 桌号预填（扫码点餐）：?table= 非字符串（如重复参数成数组）时忽略
   // 继续点菜（track 页「继续点菜」按钮直达菜单）：?type= 恢复用餐方式（堂食/外带/外送），跳过欢迎页重选
   // ?continue= 标记继续点菜目标订单（提交时合并进现有单，不新建单）
@@ -31,7 +39,7 @@ export default async function ShopMenuPage({
   // 维护模式全拦（含查单）/ 入驻审核未通过店：getShopBySlug 抛 ShopUnavailableError → 渲染提示页
   let shop: Awaited<ReturnType<typeof getShopBySlug>>
   try {
-    shop = await getShopBySlug(slug)
+    shop = await getShopBySlug(slug, { expectVertical: vertical })
   } catch (e) {
     if (e instanceof ShopUnavailableError) {
       return (
@@ -39,6 +47,13 @@ export default async function ShopMenuPage({
       )
     }
     throw e
+  }
+
+  // 非 FOOD 店铺都有自己的落地子页入口（MOTO=store-code 店码落地 /lookup），根路径重定向过去
+  if (shop.vertical !== 'FOOD') {
+    redirect(
+      localizedUrl(shopSubUrl({ vertical: shop.vertical, slug }, 'lookup'), locale as Locale),
+    )
   }
 
   const products = await prisma.product.findMany({
@@ -110,6 +125,7 @@ export default async function ShopMenuPage({
   const suspended = shop.platformSuspended
   return (
     <MenuOrder
+      vertical={shop.vertical}
       slug={slug}
       shopName={shop.name}
       shopDesc={shopDesc}

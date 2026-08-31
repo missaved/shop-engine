@@ -794,6 +794,10 @@
   "customer": {
     "title": "Tra cứu xe",
     "login": "Đăng nhập",
+    "continueGoogle": "Tiếp tục với Google",
+    "continueFacebook": "Tiếp tục với Facebook",
+    "socialLoginUnavailable": "Chưa khả dụng",
+    "socialLoginHint": "hoặc",
     "register": "Đăng ký",
     "name": "Họ tên",
     "phone": "Số điện thoại",

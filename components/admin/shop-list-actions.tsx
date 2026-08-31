@@ -13,11 +13,14 @@ import {
   toggleShopApproval,
   unlockUser,
 } from '@/lib/admin-actions'
+import { shopUrl } from '@/lib/urls'
+import type { Vertical } from '@/lib/vertical'
 import { useToast, ToastView } from '../dashboard/use-toast'
 
 // 店铺卡片操作按钮：停用/启用、推荐位、删除、重置密码、入驻审核、解锁老板账号（client 交互 + toast）
 export function ShopListActions({
   shopId,
+  vertical,
   slug,
   plan,
   suspended,
@@ -27,6 +30,7 @@ export function ShopListActions({
   ownerId,
 }: {
   shopId: string
+  vertical: Vertical
   slug: string
   plan: string
   suspended: boolean
@@ -111,7 +115,7 @@ export function ShopListActions({
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Link
-        href={`/s/${slug}`}
+        href={shopUrl({ vertical, slug })}
         target="_blank"
         className="rounded-md border border-zinc-300 px-3 py-1.5 text-xs transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
       >

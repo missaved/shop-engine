@@ -2,10 +2,13 @@
 // session 里注入 shopId / role，供 DAL 做租户隔离与授权
 import NextAuth from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
+import Google from 'next-auth/providers/google'
+import Facebook from 'next-auth/providers/facebook'
 import { CredentialsSignin } from 'next-auth'
 import type { DefaultSession } from 'next-auth'
 import { compare } from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
+import { normalizePhone } from '@/lib/phone'
 import {
   ADMIN_LIMIT_OPTS,
   clearFailures,
@@ -184,39 +187,156 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
       },
     }),
+    // 客户账号 provider（M6a）：手机号+密码，authorize 查 Customer 表。
+    // 与 owner/admin 完全隔离（Customer 独立表，不动 UserRole 枚举）；登录不限流（MVP 从简，
+    // 客户账号非关键资源，后续按需接 rate-limit）。登录不强制：低门槛客户走匿名查询（6.3b）
+    Credentials({
+      id: 'customer-credentials',
+      name: 'customer',
+      credentials: {
+        phone: { label: 'Phone', type: 'tel' },
+        password: { label: 'Password', type: 'password' },
+      },
+      authorize: async (credentials) => {
+        const phone = normalizePhone(
+          typeof credentials?.phone === 'string' ? credentials.phone : '',
+        )
+        const password =
+          typeof credentials?.password === 'string' ? credentials.password : ''
+        if (!phone || !password) return null
+        const customer = await prisma.customer.findUnique({ where: { phone } })
+        if (!customer) return null
+        // 身份融合（2026-08-31）：passwordHash 可空（纯 OAuth 客户无密码）——密码登录仅支持有密码客户
+        if (!customer.passwordHash) return null
+        const ok = await compare(password, customer.passwordHash)
+        if (!ok) return null
+        return {
+          id: customer.id,
+          name: customer.name ?? customer.phone ?? customer.username,
+          phone: customer.phone ?? undefined,
+          role: 'CUSTOMER',
+        }
+      },
+    }),
+    // 顾客 OAuth 主通道（用户拍板 2026-08-31「本期做 FB/Google」）：显式传 env，不走 AUTH_ 隐式前缀
+    // （避免与老板实例共享 env 的魔术映射）；未配置 → 该 provider 不加入，零崩溃。
+    // profile() 必须显式返回 { id: Customer.id, role: 'CUSTOMER' }（plan 审辩 A3）：
+    // 否则 Google/FB 默认只返回 provider sub + 无 role → jwt 走 else 分支、token.customerId 永不写 → 身份融合静默失效。
+    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+      ? [
+          Google({
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+            async profile(profile) {
+              const providerId = String(profile.sub ?? '')
+              const customer = await prisma.customer.upsert({
+                where: { provider_providerId: { provider: 'google', providerId } },
+                create: {
+                  provider: 'google',
+                  providerId,
+                  name: profile.name ?? null,
+                  email: profile.email ?? null,
+                  image: profile.picture ?? null,
+                },
+                update: {
+                  name: profile.name ?? undefined,
+                  email: profile.email ?? undefined,
+                  image: profile.picture ?? undefined,
+                },
+              })
+              return {
+                id: customer.id,
+                name: customer.name ?? customer.phone ?? customer.username ?? undefined,
+                email: customer.email ?? undefined,
+                image: customer.image ?? undefined,
+                role: 'CUSTOMER',
+              }
+            },
+          }),
+        ]
+      : []),
+    ...(process.env.FACEBOOK_CLIENT_ID && process.env.FACEBOOK_CLIENT_SECRET
+      ? [
+          Facebook({
+            clientId: process.env.FACEBOOK_CLIENT_ID,
+            clientSecret: process.env.FACEBOOK_CLIENT_SECRET,
+            async profile(profile) {
+              const providerId = String(profile.id ?? '')
+              const customer = await prisma.customer.upsert({
+                where: { provider_providerId: { provider: 'facebook', providerId } },
+                create: {
+                  provider: 'facebook',
+                  providerId,
+                  name: profile.name ?? null,
+                  email: profile.email ?? null,
+                  image: profile.picture?.data?.url ?? null,
+                },
+                update: {
+                  name: profile.name ?? undefined,
+                  email: profile.email ?? undefined,
+                  image: profile.picture?.data?.url ?? undefined,
+                },
+              })
+              return {
+                id: customer.id,
+                name: customer.name ?? customer.phone ?? customer.username ?? undefined,
+                email: customer.email ?? undefined,
+                image: customer.image ?? undefined,
+                role: 'CUSTOMER',
+              }
+            },
+          }),
+        ]
+      : []),
   ],
   callbacks: {
     jwt({ token, user }) {
       if (user) {
-        token.shopId = user.shopId
-        token.role = user.role
+        if (user.role === 'CUSTOMER') {
+          // 客户会话：写 customerId + phone（认领用 ownerPhone 匹配），不碰 shopId（owner/admin 分支不受影响）
+          token.customerId = user.id
+          token.phone = user.phone
+          token.role = 'CUSTOMER'
+        } else if (user.role === 'OWNER' || user.role === 'ADMIN') {
+          token.shopId = user.shopId
+          token.role = user.role
+        }
+        // 其它（如未来 provider 漏传 role）不写任何身份，避免误写 shopId/role（plan A3 兜底）
       }
       return token
     },
     session({ session, token }) {
       if (session.user) {
         session.user.id = (token.sub ?? '') as string
-        session.user.shopId = token.shopId as string | null
-        session.user.role = token.role as UserRole
+        if (token.customerId) {
+          // 客户会话：注入 customerId + phone + role='CUSTOMER'
+          session.user.customerId = token.customerId as string
+          session.user.phone = token.phone as string
+          session.user.role = 'CUSTOMER'
+        } else {
+          session.user.shopId = token.shopId as string | null
+          session.user.role = token.role as UserRole
+        }
       }
       return session
     },
   },
 })
 
-// 类型扩展：让 session.user 携带租户与角色信息
+// 类型扩展：让 session.user 携带租户与角色信息（M6a 加 customerId + CUSTOMER 角色）
 declare module 'next-auth' {
   interface Session {
     user: {
       id: string
       shopId: string | null
-      role: UserRole
+      customerId?: string
+      role: UserRole | 'CUSTOMER'
     } & DefaultSession['user']
   }
 
   interface User {
     shopId?: string | null
-    role?: UserRole
+    role?: UserRole | 'CUSTOMER'
     phone?: string
   }
 }

@@ -1,4 +1,6 @@
-// 客户侧查单页：/s/[slug]/track?phone=..&orderNo=..（GET 表单，结果可刷新/分享）
+// 客户侧查单页：/{vertical}/{slug}/track?phone=..&orderNo=..（GET 表单，结果可刷新/分享）
+// 注意：文件内已有本地布尔 `notFound`（查单失败态），故 next/navigation 的 404 函数需别名导入
+import { notFound as notFoundPage } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import { headers } from 'next/headers'
 import { prisma } from '@/lib/prisma'
@@ -6,6 +8,7 @@ import { getShopBySlug, ShopUnavailableError } from '@/lib/tenant'
 import { ShopUnavailableView } from '@/components/shop/shop-unavailable'
 import { isRateLimited, recordFailure } from '@/lib/rate-limit'
 import { normalizePhone } from '@/lib/phone'
+import { parseVerticalSlug } from '@/lib/vertical'
 import { Link } from '@/i18n/navigation'
 import { CallWaiterButton } from '@/components/shop/call-waiter-button'
 import { DeleteMyData } from '@/components/shop/delete-my-data'
@@ -14,22 +17,25 @@ import { AddMoreMenu } from '@/components/shop/add-more-menu'
 import { getRecommendedProducts } from '@/lib/menu'
 import { normalizeTheme } from '@/lib/theme'
 import { formatPrice } from '@/lib/format'
+import { shopSubUrl, shopUrl } from '@/lib/urls'
 
 export default async function TrackOrderPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ locale: string; slug: string }>
+  params: Promise<{ locale: string; vertical: string; slug: string }>
   searchParams: Promise<{ orderNo?: string; phone?: string }>
 }) {
-  const { slug, locale } = await params
+  const { slug, locale, vertical: verticalParam } = await params
+  const vertical = parseVerticalSlug(verticalParam)
+  if (!vertical) notFoundPage()
   const { orderNo: orderNoStr, phone } = await searchParams
   const t = await getTranslations('track')
 
   // 维护模式全拦（含查单）/ 入驻审核未通过店：getShopBySlug 抛 ShopUnavailableError → 渲染提示页
   let shop: Awaited<ReturnType<typeof getShopBySlug>>
   try {
-    shop = await getShopBySlug(slug)
+    shop = await getShopBySlug(slug, { expectVertical: vertical })
   } catch (e) {
     if (e instanceof ShopUnavailableError) {
       return (
@@ -322,7 +328,11 @@ export default async function TrackOrderPage({
               // 继续点菜：跳菜单页带 type 恢复用餐方式、table 恢复桌号、continue 标记加菜目标单
               // （2026-08-29 用户反馈修复：不再锚点滚到下方加菜栏，而是返回真正的点菜页）
               <Link
-                href={`/s/${slug}?type=${orderType}${orderCfg.tableNo ? `&table=${encodeURIComponent(orderCfg.tableNo)}` : ''}&continue=${encodeURIComponent(order.displayNo)}`}
+                href={shopSubUrl({ vertical: shop.vertical, slug }, '', {
+                  type: orderType,
+                  table: orderCfg.tableNo,
+                  continue: order.displayNo,
+                })}
                 className="flex w-full items-center justify-center gap-1.5 rounded-md border border-primary/40 px-4 py-2.5 text-lg font-medium text-primary transition-colors hover:bg-primary/5"
               >
                 <svg
@@ -340,6 +350,7 @@ export default async function TrackOrderPage({
               </Link>
             ) : (
               <DeleteMyData
+                vertical={shop.vertical}
                 slug={slug}
                 orderNo={order.displayNo}
                 phone={trackPhone}
@@ -365,7 +376,7 @@ export default async function TrackOrderPage({
         />
       )}
 
-      <Link href={`/s/${slug}`} className="text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
+      <Link href={shopUrl({ vertical: shop.vertical, slug })} className="text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100">
         {t('backToMenu')}
       </Link>
     </main>

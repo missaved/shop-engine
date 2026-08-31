@@ -73,7 +73,7 @@ export async function createOrder(input: {
   // 无会话 → 静默走 guestKey/guestIp/phone 匿名兜底，**不 throw、不强制登录**。
   const sessionUser = await getCurrentUser()
   const customerId = sessionUser?.customerId ?? null
-  const shop = await getShopBySlug(input.slug)
+  const shop = await getShopBySlug(input.slug, { expectVertical: 'FOOD' })
   if (!shop.open) throw new Error('店铺已打烊')
   if (shop.platformSuspended) throw new Error('店铺暂停营业')
   if (await isShopExpired(shop)) throw new Error('店铺已到期')
@@ -246,7 +246,7 @@ export async function deleteMyData(input: {
   phone?: string
   guestKey?: string
 }): Promise<void> {
-  const shop = await getShopBySlug(input.slug)
+  const shop = await getShopBySlug(input.slug, { expectVertical: 'FOOD' })
   const phone = input.phone ? normalizePhone(input.phone) : ''
   const guestKey = input.guestKey?.trim() ?? ''
   const orderNo = input.orderNo?.trim()
@@ -286,7 +286,7 @@ export async function callWaiter(input: {
   tableNo?: string
   phone?: string
 }): Promise<void> {
-  const shop = await getShopBySlug(input.slug)
+  const shop = await getShopBySlug(input.slug, { expectVertical: 'FOOD' })
   try {
     const now = new Date()
     const since = new Date(now.getTime() - 5 * 60 * 1000)
@@ -361,7 +361,7 @@ export async function addItemsToMyOrder(input: {
   // 扫桌贴码进入加菜模式时携带：同设备不同客（guestKey 不匹配）也可靠桌号命中本桌当前单加菜（2026-08-31 敲定）
   tableNo?: string
 }): Promise<AddItemsResult> {
-  const shop = await getShopBySlug(input.slug)
+  const shop = await getShopBySlug(input.slug, { expectVertical: 'FOOD' })
   if (shop.platformSuspended) return { ok: false, code: 'ORDER_NOT_ADDABLE' }
   if (await isShopExpired(shop)) return { ok: false, code: 'ORDER_NOT_ADDABLE' }
 

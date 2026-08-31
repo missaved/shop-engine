@@ -70,7 +70,7 @@ export async function claimVehicle(
   plate: string,
 ): Promise<CustomerResult> {
   try {
-    const shop = await getShopBySlug(slug)
+    const shop = await getShopBySlug(slug, { expectVertical: 'MOTO' })
     const customer = await requireCustomer(slug, shop.vertical)
     const normPlate = normalizePlate(plate)
     if (!normPlate) return { ok: false, error: 'notFound' }
@@ -102,7 +102,7 @@ export async function claimVehicle(
 // 我的车辆（6.4）：当前店 + 已认领的车辆 → 卡片（含当前在修单/历史维保/下次保养）
 export async function getMyVehicles(slug: string): Promise<CustomerResult<MyVehicle[]>> {
   try {
-    const shop = await getShopBySlug(slug)
+    const shop = await getShopBySlug(slug, { expectVertical: 'MOTO' })
     const customer = await requireCustomer(slug, shop.vertical)
     const vehicles = await prisma.vehicle.findMany({
       where: { shopId: shop.id, ownerCustomerId: customer.customerId },
@@ -156,7 +156,7 @@ export async function getVehicleAnonStatus(
   phoneTail: string,
 ): Promise<CustomerResult<{ vehicle: MyVehicle | null }>> {
   try {
-    const shop = await getShopBySlug(slug)
+    const shop = await getShopBySlug(slug, { expectVertical: 'MOTO' })
     const normPlate = normalizePlate(plate)
     const tail = (phoneTail ?? '').trim()
     if (!normPlate || !tail) return { ok: false, error: 'invalid' }

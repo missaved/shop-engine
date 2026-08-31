@@ -100,7 +100,7 @@ export async function getRecommendedProducts(params: {
   orderStatus?: string
 }): Promise<MenuProduct[]> {
   const { slug, locale, limit = 60, orderStatus } = params
-  const shop = await getShopBySlug(slug)
+  const shop = await getShopBySlug(slug, { expectVertical: 'FOOD' })
   const products = await prisma.product.findMany({
     where: { shopId: shop.id, active: true },
     orderBy: [{ sortOrder: 'asc' }],

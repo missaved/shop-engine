@@ -888,6 +888,7 @@
   "city": {
     "hcm": "Ho Chi Minh City",
     "hn": "Hanoi",
-    "dn": "Da Nang"
+    "dn": "Da Nang",
+    "shopCount": "{n} shops"
   }
 }

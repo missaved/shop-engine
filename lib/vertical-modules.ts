@@ -56,6 +56,8 @@ export interface AggCard {
   badge?: 'open' | 'closed' | 'suspended' | 'expired'
   /** 副信息（如品类/服务范围；可选） */
   subtitle?: string
+  /** 店铺自家图（config.image；可选，无则不显示缩略图） */
+  image?: string
 }
 
 // 聚合卡上下文：locale 供 i18n（预留）；billing 供到期判定（与 isShopExpired 共用 isExpiredByPolicy，
@@ -153,6 +155,8 @@ export function cardAvailability(
 
 // 聚合卡共用投影：badge=徽章态（页面映射四态），差异化卡需保留（否则页面误判为 closed）
 function aggBase(shop: AggShopInput, billing?: BillingPolicy | null): AggCard {
+  const cfg = (shop.config ?? {}) as Record<string, unknown>
+  const image = typeof cfg.image === 'string' && cfg.image ? cfg.image : undefined
   return {
     title: shop.name,
     slug: shop.slug,
@@ -160,6 +164,7 @@ function aggBase(shop: AggShopInput, billing?: BillingPolicy | null): AggCard {
     open: shop.open,
     currency: shop.currency,
     badge: cardAvailability(shop, billing),
+    ...(image ? { image } : {}),
   }
 }
 

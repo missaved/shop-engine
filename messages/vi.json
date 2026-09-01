@@ -888,6 +888,7 @@
   "city": {
     "hcm": "Thành phố Hồ Chí Minh",
     "hn": "Hà Nội",
-    "dn": "Đà Nẵng"
+    "dn": "Đà Nẵng",
+    "shopCount": "{n} cửa hàng"
   }
 }

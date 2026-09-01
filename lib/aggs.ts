@@ -37,6 +37,8 @@ export async function listVerifiedShops(vertical: Vertical, city?: CitySlug): Pr
 // 默认卡片投影（垂直未实现 aggregation.card 时兜底）：title=店名，badge=营业态。
 // 差异化卡片（如 food 显菜单首图 / moto 显服务范围）届时在 vertical-modules 的 aggregation.card 覆盖。
 export function defaultAggCard(shop: ShopPublic, ctx: AggCtx): AggCard {
+  const cfg = (shop.config ?? {}) as Record<string, unknown>
+  const image = typeof cfg.image === 'string' && cfg.image ? cfg.image : undefined
   return {
     title: shop.name,
     slug: shop.slug,
@@ -44,5 +46,6 @@ export function defaultAggCard(shop: ShopPublic, ctx: AggCtx): AggCard {
     open: shop.open,
     currency: shop.currency,
     badge: cardAvailability(shop, ctx.billing), // 由页面侧映射为「营业中/已打烊/已停用/已到期」（i18n 在聚合页做）
+    ...(image ? { image } : {}),
   }
 }

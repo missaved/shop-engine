@@ -33,6 +33,15 @@ export default async function VerticalHomePage({
   const th = await getTranslations('home')
   const tc = await getTranslations('city') // 城市名 6 语
 
+  // 垂直 → 本地授权缩略图（与聚合页/city 页一致；店铺无 config.image 时兜底）
+  const VERTICAL_IMG: Record<string, string> = {
+    FOOD: '/vertical/food.jpg',
+    MOTO: '/vertical/moto.jpg',
+    SALON: '/vertical/salon.jpg',
+    PET: '/vertical/pet.jpg',
+    LAUNDRY: '/vertical/laundry.jpg',
+  }
+
   // 各垂直演示店（有 → 演示店入口；无 → 只显示 boss/开店；demo 店见 prisma/seed.ts）
   const DEMO_SLUG: Partial<Record<Vertical, string>> = { FOOD: 'demo-pho', MOTO: 'demo-moto' }
 
@@ -92,6 +101,7 @@ export default async function VerticalHomePage({
                 card={card}
                 vertical={vertical}
                 city={city}
+                image={card.image ?? VERTICAL_IMG[vertical]}
                 openLabel={td('open')}
                 closedLabel={td('closed')}
                 suspendedLabel={td('suspended')}

@@ -13,6 +13,7 @@ export function ShopCard({
   closedLabel,
   suspendedLabel,
   expiredLabel,
+  image,
 }: {
   card: AggCard
   vertical: Vertical
@@ -21,17 +22,27 @@ export function ShopCard({
   closedLabel: string
   suspendedLabel: string
   expiredLabel: string
+  /** 可选缩略图（门户页传垂直实景图；不传则纯文字卡，向后兼容） */
+  image?: string
 }) {
   return (
     <Link
       href={shopUrl({ vertical, slug: card.slug, city })}
       className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white px-4 py-3 transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800"
     >
-      <span className="flex min-w-0 flex-col">
-        <span className="text-lg font-medium">{card.title}</span>
-        {card.subtitle && (
-          <span className="truncate text-xs text-zinc-400 dark:text-zinc-500">{card.subtitle}</span>
+      <span className="flex min-w-0 flex-1 items-center gap-3">
+        {image && (
+          <span
+            className="h-12 w-12 flex-none rounded-[10px] bg-cover bg-center"
+            style={{ backgroundImage: `url('${image}')` }}
+          />
         )}
+        <span className="flex min-w-0 flex-col">
+          <span className="truncate text-lg font-medium">{card.title}</span>
+          {card.subtitle && (
+            <span className="truncate text-xs text-zinc-400 dark:text-zinc-500">{card.subtitle}</span>
+          )}
+        </span>
       </span>
       <span className="shrink-0 text-sm text-zinc-500 dark:text-zinc-400">
         {card.badge === 'open'

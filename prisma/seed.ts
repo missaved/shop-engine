@@ -14,17 +14,19 @@ const prisma = new PrismaClient({ adapter })
 async function main() {
   const shop = await prisma.shop.upsert({
     where: { slug: 'demo-pho' },
-    update: {},
+    update: { approved: true }, // 演示店：补已落库旧店的 approved（upsert 幂等）
     create: {
       slug: 'demo-pho',
       name: 'Phở Demo 88',
       vertical: 'FOOD',
       city: 'hcm',
+      approved: true, // 演示店：标入驻，聚合/城市列表可见（listVerifiedShops 按 approved 过滤）
       phone: '0901234567',
       address: '12 Nguyễn Huệ, Q1, TP.HCM',
       config: {
         openHours: '07:00-22:00',
         minOrderAmount: 50000, // 起送价
+        image: '/vertical/food.jpg', // 店头图（聚合/门户店铺卡缩略图）
       },
     },
   })
@@ -176,16 +178,18 @@ async function main() {
   // moto Demo 店（显式 vertical=MOTO；config 从 MotoPreset 预设库拉取写入）
   const motoShop = await prisma.shop.upsert({
     where: { slug: 'demo-moto' },
-    update: {},
+    update: { approved: true }, // 演示店：补已落库旧店的 approved（upsert 幂等）
     create: {
       slug: 'demo-moto',
       name: 'Demo Moto 88',
       vertical: 'MOTO',
       city: 'hcm',
+      approved: true, // 演示店：标入驻，聚合/城市列表可见（listVerifiedShops 按 approved 过滤）
       phone: '0901122334',
       address: '45 Trần Hưng Đạo, Q5, TP.HCM',
       config: {
         openHours: '07:00-19:00',
+        image: '/vertical/moto.jpg', // 店头图（聚合/门户店铺卡缩略图）
         // 常见车型（开单分步向导点选，老板可在设置页自定义）
         commonModels: [
           'Honda Wave Alpha',
@@ -341,12 +345,13 @@ async function main() {
       const slug = `demo-${vertical.toLowerCase()}-${citySlug}`
       await prisma.shop.upsert({
         where: { slug },
-        update: {},
+        update: { approved: true }, // 演示店：补已落库旧店的 approved（upsert 幂等）
         create: {
           slug,
           name: `${vmeta.name} ${meta?.nameEn ?? citySlug}`,
           vertical: vertical as never,
           city: citySlug as never,
+          approved: true, // 演示店：标入驻，聚合/城市列表可见（listVerifiedShops 按 approved 过滤）
           phone: vmeta.phone,
           address: `${meta?.nameEn ?? citySlug} demo store`,
           config: { openHours: '07:00-22:00' },

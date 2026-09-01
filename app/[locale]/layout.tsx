@@ -30,7 +30,7 @@ export default async function LocaleLayout({
 
   return (
     <html lang={locale} className="h-full antialiased">
-      <body className="flex min-h-full flex-col bg-orange-50/40 text-zinc-900 dark:bg-black dark:text-zinc-50">
+      <body className="flex min-h-full flex-col bg-[#111] text-zinc-100 dark:bg-black dark:text-zinc-50">
         <NextIntlClientProvider messages={messages}>
           {children}
           {/* 浏览器语言自动适配：须在 provider 内用 useLocale/useRouter，挂载时自动跳一次 */}

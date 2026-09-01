@@ -37,7 +37,7 @@ export default async function HomePage() {
   )
 
   return (
-    <main className="flex flex-1 flex-col">
+    <main className="flex flex-1 flex-col bg-[#111]">
       {/* 沉浸大图 Hero：贴顶铺满 */}
       <section className="relative flex h-[220px] flex-col justify-end overflow-hidden px-5 pb-14 pt-5">
         {/* 背景照片 */}

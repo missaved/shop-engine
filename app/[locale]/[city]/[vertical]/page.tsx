@@ -61,7 +61,7 @@ export default async function VerticalHomePage({
   const labelKey = 'vertical' + vertical[0] + vertical.slice(1).toLowerCase()
 
   return (
-    <main className="flex flex-1 flex-col">
+    <main className="flex flex-1 flex-col bg-[#111]">
       {/* 沉浸大图 Hero：城市风景铺满 */}
       <section className="relative flex h-[220px] flex-col justify-end overflow-hidden px-5 pb-6 pt-5">
         <div

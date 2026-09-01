@@ -230,18 +230,20 @@ export default async function DashboardPage() {
     : []
   const hasSnapshot = !!shopDraft?.snapshot && (shopDraft.snapshot as unknown[]).length > 0
 
-  // C1 今日概览统计
-  const startOfDay = new Date()
-  startOfDay.setHours(0, 0, 0, 0)
-  const todayOrders = orders.filter((o) => o.createdAt >= startOfDay)
+  // C1 今日概览统计（营收口径与 MOTO 一致：paidAmount + 排除取消 + UTC+7 业务日，见 lib/moto-actions getMotoOverview）
+  const todayOrders = orders.filter((o) => o.createdAt >= todayStartUtc)
   const todayCount = todayOrders.length
-  const todayRevenue = todayOrders.reduce((s, o) => s + Number(o.total), 0)
-  // 营业额多档统计（1 天 = 今日，3/7/30 天 = 滚动窗口，供 RevenueCard 二级明细）
+  const todayRevenue = todayOrders
+    .filter((o) => o.status !== 'CANCELLED')
+    .reduce((s, o) => s + Number(o.paidAmount), 0)
+  // 营业额多档统计（1 天 = 今日，3/7/30 天 = 业务日滚动窗口；营收同口径：排除取消 + 用 paidAmount）
   const dayMs = 24 * 60 * 60 * 1000
   const inRange = (days: number) =>
-    orders.filter((o) => o.createdAt >= new Date(Date.now() - days * dayMs))
+    orders.filter((o) => o.createdAt >= new Date(todayStartUtc.getTime() - (days - 1) * dayMs))
   const revenueRange = (days: number) =>
-    inRange(days).reduce((s, o) => s + Number(o.total), 0)
+    inRange(days)
+      .filter((o) => o.status !== 'CANCELLED')
+      .reduce((s, o) => s + Number(o.paidAmount), 0)
   const revenue3d = revenueRange(3)
   const revenue7d = revenueRange(7)
   const revenue30d = revenueRange(30)

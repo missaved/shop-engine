@@ -836,6 +836,7 @@
     "invalid": "手機號碼或密碼格式不正確",
     "registered": "此手機號碼已註冊",
     "notFound": "找不到該車輛",
+    "rateLimited": "查詢過於頻繁，請稍後再試",
     "phoneMismatch": "手機號碼不匹配，請聯絡店家",
     "signOut": "登出"
   },

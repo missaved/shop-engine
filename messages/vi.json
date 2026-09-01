@@ -836,6 +836,7 @@
     "invalid": "Số điện thoại hoặc mật khẩu không hợp lệ",
     "registered": "Số điện thoại này đã đăng ký",
     "notFound": "Không tìm thấy xe này",
+    "rateLimited": "Thao tác quá thường xuyên, vui lòng thử lại sau",
     "phoneMismatch": "Số điện thoại không khớp, vui lòng liên hệ cửa hàng",
     "signOut": "Đăng xuất"
   },

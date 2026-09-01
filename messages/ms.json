@@ -836,6 +836,7 @@
     "invalid": "Nombor telefon atau kata laluan tidak sah",
     "registered": "Nombor telefon ini sudah didaftar",
     "notFound": "Kenderaan tidak dijumpai",
+    "rateLimited": "Terlalu kerap, sila cuba lagi kemudian",
     "phoneMismatch": "Nombor telefon tidak padan, sila hubungi kedai",
     "signOut": "Log keluar"
   },

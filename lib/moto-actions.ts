@@ -734,6 +734,8 @@ export async function settleMotoOrder(
 
     const amount = Number(input.paidAmount)
     if (!Number.isFinite(amount) || amount < 0) throw new Error('实收金额无效')
+    // P3-H 金额上限（复用建单 MAX_ORDER_AMOUNT，防老板误录/伪造超大实收）
+    if (amount > MAX_ORDER_AMOUNT) throw new Error('实收金额超出上限')
 
     const oldCfg = (order.config as Record<string, unknown> | null) ?? {}
     await prisma.order.update({

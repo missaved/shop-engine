@@ -836,6 +836,7 @@
     "invalid": "Invalid phone number or password",
     "registered": "This phone number is already registered",
     "notFound": "Vehicle not found",
+    "rateLimited": "Too many attempts, please try again later",
     "phoneMismatch": "Phone number mismatch, please contact the shop",
     "signOut": "Sign out"
   },

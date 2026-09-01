@@ -3,10 +3,12 @@
 // 认领捆绑强制（检查点）：查绑定内容必须先认领（Vehicle.ownerCustomerId）；匿名查询只给当前/最近单只读
 import { prisma } from '@/lib/prisma'
 import { hash } from 'bcryptjs'
+import { headers } from 'next/headers'
 import { getShopBySlug } from '@/lib/tenant'
 import { requireCustomer } from '@/lib/dal'
 import { normalizePhone } from '@/lib/phone'
 import { normalizePlate } from '@/lib/plate'
+import { isRateLimited, recordFailure } from '@/lib/rate-limit'
 
 // 统一返回：ok=false 时 error 为文案 key（客户组件用 t(`customer.${error}`) 渲染）
 export type CustomerResult<T = undefined> =
@@ -155,6 +157,12 @@ export async function getVehicleAnonStatus(
   plate: string,
   phoneTail: string,
 ): Promise<CustomerResult<{ vehicle: MyVehicle | null }>> {
+  // 匿名查车限流（P3-I）：同 FOOD track 页——按请求 IP 主锁，5 次/60s，防爆破车牌+手机尾号枚举。
+  const h = await headers()
+  const fwd = h.get('x-forwarded-for')
+  const ip = (fwd ? fwd.split(',')[0].trim() : h.get('x-real-ip')?.trim()) || 'unknown'
+  const limKey = `vehicle:anon:ip:${ip}`
+  if (isRateLimited(limKey)) return { ok: false, error: 'rateLimited' }
   try {
     const shop = await getShopBySlug(slug, { expectVertical: 'MOTO' })
     const normPlate = normalizePlate(plate)
@@ -163,10 +171,16 @@ export async function getVehicleAnonStatus(
     const vehicle = await prisma.vehicle.findUnique({
       where: { shopId_plate: { shopId: shop.id, plate: normPlate } },
     })
-    if (!vehicle) return { ok: false, error: 'notFound' }
+    if (!vehicle) {
+      recordFailure(limKey)
+      return { ok: false, error: 'notFound' }
+    }
     // 手机号后 4 位校验（车主手机号末尾匹配），防随便输车牌窥探
     const owner = vehicle.ownerPhone ?? ''
-    if (!owner.endsWith(tail)) return { ok: false, error: 'phoneMismatch' }
+    if (!owner.endsWith(tail)) {
+      recordFailure(limKey)
+      return { ok: false, error: 'phoneMismatch' }
+    }
     const orders = await prisma.order.findMany({
       where: {
         shopId: shop.id,

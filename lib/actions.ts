@@ -26,7 +26,7 @@ import {
   vietnamTodayStartUtc,
   type OrderPlain,
 } from '@/lib/dashboard-orders'
-import { lockOrderForUpdate, dismissOrderReminders } from '@/lib/order-shared'
+import { lockOrderForUpdate, dismissOrderReminders, MAX_ORDER_AMOUNT } from '@/lib/order-shared'
 // 待办提醒序列化类型（与 page.tsx / reminder-list 共享，避免漂移）
 import type { ReminderPlain } from '@/components/dashboard/reminder-list'
 
@@ -98,6 +98,8 @@ export async function settleOrder(
 
     const amount = Number(paidAmount)
     if (!Number.isFinite(amount) || amount < 0) throw new Error('实收金额无效')
+    // P3-H 金额上限（复用建单 MAX_ORDER_AMOUNT，防老板误录/伪造超大实收致账务统计异常）
+    if (amount > MAX_ORDER_AMOUNT) throw new Error('实收金额超出上限')
 
     const oldCfg = (order.config as Record<string, unknown> | null) ?? {}
     await prisma.order.update({

@@ -3,7 +3,6 @@ import { notFound } from 'next/navigation'
 import { getShopBySlug, ShopUnavailableError } from '@/lib/tenant'
 import { ShopUnavailableView } from '@/components/shop/shop-unavailable'
 import { requireCustomer } from '@/lib/dal'
-import { getTranslations } from 'next-intl/server'
 import { parseVerticalSlug } from '@/lib/vertical'
 import { parseCitySlug } from '@/lib/city'
 import { CustomerVehicles } from '@/components/moto/customer-vehicles'
@@ -30,16 +29,6 @@ export default async function CustomerMyPage({
       )
     }
     throw e
-  }
-  if (shop.vertical !== 'MOTO') {
-    const t = await getTranslations('customer')
-    return (
-      <main className="mx-auto flex w-full max-w-xl flex-col gap-4 px-6 py-4">
-        <p className="rounded-xl border border-dashed border-zinc-300 p-6 text-center text-sm text-zinc-500 dark:border-zinc-700">
-          {t('notMoto')}
-        </p>
-      </main>
-    )
   }
   return (
     <CustomerVehicles

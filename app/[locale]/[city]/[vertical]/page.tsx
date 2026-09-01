@@ -6,8 +6,10 @@
 // 城市段（58 同城式 /{locale}/{city}/{vertical}）：city 已为数据维度（Shop.city），聚合按城市过滤（阶段3 起步）。
 import { notFound } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
-import { parseVerticalSlug } from '@/lib/vertical'
+import { parseVerticalSlug, type Vertical } from '@/lib/vertical'
 import { parseCitySlug, cityMeta } from '@/lib/city'
+import { Link } from '@/i18n/navigation'
+import { shopUrl } from '@/lib/urls'
 import { getVerticalModule } from '@/lib/vertical-modules'
 import { listVerifiedShops, defaultAggCard } from '@/lib/aggs'
 import { ShopCard } from '@/components/shop-card'
@@ -25,6 +27,10 @@ export default async function VerticalHomePage({
 
   const t = await getTranslations('admin')
   const td = await getTranslations('dashboard')
+  const th = await getTranslations('home')
+
+  // 各垂直演示店（有 → 演示店入口；无 → 只显示 boss/开店；demo 店见 prisma/seed.ts）
+  const DEMO_SLUG: Partial<Record<Vertical, string>> = { FOOD: 'demo-pho', MOTO: 'demo-moto' }
 
   // 垂直差异注入：模块 aggregation.card 可覆盖为差异化卡片；未实现 → 通用 defaultAggCard 兜底
   const cardFn = getVerticalModule(vertical).aggregation?.card ?? defaultAggCard
@@ -36,6 +42,32 @@ export default async function VerticalHomePage({
   return (
     <main className="mx-auto flex w-full max-w-xl flex-col gap-6 px-6 py-12">
       <h1 className="text-center text-3xl font-bold">{cityMeta(city).nameEn} · {t(labelKey)}</h1>
+
+      {/* 顶部入口：演示店 / 老板登录 / 免费开店（2026-09-01 #6：这些入口进垂直应用；聚合页已移除） */}
+      <div className="flex flex-col gap-2">
+        {DEMO_SLUG[vertical] && (
+          <Link
+            href={shopUrl({ vertical, slug: DEMO_SLUG[vertical]!, city })}
+            className="flex items-center justify-center rounded-md border border-primary/40 px-4 py-2.5 text-sm font-medium text-primary transition-colors hover:bg-primary/5"
+          >
+            {th('shopDemo')}
+          </Link>
+        )}
+        <div className="flex gap-2">
+          <Link
+            href="/login"
+            className="flex-1 rounded-md border border-zinc-300 px-4 py-2 text-center text-sm transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
+          >
+            {th('bossLogin')}
+          </Link>
+          <Link
+            href="/open"
+            className="flex-1 rounded-md bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-2 text-center text-sm font-semibold text-white shadow-md shadow-amber-500/25 transition-transform hover:brightness-105 active:scale-[0.98]"
+          >
+            {th('freeOpen')}
+          </Link>
+        </div>
+      </div>
 
       {shops.length === 0 ? (
         // 空态：该垂直暂无已入驻店铺（保留占位「敬请期待」）

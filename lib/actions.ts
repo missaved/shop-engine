@@ -49,7 +49,7 @@ async function finalizeOrder(
   await dismissOrderReminders(order.id, ['FOOD_NEW_ORDER', 'FOOD_READY', 'FOOD_ADD'])
 }
 
-// 推进订单状态（2026-08-31 用户需求：逐步推进，待处理→处理中→已上桌；README 后主按钮变「收款」，
+// 推进订单状态（2026-09-01 用户需求：任意非终态推进一步直达「已上桌/待取」(READY) → 主按钮变「收款」；
 // 收款结单走 settleOrder，不再推进。不建 FOOD_READY 提醒：推进是老板主动操作，无需再提醒自己）
 export async function advanceOrderStatus(orderId: string): Promise<void> {
   const user = await requireOwner()
@@ -59,9 +59,9 @@ export async function advanceOrderStatus(orderId: string): Promise<void> {
       await prisma.order.findUnique({ where: { id: orderId } }),
     )
 
-    // 逐步推进：待处理→处理中；处理中→已上桌/待取；READY 之后只收款（settleOrder），不再推进
+    // 一次推进直达 READY（已上桌/待取）：PENDING/IN_PROGRESS 均一步到位；READY 之后只收款（settleOrder），不再推进
     const next: Record<string, string> = {
-      PENDING: 'IN_PROGRESS',
+      PENDING: 'READY',
       IN_PROGRESS: 'READY',
     }
     if (!next[order.status]) throw new Error('当前状态无法推进')

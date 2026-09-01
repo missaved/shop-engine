@@ -167,7 +167,7 @@ export function OrderList({
   // 所有订单默认折叠成概要行（仅订单号+状态+时间+金额），点开看全貌（含 PENDING/READY）
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
   const isFolded = (order: OrderPlain) => collapsed[order.id] ?? true
-  // 展开后 5 秒自动收回（所有订单统一规则，含进行中）；timer 按订单 id 独立，点开 A 再点 B 互不影响、各自按时收回
+  // 展开后 10 秒自动收回（所有订单统一规则，含进行中）；timer 按订单 id 独立，点开 A 再点 B 互不影响、各自按时收回
   const collapseTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
   const scheduleAutoCollapse = useCallback((id: string) => {
     const timers = collapseTimersRef.current
@@ -178,7 +178,7 @@ export function OrderList({
       setTimeout(() => {
         setCollapsed((prev) => ({ ...prev, [id]: true }))
         timers.delete(id)
-      }, 5000)
+      }, 10000)
     )
   }, [])
   function expandOrder(id: string) {
@@ -186,7 +186,7 @@ export function OrderList({
     scheduleAutoCollapse(id)
   }
 
-  // 待办提醒点击跳单：监听 order-jump 事件（由 ReminderList 派发），收到即展开该订单 + 5 秒自动收回（与手动展开同规则）
+  // 待办提醒点击跳单：监听 order-jump 事件（由 ReminderList 派发），收到即展开该订单 + 10 秒自动收回（与手动展开同规则）
   useEffect(() => {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent<{ orderId?: string }>).detail

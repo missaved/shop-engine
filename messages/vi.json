@@ -5,7 +5,9 @@
     "tagline": "Từ đơn hàng đến nhắc Zalo — trang quản lý chỉ một trang.",
     "switchLocale": "Ngôn ngữ:",
     "shopDemo": "Cửa hàng demo · Đặt hàng",
-    "bossLogin": "Trang quản lý"
+    "bossLogin": "Trang quản lý",
+    "freeOpen": "Mở miễn phí",
+    "verticalCount": "{n} cửa hàng"
   },
   "login": {
     "title": "Đăng nhập",
@@ -244,7 +246,8 @@
     "callTooFrequent": "Vui lòng chờ một lúc trước khi gọi lại",
     "tableOccupied": "Bàn này đã có đơn đang xử lý — tiếp tục thêm món",
     "addModeHint": "Đang thêm món vào đơn {orderNo}",
-    "addNow": "Thêm món"
+    "addNow": "Thêm món",
+    "queryOrder": "Theo dõi"
   },
   "track": {
     "addMore": "Gọi thêm",
@@ -288,7 +291,8 @@
     "notFoundNoPhone": "Không tìm thấy đơn hàng. Vui lòng kiểm tra mã đơn.",
     "callWaiter": "Gọi nhân viên",
     "callWaiterSent": "Đã gọi nhân viên, vui lòng chờ",
-    "callTooFrequent": "Vui lòng chờ một lúc trước khi gọi lại"
+    "callTooFrequent": "Vui lòng chờ một lúc trước khi gọi lại",
+    "loginSuggest": "Đăng nhập để xem tất cả đơn hàng của bạn."
   },
   "common": {
     "installApp": "Thêm vào màn hình",
@@ -854,5 +858,21 @@
     "tagline": "Công cụ mở đơn tối giản cho tiệm nhỏ Đông Nam Á",
     "domain": "spotnear.me",
     "imageDomain": "img.spotnear.me"
+  },
+  "open": {
+    "title": "Mở cửa hàng",
+    "subtitle": "Gửi để xem xét, hoạt động sau khi duyệt.",
+    "name": "Tên cửa hàng",
+    "vertical": "Danh mục",
+    "city": "Thành phố",
+    "ownerPhone": "SĐT chủ",
+    "ownerPassword": "Mật khẩu chủ (≥8 ký tự)",
+    "submit": "Gửi",
+    "successApproved": "Tạo cửa hàng & hoạt động",
+    "successReview": "Đã gửi — chờ duyệt",
+    "successHint": "Bạn có thể đăng nhập để hoàn thiện cửa hàng.",
+    "goLogin": "Vào đăng nhập",
+    "backHome": "Trang chủ",
+    "errorGeneric": "Gửi thất bại, thử lại"
   }
 }

@@ -596,6 +596,17 @@ export function MenuOrder({
             isLoggedIn={!!isLoggedIn}
             customerName={customerName ?? null}
           />
+          <Link
+            href={shopSubUrl({ vertical, slug, city }, 'track')}
+            aria-label={t('queryOrder')}
+            className="inline-flex h-8 items-center gap-1 rounded-lg border border-zinc-300 px-2.5 text-sm font-medium transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
+          >
+            <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="11" cy="11" r="7" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+            <span className="hidden sm:inline">{t('queryOrder')}</span>
+          </Link>
           {blocked && (
             <span className="text-sm text-red-600 dark:text-red-400">{t(blocked)}</span>
           )}

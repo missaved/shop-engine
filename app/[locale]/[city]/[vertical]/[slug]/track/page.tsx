@@ -19,6 +19,7 @@ import { getRecommendedProducts } from '@/lib/menu'
 import { normalizeTheme } from '@/lib/theme'
 import { formatPrice } from '@/lib/format'
 import { shopSubUrl, shopUrl } from '@/lib/urls'
+import { getCurrentUser } from '@/lib/dal'
 
 export default async function TrackOrderPage({
   params,
@@ -59,6 +60,8 @@ export default async function TrackOrderPage({
   const cookieStr = reqHeaders.get('cookie') ?? ''
   const guestKeyRaw = cookieStr.match(/(?:^|;\s*)guest_key=([^;]*)/)?.[1]?.trim() ?? ''
   const guestKey = guestKeyRaw ? decodeURIComponent(guestKeyRaw) : ''
+  // 登录用户：按账号查自己订单（#3，2026-09-01）。读取 session customerId；无则不启用，游客照旧走 guestKey/表单
+  const customerId = (await getCurrentUser())?.customerId ?? null
 
   // 查单：对外订单号 displayNo（CP-YYMMDD-NNN）+ 手机号（归一化后精确匹配）
   const no = orderNoStr?.trim()
@@ -105,6 +108,12 @@ export default async function TrackOrderPage({
         recordFailure(keyIp)
       }
     }
+  } else if (customerId) {
+    // 登录用户免填：按 customerId 匹配本人最新一单（账号级，比游客 guestKey 设备级更精准）
+    order = await prisma.order.findFirst({
+      where: { shopId: shop.id, customerId },
+      orderBy: { createdAt: 'desc' },
+    })
   } else if (guestKey) {
     // 游客免填：按 guestKey 匹配最新一单（无 cookie 或换设备则回退手动表单）
     order = await prisma.order.findFirst({
@@ -176,6 +185,11 @@ export default async function TrackOrderPage({
       {/* 「查询订单」标题：未命中订单（表单态）时保留作页面标题；命中订单时并入结果卡作次级标题，避免独立大字突兀（2026-08-31） */}
       {!order && <h1 className="text-center text-2xl font-semibold">{t('title')}</h1>}
 
+      {/* 未登录查单提示（不强制）：登录后一键看本人全部订单（#3）；游客照常按单号/手机号查询 */}
+      {!order && !customerId && (
+        <p className="text-center text-sm text-zinc-500 dark:text-zinc-400">{t('loginSuggest')}</p>
+      )}
+
       {/* 查询表单：仅无命中订单时显示（用户反馈：订单已显示详情，上方查询选项隐藏）；
           查失败（notFound/rateLimited）时表单保留可重试，文案在表单下方 */}
       {!order && (
@@ -238,7 +252,7 @@ export default async function TrackOrderPage({
             byIp={ipMatched}
             initialStatus={order.status}
             orderType={orderType}
-            pollActive={Boolean(trackPhone || guestKey || ipMatched)}
+            pollActive={Boolean(trackPhone || guestKey || ipMatched || customerId)}
           />
 
           {/* 订单类型徽章 + 桌号（堂食）/ 地址（外送）：居中显示（2026-08-29 需求7 变大居中） */}
@@ -326,7 +340,7 @@ export default async function TrackOrderPage({
           {/* 未结束订单：显示「继续点菜」返回按钮——真正返回点菜页（/{locale}/{vertical}/{slug}）继续点菜，提交时合并进现有订单；
               已结束订单：P2-1 PDPD 一键删除我的数据；无号单新设备无凭证 → 不显示（仅静态查看）；
               ipMatched（IP+30min 兜底命中，可能是他人匿名单）→ 仅静态查看，不显示继续点菜/删除我的数据 */}
-          {!ipMatched && (trackPhone || guestKey) ? (
+          {!ipMatched && (trackPhone || guestKey || customerId) ? (
             order.status !== 'COMPLETED' && order.status !== 'CANCELLED' ? (
               // 继续点菜：跳菜单页带 type 恢复用餐方式、table 恢复桌号、continue 标记加菜目标单
               // （2026-08-29 用户反馈修复：不再锚点滚到下方加菜栏，而是返回真正的点菜页）
@@ -367,7 +381,7 @@ export default async function TrackOrderPage({
 
       {/* 分条件：订单未结束才显示加菜区；PENDING/IN_PROGRESS 全量、READY 仅「可追加」商品（track 页已过滤）。
           无号单新设备无凭证（无 phone 无 guestKey）→ 不显示加菜区（仅静态查看） */}
-      {canAddMore && order && !ipMatched && (trackPhone || guestKey) && addMoreProducts.length > 0 && (
+      {canAddMore && order && !ipMatched && (trackPhone || guestKey || customerId) && addMoreProducts.length > 0 && (
         <AddMoreMenu
           slug={slug}
           orderNo={order.displayNo}

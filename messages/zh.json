@@ -5,7 +5,9 @@
     "tagline": "从订单到 Zalo 提醒，老板侧一页后台。",
     "switchLocale": "语言：",
     "shopDemo": "进入演示店 · 立即下单",
-    "bossLogin": "老板后台登录"
+    "bossLogin": "老板后台登录",
+    "freeOpen": "免费开店",
+    "verticalCount": "{n} 家店铺"
   },
   "login": {
     "title": "老板登录",
@@ -244,7 +246,8 @@
     "callTooFrequent": "呼叫过于频繁，请稍候",
     "tableOccupied": "该桌已有进行中的订单，请确认后继续加菜",
     "addModeHint": "正在向订单 {orderNo} 加菜",
-    "addNow": "加菜"
+    "addNow": "加菜",
+    "queryOrder": "查单"
   },
   "track": {
     "addMore": "加菜",
@@ -288,7 +291,8 @@
     "notFoundNoPhone": "未找到该订单，请核对订单号",
     "callWaiter": "呼叫服务员",
     "callWaiterSent": "已呼叫服务员，请稍候",
-    "callTooFrequent": "呼叫过于频繁，请稍候"
+    "callTooFrequent": "呼叫过于频繁，请稍候",
+    "loginSuggest": "登录后即可一键查看你的全部订单。"
   },
   "common": {
     "installApp": "添加到桌面",
@@ -854,5 +858,21 @@
     "tagline": "东南亚小商户的极简开单工具",
     "domain": "spotnear.me",
     "imageDomain": "img.spotnear.me"
+  },
+  "open": {
+    "title": "免费开店申请",
+    "subtitle": "提交后由平台审核，通过即可开张。",
+    "name": "店名",
+    "vertical": "类目",
+    "city": "城市",
+    "ownerPhone": "老板手机号",
+    "ownerPassword": "老板密码（≥8 位）",
+    "submit": "提交申请",
+    "successApproved": "开店成功，已生效",
+    "successReview": "申请已提交，请等待审核",
+    "successHint": "可先登录后台完善店铺。",
+    "goLogin": "去后台登录",
+    "backHome": "返回首页",
+    "errorGeneric": "提交失败，请重试"
   }
 }

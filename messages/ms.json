@@ -5,7 +5,9 @@
     "tagline": "Daripada pesanan hingga peringatan Zalo — satu papan pemuka bos.",
     "switchLocale": "Bahasa:",
     "shopDemo": "Kedai demo · Pesan sekarang",
-    "bossLogin": "Papan pemuka bos"
+    "bossLogin": "Papan pemuka bos",
+    "freeOpen": "Buka percuma",
+    "verticalCount": "{n} kedai"
   },
   "login": {
     "title": "Log Masuk Bos",
@@ -244,7 +246,8 @@
     "callTooFrequent": "Sila tunggu sebentar sebelum memanggil lagi",
     "tableOccupied": "Meja ini ada pesanan aktif — teruskan tambah item",
     "addModeHint": "Menambah item ke pesanan {orderNo}",
-    "addNow": "Tambah item"
+    "addNow": "Tambah item",
+    "queryOrder": "Semak"
   },
   "track": {
     "addMore": "Tambah lagi",
@@ -288,7 +291,8 @@
     "notFoundNoPhone": "Pesanan tidak ditemui. Sila semak nombor pesanan.",
     "callWaiter": "Panggil pelayan",
     "callWaiterSent": "Pelayan dipanggil, sila tunggu",
-    "callTooFrequent": "Sila tunggu sebentar sebelum memanggil lagi"
+    "callTooFrequent": "Sila tunggu sebentar sebelum memanggil lagi",
+    "loginSuggest": "Log masuk untuk lihat semua pesanan anda sekali imbas."
   },
   "common": {
     "installApp": "Tambah ke Skrin Utama",
@@ -854,5 +858,21 @@
     "tagline": "Alat jualan ringan untuk kedai kecil Asia Tenggara",
     "domain": "spotnear.me",
     "imageDomain": "img.spotnear.me"
+  },
+  "open": {
+    "title": "Buka Kedai",
+    "subtitle": "Hantar untuk semakan, aktif selepas diluluskan.",
+    "name": "Nama kedai",
+    "vertical": "Kategori",
+    "city": "Bandar",
+    "ownerPhone": "Telefon pemilik",
+    "ownerPassword": "Kata laluan pemilik (≥8 aksara)",
+    "submit": "Hantar",
+    "successApproved": "Kedai dicipta & aktif",
+    "successReview": "Permohonan dihantar — menunggu semakan",
+    "successHint": "Anda boleh log masuk untuk lengkapkan kedai.",
+    "goLogin": "Ke log masuk",
+    "backHome": "Kembali",
+    "errorGeneric": "Gagal, sila cuba lagi"
   }
 }

@@ -5,7 +5,9 @@
     "tagline": "From orders to Zalo reminders — a one-page boss dashboard.",
     "switchLocale": "Language:",
     "shopDemo": "Demo shop · Order now",
-    "bossLogin": "Boss dashboard"
+    "bossLogin": "Boss dashboard",
+    "freeOpen": "Open for free",
+    "verticalCount": "{n} shops"
   },
   "login": {
     "title": "Boss Login",
@@ -244,7 +246,8 @@
     "callTooFrequent": "Please wait a moment before calling again",
     "tableOccupied": "This table has an active order — continue adding items",
     "addModeHint": "Adding items to order {orderNo}",
-    "addNow": "Add items"
+    "addNow": "Add items",
+    "queryOrder": "Track"
   },
   "track": {
     "addMore": "Add more",
@@ -288,7 +291,8 @@
     "notFoundNoPhone": "Order not found. Please check the order number.",
     "callWaiter": "Call waiter",
     "callWaiterSent": "Waiter called, please wait",
-    "callTooFrequent": "Please wait a moment before calling again"
+    "callTooFrequent": "Please wait a moment before calling again",
+    "loginSuggest": "Log in to see all your orders at a glance."
   },
   "common": {
     "installApp": "Add to Home Screen",
@@ -854,5 +858,21 @@
     "tagline": "Lightweight POS for SEA street shops",
     "domain": "spotnear.me",
     "imageDomain": "img.spotnear.me"
+  },
+  "open": {
+    "title": "Open a Shop",
+    "subtitle": "Submit for review, then go live once approved.",
+    "name": "Shop name",
+    "vertical": "Category",
+    "city": "City",
+    "ownerPhone": "Owner phone",
+    "ownerPassword": "Owner password (≥8 chars)",
+    "submit": "Submit",
+    "successApproved": "Shop created & live",
+    "successReview": "Application submitted — waiting for review",
+    "successHint": "You can log in to finalize shop settings.",
+    "goLogin": "Go to dashboard login",
+    "backHome": "Home",
+    "errorGeneric": "Submission failed, please retry"
   }
 }

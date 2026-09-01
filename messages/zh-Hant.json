@@ -5,7 +5,9 @@
     "tagline": "從訂單到 Zalo 提醒，老闆側一頁後台。",
     "switchLocale": "語言：",
     "shopDemo": "進入示範店 · 立即下單",
-    "bossLogin": "老闆後台登入"
+    "bossLogin": "老闆後台登入",
+    "freeOpen": "免費開店",
+    "verticalCount": "{n} 家店鋪"
   },
   "login": {
     "title": "老闆登入",
@@ -244,7 +246,8 @@
     "callTooFrequent": "呼叫過於頻繁，請稍候",
     "tableOccupied": "該桌已有進行中的訂單，請確認後繼續加菜",
     "addModeHint": "正在向訂單 {orderNo} 加菜",
-    "addNow": "加菜"
+    "addNow": "加菜",
+    "queryOrder": "查單"
   },
   "track": {
     "addMore": "加菜",
@@ -288,7 +291,8 @@
     "notFoundNoPhone": "未找到該訂單，請核對訂單號",
     "callWaiter": "呼叫服務員",
     "callWaiterSent": "已呼叫服務員，請稍候",
-    "callTooFrequent": "呼叫過於頻繁，請稍候"
+    "callTooFrequent": "呼叫過於頻繁，請稍候",
+    "loginSuggest": "登入即可一鍵查看你的全部訂單。"
   },
   "common": {
     "installApp": "新增到桌面",
@@ -854,5 +858,21 @@
     "tagline": "東南亞小商戶的極簡開單工具",
     "domain": "spotnear.me",
     "imageDomain": "img.spotnear.me"
+  },
+  "open": {
+    "title": "免費開店申請",
+    "subtitle": "送出後由平台審核，通過即可開張。",
+    "name": "店名",
+    "vertical": "類目",
+    "city": "城市",
+    "ownerPhone": "老闆手機號",
+    "ownerPassword": "老闆密碼（≥8 位）",
+    "submit": "送出申請",
+    "successApproved": "開店成功，已生效",
+    "successReview": "申請已送出，請等待審核",
+    "successHint": "可先登入後台完善店鋪。",
+    "goLogin": "去後台登入",
+    "backHome": "返回首頁",
+    "errorGeneric": "送出失敗，請重試"
   }
 }

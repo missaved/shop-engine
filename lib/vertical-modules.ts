@@ -110,8 +110,34 @@ async function foodOnOrderCreated({ order, shop }: { order: Order; shop: Shop })
   })
 }
 
+// SALON/PET/LAUNDRY 占位垂直兜底：用通用 createOrder 下单时发「新单提醒」，避免老板端无感知。
+// templateKey='NEW_ORDER'：reminder-list 对未知 key 有兜底（label→newOrder、样式→FOOD_NEW_ORDER），
+// 无需注册模板即可正常展示（P2-AC）。payload 结构沿用 foodOnOrderCreated（占位垂直复用）。
+async function genericOnOrderCreated({ order, shop }: { order: Order; shop: Shop }): Promise<void> {
+  const cfg = (order.config ?? {}) as Record<string, unknown>
+  const items = (order.items as StoredOrderItem[] | null) ?? []
+  await prisma.reminder.create({
+    data: {
+      shopId: shop.id,
+      orderId: order.id,
+      templateKey: 'NEW_ORDER',
+      dueAt: order.createdAt,
+      status: 'PENDING',
+      payload: {
+        displayNo: order.displayNo,
+        customerName: order.customerName,
+        customerPhone: order.customerPhone,
+        total: Number(order.total),
+        orderType: cfg.orderType ?? null,
+        tableNo: cfg.tableNo ?? null,
+        items: items.map((it) => ({ name: it.name, qty: it.qty })),
+      },
+    },
+  })
+}
+
 function noopModule<V extends Vertical>(vertical: V): VerticalModule<V> {
-  return { vertical }
+  return { vertical, onOrderCreated: genericOnOrderCreated }
 }
 
 // 聚合卡徽章态（P2-N）：平台停用 > 订阅到期 > 营业态。expired 用 isExpiredByPolicy 判定

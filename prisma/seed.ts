@@ -4,6 +4,7 @@ import 'dotenv/config'
 import { PrismaClient } from '../generated/prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { hash } from 'bcryptjs'
+import { CITIES } from '../lib/city'
 
 const adapter = new PrismaPg({
   connectionString: process.env.DATABASE_URL,
@@ -18,6 +19,7 @@ async function main() {
       slug: 'demo-pho',
       name: 'Phở Demo 88',
       vertical: 'FOOD',
+      city: 'hcm',
       phone: '0901234567',
       address: '12 Nguyễn Huệ, Q1, TP.HCM',
       config: {
@@ -179,6 +181,7 @@ async function main() {
       slug: 'demo-moto',
       name: 'Demo Moto 88',
       vertical: 'MOTO',
+      city: 'hcm',
       phone: '0901122334',
       address: '45 Trần Hưng Đạo, Q5, TP.HCM',
       config: {
@@ -313,6 +316,46 @@ async function main() {
     },
   })
   console.log(`moto 店老板账号就绪：${motoOwner.phone} / demo1234`)
+
+  // ================= 多城市演示店扩展（让城市/垂直切换都有内容）=================
+  // 现状：只有 hcm 的 demo-pho/demo-moto。为让聚合/门户切到河内(hn)、岘港(dn)也「跟走」，
+  // 给每个城市 × 每个垂直补 1 家演示店（幂等 upsert by slug；仅建店骨架，商品/预设沿用各垂直 demo）。
+  // 垂直展示名用 admin 命名空间；SALON/PET/LAUNDRY 暂只建店（后续垂直模块接入后再补商品流程）。
+  const VERTICAL_DEMO_META: Record<string, { name: string; phone: string }> = {
+    FOOD: { name: 'Phở', phone: '0902111001' },
+    MOTO: { name: 'Moto', phone: '0902111002' },
+    SALON: { name: 'Salon', phone: '0902111003' },
+    PET: { name: 'Pet', phone: '0902111004' },
+    LAUNDRY: { name: 'Giặt ủi', phone: '0902111005' },
+  }
+
+  // hcm 已有 demo-pho/demo-moto（首店），这里为 hn/dn 各垂直补店；
+  // 同时为 hcm 的 SALON/PET/LAUNDRY 也各建一家（否则这三个垂直首层进 hcm 也是空）。
+  const citySeedPlan = ['hn', 'dn'] // 除 hcm（已有首店）外的城市
+  const seeded: string[] = []
+  for (const citySlug of ['hcm', ...citySeedPlan]) {
+    const meta = CITIES.find((c) => c.slug === citySlug)
+    for (const [vertical, vmeta] of Object.entries(VERTICAL_DEMO_META)) {
+      // hcm 的 FOOD/MOTO 已有 flagship 店（demo-pho/demo-moto），不重复建
+      if (citySlug === 'hcm' && (vertical === 'FOOD' || vertical === 'MOTO')) continue
+      const slug = `demo-${vertical.toLowerCase()}-${citySlug}`
+      await prisma.shop.upsert({
+        where: { slug },
+        update: {},
+        create: {
+          slug,
+          name: `${vmeta.name} ${meta?.nameEn ?? citySlug}`,
+          vertical: vertical as never,
+          city: citySlug as never,
+          phone: vmeta.phone,
+          address: `${meta?.nameEn ?? citySlug} demo store`,
+          config: { openHours: '07:00-22:00' },
+        },
+      })
+      seeded.push(slug)
+    }
+  }
+  console.log(`多城市演示店就绪 ${seeded.length} 家：${seeded.join(', ')}`)
 }
 
 main()

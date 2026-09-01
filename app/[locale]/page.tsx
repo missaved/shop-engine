@@ -27,6 +27,7 @@ export const dynamic = 'force-dynamic'
 export default async function HomePage() {
   const t = await getTranslations('home')
   const ta = await getTranslations('admin')
+  const tc = await getTranslations('city')
   // P4-Z：落地页跟随访客最近选择的城市（cookie 记忆，缺省 DEFAULT_CITY）
   const city = await getVisitorCity()
 
@@ -52,6 +53,7 @@ export default async function HomePage() {
           <div className="flex items-center gap-1 rounded-full bg-white/12 px-3 py-1.5 backdrop-blur-md">
             <span className="text-sm leading-none">📍</span>
             <CitySwitcher className="border-0 bg-transparent pr-0 text-[12.5px] font-medium text-white outline-none [&>option]:text-zinc-900" />
+            <span className="text-[12.5px] font-medium text-white/90">{tc(city)}</span>
           </div>
           <div className="flex items-center rounded-full bg-white/12 px-1.5 py-1 backdrop-blur-md">
             <LocaleSwitcher />

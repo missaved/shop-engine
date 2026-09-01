@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SpotNear Mark · 纯定位针图形
+  - 派生源：app/public/brand/logo-mark.svg
+  - 派生产物：app/public/brand/logo-{512,256,128,64}.png
+                app/app/favicon.ico
+                app/app/apple-icon.png
+                app/app/opengraph-image.png 内的主图
+  - 色板：app/BRAND.md §1
+  - viewBox 192×192，与 app/app/icon.svg 同坐标系，便于互换
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img" aria-label="SpotNear">
+  <!-- 圆角方形底（深底浅针 配色） -->
+  <rect width="192" height="192" rx="40" fill="#0A0A0A"/>
+
+  <!-- 定位针：经典 map-pin 形（外圈圆 + 三角下尖 + 内白点） -->
+  <!-- 主针体（主色） -->
+  <path d="
+    M 96 36
+    C 67 36 44 58 44 86
+    C 44 117 79 148 96 161
+    C 113 148 148 117 148 86
+    C 148 58 125 36 96 36
+    Z"
+    fill="#0EA5A4"/>
+
+  <!-- 针内白圆（穿孔感） -->
+  <circle cx="96" cy="86" r="20" fill="#0A0A0A"/>
+  <circle cx="96" cy="86" r="11" fill="#FAFAFA"/>
+</svg>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  app/app/icon.svg
+  Next.js 16 自动派生 <link rel="icon" sizes="..."> 的源文件。
+  内容与 public/brand/logo-mark.svg 同源；为避免重复读 svg，保留独立文件
+  以便未来 Next.js 派生策略升级时单独调整。
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <rect width="192" height="192" rx="40" fill="#0A0A0A"/>
+  <path d="M 96 36 C 67 36 44 58 44 86 C 44 117 79 148 96 161 C 113 148 148 117 148 86 C 148 58 125 36 96 36 Z" fill="#0EA5A4"/>
+  <circle cx="96" cy="86" r="20" fill="#0A0A0A"/>
+  <circle cx="96" cy="86" r="11" fill="#FAFAFA"/>
+</svg>

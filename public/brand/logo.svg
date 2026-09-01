@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  SpotNear 主 Logo（横排） · 定位针 + 文字
+  - 文件：app/public/brand/logo.svg
+  - 用法：落地页顶部、文档 README 头部、印刷品
+  - 色板：app/BRAND.md §1
+  - 字体栈：英文 "Inter" / 系统字体回退（SVG 不内嵌外链字体）
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 96" role="img" aria-label="SpotNear">
+  <!-- Mark：左侧定位针，缩放到 80×80，居中垂直 -->
+  <g transform="translate(8 8)">
+    <svg viewBox="0 0 192 192" x="0" y="0" width="80" height="80">
+      <rect width="192" height="192" rx="40" fill="#0A0A0A"/>
+      <path d="M 96 36 C 67 36 44 58 44 86 C 44 117 79 148 96 161 C 113 148 148 117 148 86 C 148 58 125 36 96 36 Z" fill="#0EA5A4"/>
+      <circle cx="96" cy="86" r="20" fill="#0A0A0A"/>
+      <circle cx="96" cy="86" r="11" fill="#FAFAFA"/>
+    </svg>
+  </g>
+
+  <!-- 文字：右侧 "SpotNear"，与 Mark 垂直居中对齐 -->
+  <text
+    x="104"
+    y="60"
+    font-family="Inter, &quot;SF Pro Display&quot;, system-ui, -apple-system, sans-serif"
+    font-size="44"
+    font-weight="700"
+    letter-spacing="-1.5"
+    fill="#0A0A0A">SpotNear</text>
+
+  <!-- 域名小字（可选，落地页 hero 用；其它场景可隐藏） -->
+  <text
+    x="104"
+    y="82"
+    font-family="Inter, system-ui, sans-serif"
+    font-size="11"
+    font-weight="500"
+    letter-spacing="0.5"
+    fill="#71717A">spotnear.me</text>
+</svg>

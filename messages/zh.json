@@ -683,7 +683,12 @@
     "mpEnable": "启用",
     "mpEmpty": "暂无预设",
     "mpNeedKey": "缺少服务标识或名称",
-    "mpSaved": "已保存"
+    "mpSaved": "已保存",
+    "themeLight": "浅色",
+    "themeDark": "深色",
+    "themeSystem": "跟随系统",
+    "appearanceTitle": "外观",
+    "appearanceHint": "主题模式：浅色 / 深色 / 跟随系统自动切换"
   },
   "moto": {
     "title": "摩托维修开单",

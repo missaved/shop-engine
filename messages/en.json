@@ -683,7 +683,12 @@
     "mpSaved": "Saved",
     "mpServiceKey": "Service code",
     "mpTitle": "Moto service preset library",
-    "mpUnit": "Unit"
+    "mpUnit": "Unit",
+    "themeLight": "Light",
+    "themeDark": "Dark",
+    "themeSystem": "System",
+    "appearanceTitle": "Appearance",
+    "appearanceHint": "Theme mode: Light / Dark / Auto (follow system)"
   },
   "moto": {
     "accountName": "Account holder",

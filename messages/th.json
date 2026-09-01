@@ -683,7 +683,12 @@
     "mpSaved": "บันทึกแล้ว",
     "mpServiceKey": "รหัสบริการ",
     "mpTitle": "คลังเทมเพลตบริการมอเตอร์ไซค์",
-    "mpUnit": "หน่วย"
+    "mpUnit": "หน่วย",
+    "themeLight": "สว่าง",
+    "themeDark": "มืด",
+    "themeSystem": "ตามระบบ",
+    "appearanceTitle": "ลักษณะ",
+    "appearanceHint": "โหมดธีม: สว่าง / มืด / อัตโนมัติ (ตามระบบ)"
   },
   "moto": {
     "accountName": "ชื่อเจ้าบัญชี",

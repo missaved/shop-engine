@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* 深色模式改 class 驱动（html.dark 触发 dark: 变体）：
+   默认由主题初始化脚本按「用户偏好(light/dark/system)」同步 .dark 到 <html>；
+   手动选深/浅可随时切换，跟随系统(system)时与原先 prefers-color-scheme 行为一致。 */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* ============================================================
    门店皮肤系统（6 套完整 token）
    每套皮肤 = 一整套变量（不只换主色，还换 表面/边框/次要文字/图瓦/显示字体/圆角/投影/按钮形状）。

@@ -30,6 +30,16 @@ export default async function LocaleLayout({
 
   return (
     <html lang={locale} className="h-full antialiased">
+      <head>
+        {/* 主题 class 驱动后（globals.css @custom-variant dark），须按偏好同步 <html>.dark 以保证 dark: 变体不失效。
+            客户端/老板端默认跟系统（无切换 UI、行为与 prefers-color-scheme 一致）；中台单独有切换器。 */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "(function(){try{var m=(document.cookie.match(/(?:^|; )spotnear\\.theme=([^;]*)/)||[])[1]||'system';var d=m==='dark'||(m==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d);}catch(e){}})();",
+          }}
+        />
+      </head>
       <body className="flex min-h-full flex-col bg-[#111] text-zinc-100 dark:bg-black dark:text-zinc-50">
         <NextIntlClientProvider messages={messages}>
           {children}

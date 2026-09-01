@@ -683,7 +683,12 @@
     "mpSaved": "已保存",
     "mpServiceKey": "服務標識",
     "mpTitle": "摩托服務範本庫",
-    "mpUnit": "單位"
+    "mpUnit": "單位",
+    "themeLight": "淺色",
+    "themeDark": "深色",
+    "themeSystem": "跟隨系統",
+    "appearanceTitle": "外觀",
+    "appearanceHint": "主題模式：淺色 / 深色 / 跟隨系統自動切換"
   },
   "moto": {
     "accountName": "戶名",

@@ -13,6 +13,15 @@ export const metadata = {
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="zh" className="h-full antialiased">
+      <head>
+        {/* 深/浅/系统主题：首帧前按偏好同步 <html>.dark（防闪烁）。范围仅中台 html 树。 */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "(function(){try{var m=(document.cookie.match(/(?:^|; )spotnear\\.theme=([^;]*)/)||[])[1]||'system';var d=m==='dark'||(m==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.classList.toggle('dark',d);}catch(e){}})();",
+          }}
+        />
+      </head>
       <body className="flex min-h-full flex-col bg-zinc-100 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-50">
         {children}
       </body>

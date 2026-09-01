@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl'
 import Link from 'next/link'
 import { useParams, usePathname } from 'next/navigation'
 import { LogoutButton } from '@/components/admin/logout-button'
+import { ThemeToggle } from '@/components/admin/theme-toggle'
 
 // admin 后台外壳（第 20 批 A5）：纯桌面固定左栏导航（管理员电脑用，不做移动折叠）
 // 菜单分组：运营 / 营收 / 内容 / 系统。新增垂直或板块时在对应组加一项即可挂载
@@ -73,6 +74,9 @@ export function AdminShell({
             <span className="text-lg leading-none text-amber-500">☰</span>
           )}
           <span className="truncate text-lg font-semibold">{siteName ?? t('title')}</span>
+          <span className="ml-auto">
+            <ThemeToggle />
+          </span>
         </div>
 
         <nav className="flex flex-col gap-3 p-3">

@@ -683,7 +683,12 @@
     "mpSaved": "Disimpan",
     "mpServiceKey": "Kod perkhidmatan",
     "mpTitle": "Pustaka preset perkhidmatan moto",
-    "mpUnit": "Unit"
+    "mpUnit": "Unit",
+    "themeLight": "Cerah",
+    "themeDark": "Gelap",
+    "themeSystem": "Ikut sistem",
+    "appearanceTitle": "Penampilan",
+    "appearanceHint": "Mod tema: Cerah / Gelap / Auto (ikut sistem)"
   },
   "moto": {
     "accountName": "Nama pemilik akaun",

@@ -30,6 +30,7 @@ import {
   confirmAdminTotp,
 } from '@/lib/admin-actions'
 import { routing } from '@/i18n/routing'
+import { useThemeMode, type ThemeMode } from '@/components/theme-mode'
 
 // ---- 通用样式与控件 ----
 
@@ -216,11 +217,44 @@ export function SettingsPanel({
 function BaseSection({ data }: { data: SettingsData }) {
   return (
     <div className="flex flex-col gap-4">
+      <AppearanceBlock />
       <SiteBlock site={data.site} />
       <MaintenanceBlock maintenance={data.maintenance} />
       <OnboardingBlock onboarding={data.onboarding} />
       <BillingBlock billing={data.billing} />
     </div>
+  )
+}
+
+// 外观：浅色 / 深色 / 跟随系统（三态）。即时写 cookie（spotnear.theme）并同步 <html>.dark，无需服务端保存。
+function AppearanceBlock() {
+  const t = useTranslations('admin')
+  const { mode, setMode } = useThemeMode()
+  const options: { id: ThemeMode; icon: string; key: string }[] = [
+    { id: 'light', icon: '☀️', key: 'themeLight' },
+    { id: 'system', icon: '💻', key: 'themeSystem' },
+    { id: 'dark', icon: '🌙', key: 'themeDark' },
+  ]
+  return (
+    <Card title={t('appearanceTitle')} hint={t('appearanceHint')}>
+      <div className="flex gap-2">
+        {options.map((o) => (
+          <button
+            key={o.id}
+            type="button"
+            onClick={() => setMode(o.id)}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition-colors ${
+              mode === o.id
+                ? 'border-amber-500 bg-amber-50 text-amber-700 dark:border-amber-600 dark:bg-amber-900/20 dark:text-amber-300'
+                : 'border-zinc-200 text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800'
+            }`}
+          >
+            <span className="leading-none">{o.icon}</span>
+            {t(o.key)}
+          </button>
+        ))}
+      </div>
+    </Card>
   )
 }
 

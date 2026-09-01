@@ -683,7 +683,12 @@
     "mpEnable": "Bật",
     "mpEmpty": "Chưa có mẫu",
     "mpNeedKey": "Thiếu mã hoặc tên",
-    "mpSaved": "Đã lưu"
+    "mpSaved": "Đã lưu",
+    "themeLight": "Sáng",
+    "themeDark": "Tối",
+    "themeSystem": "Theo hệ thống",
+    "appearanceTitle": "Giao diện",
+    "appearanceHint": "Chế độ giao diện: Sáng / Tối / Tự động (theo hệ thống)"
   },
   "moto": {
     "title": "Sửa Moto",

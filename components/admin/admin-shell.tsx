@@ -108,7 +108,7 @@ export function AdminShell({
       </aside>
 
       {/* 内容区：左栏让位 pl-56；全屏铺满（去掉 max-w 居中约束，页面自动撑满右侧） */}
-      <main className="flex-1 pl-56">
+      <main className="flex-1 pl-56 bg-zinc-100 dark:bg-zinc-950">
         <div className="w-full px-8 pb-8 pt-8">{children}</div>
       </main>
     </div>

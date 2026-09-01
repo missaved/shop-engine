@@ -554,7 +554,7 @@
     "setLockThreshold": "Ambang kunci (percubaan)",
     "setLockMinutes": "Tempoh kunci (minit)",
     "setOauth": "Log masuk sosial (rizab)",
-    "setOauthHint": "Konfigurasi log masuk Google/Facebook/Zalo (disimpan sahaja; isi key kemudian)",
+    "setOauthHint": "Kredensial OAuth dikonfigurasikan melalui pemboleh ubah persekitaran (GOOGLE_CLIENT_ID/SECRET, FACEBOOK_CLIENT_ID/SECRET). Panel ini hanya memaparkan status semasa; kemas kini dalam persekitaran deploy.",
     "setOauthGoogle": "Google",
     "setOauthFacebook": "Facebook",
     "setOauthZalo": "Zalo",

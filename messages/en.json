@@ -554,7 +554,7 @@
     "setLockThreshold": "Lockout threshold (attempts)",
     "setLockMinutes": "Lock duration (minutes)",
     "setOauth": "Social login (reserved)",
-    "setOauthHint": "Configure Google/Facebook/Zalo login (stored only this phase; add keys later)",
+    "setOauthHint": "OAuth credentials are configured via env vars (GOOGLE_CLIENT_ID/SECRET, FACEBOOK_CLIENT_ID/SECRET). This panel only shows the live status; update them in the deploy environment.",
     "setOauthGoogle": "Google",
     "setOauthFacebook": "Facebook",
     "setOauthZalo": "Zalo",

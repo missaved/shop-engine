@@ -554,7 +554,7 @@
     "setLockThreshold": "เกณฑ์การล็อก (ครั้ง)",
     "setLockMinutes": "ระยะเวลาล็อก (นาที)",
     "setOauth": "การเข้าสู่ระบบโซเชียล (สำรอง)",
-    "setOauthHint": "กำหนดค่าการเข้าสู่ระบบ Google/Facebook/Zalo (เก็บการตั้งค่าเท่านั้น ใส่ key ทีหลัง)",
+    "setOauthHint": "ข้อมูลรับรอง OAuth กำหนดค่าผ่านตัวแปรสภาพแวดล้อม (GOOGLE_CLIENT_ID/SECRET, FACEBOOK_CLIENT_ID/SECRET) แผงนี้แสดงเฉพาะสถานะที่ใช้งานจริง โปรดอัปเดตในสภาพแวดล้อมการติดตั้ง",
     "setOauthGoogle": "Google",
     "setOauthFacebook": "Facebook",
     "setOauthZalo": "Zalo",

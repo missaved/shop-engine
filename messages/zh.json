@@ -554,7 +554,7 @@
     "setLockThreshold": "失败锁定阈值（次）",
     "setLockMinutes": "锁定时长（分钟）",
     "setOauth": "社交登录预留",
-    "setOauthHint": "配置 Google/Facebook/Zalo 登录（本期只存配置不接入，将来填 key 即可用）",
+    "setOauthHint": "OAuth 凭据由环境变量配置（GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET、FACEBOOK_CLIENT_ID/FACEBOOK_CLIENT_SECRET），此处仅展示当前生效状态；改动请在部署环境注入。",
     "setOauthGoogle": "Google",
     "setOauthFacebook": "Facebook",
     "setOauthZalo": "Zalo",

@@ -11,7 +11,6 @@ import type { SettingsData } from '@/lib/admin-settings-actions'
 import {
   saveSiteSettings,
   saveAiConfig,
-  saveOauthConfig,
   saveSecuritySettings,
   saveMaintenanceSettings,
   saveNotificationSettings,
@@ -572,10 +571,10 @@ function SecurityBlock({ security }: { security: SettingsData['security'] }) {
 
 function OauthBlock({ oauth }: { oauth: SettingsData['oauth'] }) {
   const t = useTranslations('admin')
-  const { pending, msg, err, run } = useSave()
+  // P2-T（方向 A）：OAuth 凭据由环境变量配置，是本区块唯一真源。此处只读展示「实际生效」状态，不可编辑。
   const providers: {
     id: 'google' | 'facebook' | 'zalo'
-    cfg: SettingsData['oauth'] extends infer _ ? NonNullable<SettingsData['oauth']>['google'] : never
+    cfg: NonNullable<SettingsData['oauth']>['google']
   }[] = []
   if (oauth) {
     providers.push(
@@ -584,37 +583,6 @@ function OauthBlock({ oauth }: { oauth: SettingsData['oauth'] }) {
       { id: 'zalo', cfg: oauth.zalo },
     )
   }
-  const [forms, setForms] = useState<
-    Record<string, { enabled: boolean; clientId: string; clientSecret: string }>
-  >(() => {
-    const init: Record<string, { enabled: boolean; clientId: string; clientSecret: string }> = {}
-    for (const p of providers) {
-      init[p.id] = {
-        enabled: p.cfg.enabled ?? false,
-        clientId: p.cfg.clientId ?? '',
-        clientSecret: '',
-      }
-    }
-    return init
-  })
-
-  function setField(id: string, field: 'enabled' | 'clientId' | 'clientSecret', value: string | boolean) {
-    setForms((prev) => ({ ...prev, [id]: { ...prev[id], [field]: value } }))
-  }
-
-  function save(id: 'google' | 'facebook' | 'zalo') {
-    const f = forms[id]
-    run(async () => {
-      await saveOauthConfig({
-        provider: id,
-        enabled: f.enabled,
-        clientId: f.clientId || undefined,
-        clientSecret: f.clientSecret || undefined,
-      })
-      setField(id, 'clientSecret', '')
-    })
-  }
-
   const providerLabel: Record<string, string> = {
     google: t('setOauthGoogle'),
     facebook: t('setOauthFacebook'),
@@ -625,42 +593,29 @@ function OauthBlock({ oauth }: { oauth: SettingsData['oauth'] }) {
     <Card title={t('setOauth')} hint={t('setOauthHint')}>
       {!oauth && <p className="text-xs text-zinc-500">{t('setOauthEmpty')}</p>}
       {providers.map((p) => {
-        const f = forms[p.id]
-        if (!f) return null
-        const secretConfigured = p.cfg.clientSecretConfigured
+        const configured = p.cfg.enabled ?? false
         return (
           <div
             key={p.id}
-            className="flex flex-col gap-2 rounded-lg border border-zinc-200 p-3 dark:border-zinc-800"
+            className="flex items-center justify-between rounded-lg border border-zinc-200 p-3 dark:border-zinc-800"
           >
-            <Toggle
-              checked={f.enabled}
-              onChange={(v) => setField(p.id, 'enabled', v)}
-              label={providerLabel[p.id]}
-              hint={p.id === 'zalo' ? t('setOauthZaloHint') : undefined}
-            />
-            <label className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-zinc-500">{t('setOauthClientId')}</span>
-              <Text value={f.clientId} onChange={(v) => setField(p.id, 'clientId', v)} />
-            </label>
-            <label className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-zinc-500">{t('setOauthClientSecret')}</span>
-              <Text value={f.clientSecret} onChange={(v) => setField(p.id, 'clientSecret', v)} type="password" />
-              <span className={hintCls}>
-                {secretConfigured
-                  ? t('setOauthSecretConfigured')
-                  : t('setOauthSecretNotConfigured')}
-              </span>
-            </label>
-            <div>
-              <SaveBar
-                pending={pending}
-                msg={msg}
-                err={err}
-                onSave={() => save(p.id)}
-                label={t('setSave')}
-              />
-            </div>
+            <span className="text-sm font-medium">
+              {providerLabel[p.id]}
+              {p.id === 'zalo' && (
+                <span className="ml-1.5 text-xs font-normal text-zinc-400">
+                  {t('setOauthZaloHint')}
+                </span>
+              )}
+            </span>
+            <span
+              className={`rounded-full px-2 py-0.5 text-xs ${
+                configured
+                  ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
+                  : 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'
+              }`}
+            >
+              {configured ? t('setOauthSecretConfigured') : t('setOauthSecretNotConfigured')}
+            </span>
           </div>
         )
       })}

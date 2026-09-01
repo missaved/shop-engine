@@ -63,11 +63,10 @@ export type SettingsData = {
 
 export async function getSettingsData(): Promise<SettingsData> {
   await requireAdmin()
-  const [site, aiRaw, oauthRaw, security, maintenance, notifRaw, onboarding, billing, tiers, announcements, apiKeys] =
+  const [site, aiRaw, security, maintenance, notifRaw, onboarding, billing, tiers, announcements, apiKeys] =
     await Promise.all([
       getSetting<Record<string, unknown>>('site'),
       getSetting<Record<string, unknown>>('ai'),
-      getSetting<Record<string, unknown>>('oauth'),
       getSetting<Record<string, unknown>>('security'),
       getSetting<Record<string, unknown>>('maintenance'),
       getSetting<Record<string, unknown>>('notification'),
@@ -78,13 +77,13 @@ export async function getSettingsData(): Promise<SettingsData> {
       prisma.apiKey.findMany({ orderBy: { createdAt: 'desc' }, take: 50 }),
     ])
 
-  const oauth = oauthRaw
-    ? {
-        google: providerView(oauthRaw['google']),
-        facebook: providerView(oauthRaw['facebook']),
-        zalo: providerView(oauthRaw['zalo']),
-      }
-    : null
+  // P2-T（方向 A）：OAuth 认证走 Auth.js 读 process.env（唯一真源）。settings 页只读展示「实际生效」状态，
+  // 不再读 DB settings.oauth（那是废弃的写入口，Auth.js 不认，读了反而误导）。zalo 未接入 → 恒未配置。
+  const oauth = {
+    google: oauthProviderEnv('google'),
+    facebook: oauthProviderEnv('facebook'),
+    zalo: { enabled: false, clientSecretConfigured: false },
+  }
 
   // 通知配置脱敏：SMTP/SMS 的 password/apiKey 加密落库，读取只回「已配置」布尔（2026-08-29 安全约束）
   const notifSmtp = (notifRaw?.['smtp'] ?? {}) as Record<string, unknown>
@@ -156,16 +155,20 @@ export async function getSettingsData(): Promise<SettingsData> {
   }
 }
 
-function providerView(v: unknown): {
+// P2-T（方向 A）：OAuth provider 的「实际生效」视图，取自环境变量（与 auth.ts 认证真源一致）。
+// configured = ID+SECRET 均存在（对齐 auth.ts 里 `process.env.X_CLIENT_ID && process.env.X_CLIENT_SECRET` 的启用条件）。
+function oauthProviderEnv(provider: 'google' | 'facebook'): {
   enabled?: boolean
   clientId?: string
   clientSecretConfigured: boolean
 } {
-  const p = (v ?? {}) as Record<string, unknown>
+  const id = process.env[`${provider.toUpperCase()}_CLIENT_ID`]
+  const secret = process.env[`${provider.toUpperCase()}_CLIENT_SECRET`]
+  const configured = !!(id && secret)
   return {
-    enabled: p['enabled'] as boolean | undefined,
-    clientId: p['clientId'] as string | undefined,
-    clientSecretConfigured: !!p['clientSecret'],
+    enabled: configured,
+    clientId: id ?? undefined,
+    clientSecretConfigured: configured,
   }
 }
 
@@ -218,38 +221,6 @@ export async function saveAiConfig(input: {
     revalidatePath('/admin/[locale]/settings', 'page')
   } catch (e) {
     console.error('saveAiConfig:', e)
-    throw e
-  }
-}
-
-export async function saveOauthConfig(input: {
-  provider: 'google' | 'facebook' | 'zalo'
-  enabled?: boolean
-  clientId?: string
-  clientSecret?: string
-}) {
-  const admin = await requireAdmin()
-  try {
-    const cur = (await getSetting<Record<string, Record<string, unknown>>>('oauth')) ?? {}
-    const p = (cur[input.provider] ?? {}) as Record<string, unknown>
-    // enabled 是布尔（false 也算「填了」），不能走 pruneEmpty（会丢掉 false）
-    const nextProvider: Record<string, unknown> = { ...p }
-    if (input.enabled !== undefined) nextProvider['enabled'] = input.enabled
-    if (input.clientId) nextProvider['clientId'] = input.clientId
-    if (input.clientSecret) nextProvider['clientSecret'] = input.clientSecret // 加密在 mergeSet 内
-    const next = { ...cur, [input.provider]: nextProvider }
-    await setSetting('oauth', encryptSensitiveValues(next))
-    await writeAudit({
-      actorId: admin.id,
-      actorName: admin.name,
-      action: AUDIT_ACTION.CONFIG_CHANGE,
-      targetType: AUDIT_TARGET.SETTING,
-      targetId: 'oauth',
-      detail: { provider: input.provider },
-    })
-    revalidatePath('/admin/[locale]/settings', 'page')
-  } catch (e) {
-    console.error('saveOauthConfig:', e)
     throw e
   }
 }

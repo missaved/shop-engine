@@ -554,7 +554,7 @@
     "setLockThreshold": "Ngưỡng khóa (số lần)",
     "setLockMinutes": "Thời gian khóa (phút)",
     "setOauth": "Đăng nhập mạng xã hội (dự trữ)",
-    "setOauthHint": "Cấu hình đăng nhập Google/Facebook/Zalo (chỉ lưu cấu hình; điền key sau này)",
+    "setOauthHint": "Thông tin xác thực OAuth được cấu hình qua biến môi trường (GOOGLE_CLIENT_ID/SECRET, FACEBOOK_CLIENT_ID/SECRET). Bảng này chỉ hiển thị trạng thái đang áp dụng; hãy cập nhật trong môi trường triển khai.",
     "setOauthGoogle": "Google",
     "setOauthFacebook": "Facebook",
     "setOauthZalo": "Zalo",

@@ -4,7 +4,6 @@ import { notFound } from 'next/navigation'
 import { getShopBySlug, ShopUnavailableError } from '@/lib/tenant'
 import { ShopUnavailableView } from '@/components/shop/shop-unavailable'
 import { getCurrentUser } from '@/lib/dal'
-import { getTranslations } from 'next-intl/server'
 import { parseVerticalSlug } from '@/lib/vertical'
 import { parseCitySlug } from '@/lib/city'
 import { CustomerLookup } from '@/components/moto/customer-lookup'
@@ -29,17 +28,6 @@ export default async function CustomerLookupPage({
       )
     }
     throw e
-  }
-  // lookup 是摩托店客户入口：非 MOTO 店访问给提示（菜单店有独立菜单页，不提供维修查询）
-  if (shop.vertical !== 'MOTO') {
-    const t = await getTranslations('customer')
-    return (
-      <main className="mx-auto flex w-full max-w-xl flex-col gap-4 px-6 py-4">
-        <p className="rounded-xl border border-dashed border-zinc-300 p-6 text-center text-sm text-zinc-500 dark:border-zinc-700">
-          {t('notMoto')}
-        </p>
-      </main>
-    )
   }
   const user = await getCurrentUser()
   const isLoggedIn = !!user?.customerId

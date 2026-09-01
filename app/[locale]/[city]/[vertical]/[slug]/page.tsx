@@ -45,7 +45,7 @@ export default async function ShopMenuPage({
   // 维护模式全拦（含查单）/ 入驻审核未通过店：getShopBySlug 抛 ShopUnavailableError → 渲染提示页
   let shop: Awaited<ReturnType<typeof getShopBySlug>>
   try {
-    shop = await getShopBySlug(slug, { expectVertical: vertical })
+    shop = await getShopBySlug(slug, { expectVertical: vertical, expectCity: city })
   } catch (e) {
     if (e instanceof ShopUnavailableError) {
       return (

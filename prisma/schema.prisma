@@ -69,6 +69,8 @@ model Shop {
   billings  Billing[]
   shopDrafts ShopDraft[]
   vehicles  Vehicle[]
+
+  @@index([city, vertical]) // 城市×垂直聚合列表查询键（listVerifiedShops where vertical+city）
 }
 
 // 商品 / 服务项（快捷开单大按钮即预置 product）

@@ -21,6 +21,7 @@ export default async function CityHomePage({
   const meta = cityMeta(city)
   const ta = await getTranslations('admin')
   const td = await getTranslations('dashboard')
+  const tc = await getTranslations('city') // 城市名 6 语
 
   // 并行拉各垂直该城市已验证店铺 + 卡片投影（垂直差异 aggregation.card，未实现走通用 defaultAggCard）
   const feeds = await Promise.all(
@@ -34,9 +35,9 @@ export default async function CityHomePage({
   return (
     <main className="mx-auto flex w-full max-w-xl flex-col gap-6 px-6 py-12">
       <header className="flex flex-col items-center gap-2 text-center">
-        <h1 className="text-3xl font-bold">{meta.nameEn}</h1>
+        <h1 className="text-3xl font-bold">{tc(city)}</h1>
         <p className="text-sm text-zinc-500 dark:text-zinc-400">
-          {meta.flag} {meta.name} · {meta.country}
+          {meta.flag} {tc(city)} · {meta.country}
         </p>
         <CitySwitcher />
       </header>

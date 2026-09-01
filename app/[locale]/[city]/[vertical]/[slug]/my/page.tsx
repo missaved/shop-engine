@@ -22,7 +22,7 @@ export default async function CustomerMyPage({
   await requireCustomer(slug, vertical, city)
   let shop: Awaited<ReturnType<typeof getShopBySlug>>
   try {
-    shop = await getShopBySlug(slug, { expectVertical: vertical })
+    shop = await getShopBySlug(slug, { expectVertical: vertical, expectCity: city })
   } catch (e) {
     if (e instanceof ShopUnavailableError) {
       return (

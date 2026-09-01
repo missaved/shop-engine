@@ -794,7 +794,8 @@
     "toastSaved": "Đã lưu",
     "toastError": "Lỗi, thử lại",
     "removeConfirm": "Xóa dịch vụ này?",
-    "customerLink": "Liên kết khách hàng (gửi cho chủ xe để quét xem tiến độ)"
+    "customerLink": "Liên kết khách hàng (gửi cho chủ xe để quét xem tiến độ)",
+    "amountReceived": "Số tiền nhận"
   },
   "customer": {
     "title": "Tra cứu xe",
@@ -874,5 +875,10 @@
     "goLogin": "Vào đăng nhập",
     "backHome": "Trang chủ",
     "errorGeneric": "Gửi thất bại, thử lại"
+  },
+  "city": {
+    "hcm": "Thành phố Hồ Chí Minh",
+    "hn": "Hà Nội",
+    "dn": "Đà Nẵng"
   }
 }

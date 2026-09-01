@@ -26,7 +26,7 @@ export default async function MotoTicketPage({
   if (!city) notFound()
   let shop: Awaited<ReturnType<typeof getShopBySlug>>
   try {
-    shop = await getShopBySlug(slug, { expectVertical: vertical })
+    shop = await getShopBySlug(slug, { expectVertical: vertical, expectCity: city })
   } catch (e) {
     if (e instanceof ShopUnavailableError) {
       return (

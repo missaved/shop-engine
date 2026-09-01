@@ -21,7 +21,7 @@ export default async function CustomerLookupPage({
   if (!city) notFound()
   let shop: Awaited<ReturnType<typeof getShopBySlug>>
   try {
-    shop = await getShopBySlug(slug, { expectVertical: vertical })
+    shop = await getShopBySlug(slug, { expectVertical: vertical, expectCity: city })
   } catch (e) {
     if (e instanceof ShopUnavailableError) {
       return (

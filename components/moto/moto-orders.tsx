@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from '@/i18n/navigation'
 import { useTranslations } from 'next-intl'
-import { getMotoOrders, updateMotoOrderProgress, cancelMotoOrder } from '@/lib/moto-actions'
+import { getMotoOrders, updateMotoOrderProgress, cancelMotoOrder, settleMotoOrder } from '@/lib/moto-actions'
 import { formatPrice } from '@/lib/format'
 import { shopSubUrl } from '@/lib/urls'
 import type { Vertical } from '@/lib/vertical'
@@ -41,6 +41,8 @@ export function MotoOrders({
   const router = useRouter()
   const [orders, setOrders] = useState<MotoOrder[]>([])
   const [busyId, setBusyId] = useState('')
+  // 每单实收金额暂存（默认=total，可改少=部分收款/记欠款）
+  const [pays, setPays] = useState<Record<string, string>>({})
   // M4.2 车牌筛选（纯前端过滤，normalize 后大写精确包含）
   const [filter, setFilter] = useState('')
 
@@ -79,6 +81,19 @@ export function MotoOrders({
     setBusyId(o.id)
     try {
       await cancelMotoOrder(o.id)
+      await load()
+    } finally {
+      setBusyId('')
+    }
+  }
+
+  // 收款（补录实收）：填 fulltotal=结清；填少=部分收款记欠款；交车后(picked_up)亦可补录
+  const collect = async (o: MotoOrder) => {
+    const amt = Number.parseFloat(pays[o.id] ?? String(o.total))
+    if (!Number.isFinite(amt) || amt < 0) return
+    setBusyId(o.id)
+    try {
+      await settleMotoOrder(o.id, { paidAmount: amt, paymentMethod: 'cash' })
       await load()
     } finally {
       setBusyId('')
@@ -140,6 +155,25 @@ export function MotoOrders({
                       className="rounded-lg border border-zinc-200 px-3 py-2 text-sm text-red-600 dark:border-zinc-700"
                     >
                       {t('cancel')}
+                    </button>
+                  </div>
+                )}
+                {/* 收款（补录实收）：picked_up 后 done 但仍可收款；取消单禁止 */}
+                {o.status !== 'CANCELLED' && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <input
+                      inputMode="decimal"
+                      value={pays[o.id] ?? String(o.total)}
+                      onChange={(e) => setPays((p) => ({ ...p, [o.id]: e.target.value }))}
+                      placeholder={t('amountReceived')}
+                      className="w-28 rounded-lg border border-zinc-300 px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                    />
+                    <button
+                      onClick={() => collect(o)}
+                      disabled={busyId === o.id}
+                      className="flex-1 rounded-lg bg-amber-500 py-2 text-sm font-medium text-white disabled:opacity-40"
+                    >
+                      {t('pay')}
                     </button>
                   </div>
                 )}

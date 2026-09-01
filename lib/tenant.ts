@@ -25,13 +25,15 @@ export class ShopUnavailableError extends Error {
 // 按 slug 取店铺，找不到即 404
 // 顾客端统一拦截点：维护模式全拦（含查单）+ 入驻审核（开时 approved=false 拒绝）。
 // 8 个调用点（菜单/查单/下单 action/推荐菜）全为顾客端；boss/admin 后台（dashboard）不经过本函数，天然放行。
-export async function getShopBySlug(slug: string, options?: { expectVertical?: Vertical }) {
+export async function getShopBySlug(slug: string, options?: { expectVertical?: Vertical; expectCity?: string }) {
   const shop = await prisma.shop.findUnique({
     where: { slug },
   })
   if (!shop) notFound()
   // 多垂直门：URL 垂直段与 shop 实际垂直不符 → 404（收敛各页散落的 assertMotoShop / if vertical!=='MOTO'）
   if (options?.expectVertical && shop.vertical !== options.expectVertical) notFound()
+  // 多城市门：URL 城市段与 shop.city 不符 → 404（防跨城窜店；仅页面/URL 场景传入，server action 只按 slug/shopId 操作不传，保持宽容）
+  if (options?.expectCity && shop.city !== options.expectCity) notFound()
   const [maintenance, onboarding] = await Promise.all([
     getSetting<{ mode?: boolean }>('maintenance'),
     getSetting<{ reviewRequired?: boolean }>('onboarding'),

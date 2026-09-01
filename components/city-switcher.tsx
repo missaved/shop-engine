@@ -3,10 +3,12 @@
 // 独立于垂直（水平维度），落地/门户/聚合/单店任何页可放。
 // 用整页跳转（window.location.href）——城市切换是低频导航，避免依赖 next-intl router 的路径重写坑。
 import { usePathname } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { CITIES, type CitySlug, isCitySlug } from '@/lib/city'
 
 export function CitySwitcher({ className }: { className?: string }) {
   const pathname = usePathname() // /en/hcm/food/demo-pho（含 locale）
+  const t = useTranslations('city')
   const segs = pathname.split('/')
   const current =
     segs.length >= 3 && isCitySlug(segs[2]) ? (segs[2] as CitySlug) : undefined
@@ -34,7 +36,7 @@ export function CitySwitcher({ className }: { className?: string }) {
     >
       {CITIES.map((c) => (
         <option key={c.slug} value={c.slug}>
-          {c.nameEn}
+          {t(c.slug)}
         </option>
       ))}
     </select>

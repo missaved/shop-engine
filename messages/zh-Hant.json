@@ -794,7 +794,8 @@
     "waiting_pickup": "待取車",
     "year": "年份",
     "zalopayQr": "ZaloPay 收款碼連結",
-    "customerLink": "客戶入口連結（發車主掃碼查進度）"
+    "customerLink": "客戶入口連結（發車主掃碼查進度）",
+    "amountReceived": "實收金額"
   },
   "customer": {
     "title": "車輛查詢",
@@ -874,5 +875,10 @@
     "goLogin": "去後台登入",
     "backHome": "返回首頁",
     "errorGeneric": "送出失敗，請重試"
+  },
+  "city": {
+    "hcm": "胡志明市",
+    "hn": "河內",
+    "dn": "峴港"
   }
 }

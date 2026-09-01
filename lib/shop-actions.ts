@@ -259,7 +259,8 @@ export async function deleteMyData(input: {
   phone?: string
   guestKey?: string
 }): Promise<void> {
-  const shop = await getShopBySlug(input.slug, { expectVertical: 'FOOD' })
+  // 顾客订单「删单」是通用操作，不绑定垂直（同 createOrder 去硬编码先例）；归属由 order.shopId 校验
+  const shop = await getShopBySlug(input.slug)
   const phone = input.phone ? normalizePhone(input.phone) : ''
   const guestKey = input.guestKey?.trim() ?? ''
   const orderNo = input.orderNo?.trim()
@@ -374,7 +375,8 @@ export async function addItemsToMyOrder(input: {
   // 扫桌贴码进入加菜模式时携带：同设备不同客（guestKey 不匹配）也可靠桌号命中本桌当前单加菜（2026-08-31 敲定）
   tableNo?: string
 }): Promise<AddItemsResult> {
-  const shop = await getShopBySlug(input.slug, { expectVertical: 'FOOD' })
+  // 顾客订单「加菜」是通用操作，不绑定垂直（同 createOrder 去硬编码先例）；归属由 order.shopId 校验
+  const shop = await getShopBySlug(input.slug)
   if (shop.platformSuspended) return { ok: false, code: 'ORDER_NOT_ADDABLE' }
   if (await isShopExpired(shop)) return { ok: false, code: 'ORDER_NOT_ADDABLE' }
 

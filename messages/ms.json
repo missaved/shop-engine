@@ -794,7 +794,8 @@
     "waiting_pickup": "Menunggu ambil",
     "year": "Tahun",
     "zalopayQr": "Pautan QR ZaloPay",
-    "customerLink": "Pautan pelanggan (hantar kepada pemilik untuk semak kemajuan)"
+    "customerLink": "Pautan pelanggan (hantar kepada pemilik untuk semak kemajuan)",
+    "amountReceived": "Jumlah diterima"
   },
   "customer": {
     "title": "Semak kenderaan",
@@ -874,5 +875,10 @@
     "goLogin": "Ke log masuk",
     "backHome": "Kembali",
     "errorGeneric": "Gagal, sila cuba lagi"
+  },
+  "city": {
+    "hcm": "Ho Chi Minh City",
+    "hn": "Hanoi",
+    "dn": "Da Nang"
   }
 }

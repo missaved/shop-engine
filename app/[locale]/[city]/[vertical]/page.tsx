@@ -7,7 +7,7 @@
 import { notFound } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import { parseVerticalSlug, type Vertical } from '@/lib/vertical'
-import { parseCitySlug, cityMeta } from '@/lib/city'
+import { parseCitySlug } from '@/lib/city'
 import { Link } from '@/i18n/navigation'
 import { shopUrl } from '@/lib/urls'
 import { getVerticalModule } from '@/lib/vertical-modules'
@@ -28,6 +28,7 @@ export default async function VerticalHomePage({
   const t = await getTranslations('admin')
   const td = await getTranslations('dashboard')
   const th = await getTranslations('home')
+  const tc = await getTranslations('city') // 城市名 6 语
 
   // 各垂直演示店（有 → 演示店入口；无 → 只显示 boss/开店；demo 店见 prisma/seed.ts）
   const DEMO_SLUG: Partial<Record<Vertical, string>> = { FOOD: 'demo-pho', MOTO: 'demo-moto' }
@@ -41,7 +42,7 @@ export default async function VerticalHomePage({
 
   return (
     <main className="mx-auto flex w-full max-w-xl flex-col gap-6 px-6 py-12">
-      <h1 className="text-center text-3xl font-bold">{cityMeta(city).nameEn} · {t(labelKey)}</h1>
+      <h1 className="text-center text-3xl font-bold">{tc(city)} · {t(labelKey)}</h1>
 
       {/* 顶部入口：演示店 / 老板登录 / 免费开店（2026-09-01 #6：这些入口进垂直应用；聚合页已移除） */}
       <div className="flex flex-col gap-2">

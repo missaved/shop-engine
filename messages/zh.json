@@ -794,7 +794,8 @@
     "toastSaved": "已保存",
     "toastError": "操作失败，请重试",
     "removeConfirm": "确定移除该服务？",
-    "customerLink": "客户入口链接（发车主扫码查进度）"
+    "customerLink": "客户入口链接（发车主扫码查进度）",
+    "amountReceived": "实收金额"
   },
   "customer": {
     "title": "车辆查询",
@@ -874,5 +875,10 @@
     "goLogin": "去后台登录",
     "backHome": "返回首页",
     "errorGeneric": "提交失败，请重试"
+  },
+  "city": {
+    "hcm": "胡志明市",
+    "hn": "河内",
+    "dn": "岘港"
   }
 }

@@ -794,7 +794,8 @@
     "waiting_pickup": "Awaiting pickup",
     "year": "Year",
     "zalopayQr": "ZaloPay QR link",
-    "customerLink": "Customer link (send to owner to scan & track progress)"
+    "customerLink": "Customer link (send to owner to scan & track progress)",
+    "amountReceived": "Received"
   },
   "customer": {
     "title": "Vehicle lookup",
@@ -874,5 +875,10 @@
     "goLogin": "Go to dashboard login",
     "backHome": "Home",
     "errorGeneric": "Submission failed, please retry"
+  },
+  "city": {
+    "hcm": "Ho Chi Minh City",
+    "hn": "Hanoi",
+    "dn": "Da Nang"
   }
 }

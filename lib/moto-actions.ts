@@ -711,3 +711,41 @@ export async function removeShopMotoPreset(serviceKey: string) {
   })
   revalidatePath('/[locale]/dashboard', 'page')
 }
+
+// —— 收款（交车即完结的补录实收，拍板 A）——
+// food 的 settleOrder 拒绝 COMPLETED 单；moto 专版允许对已完结(COMPLETED)单补录实收：
+// 填 = total → 结清；填 < total → 记欠款（欠款 = total-paidAmount，getMotoLedger 已按此推导）。
+// 取消了单禁止收款（先取消单再收款属恢复作废单，不允许）。
+export async function settleMotoOrder(
+  orderId: string,
+  input: { paidAmount: number; paymentMethod: 'cash' | 'qr' | 'other' },
+): Promise<void> {
+  const user = await requireOwner()
+  try {
+    const order = assertShopOwned(
+      user.shopId,
+      await prisma.order.findUnique({
+        where: { id: orderId },
+        include: { shop: { select: { vertical: true } } },
+      }),
+    )
+    if (order.shop.vertical !== 'MOTO') throw new Error('非 moto 店订单')
+    if (order.status === 'CANCELLED') throw new Error('已取消订单不可收款')
+
+    const amount = Number(input.paidAmount)
+    if (!Number.isFinite(amount) || amount < 0) throw new Error('实收金额无效')
+
+    const oldCfg = (order.config as Record<string, unknown> | null) ?? {}
+    await prisma.order.update({
+      where: { id: orderId },
+      data: {
+        paidAmount: amount,
+        config: { ...oldCfg, paymentMethod: input.paymentMethod },
+      },
+    })
+    revalidatePath('/[locale]/dashboard', 'page')
+  } catch (e) {
+    console.error('moto 收款失败（orderId=%s）:', orderId, e)
+    throw e
+  }
+}

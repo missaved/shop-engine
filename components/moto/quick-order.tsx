@@ -8,6 +8,7 @@ import { formatPrice } from '@/lib/format'
 import { PlateSearch } from './plate-search'
 import { PlateCamera } from './plate-camera'
 import { VehicleForm } from './vehicle-form'
+import { motoItemKind } from './types'
 import type { MotoServiceItem, MotoPresetItem, MotoShop, VehiclePlain } from './types'
 
 // 常见症状标签（多语言）：点选存本地语言原文（凭证页直接展示，MVP 不做翻译映射）
@@ -81,7 +82,8 @@ export function QuickOrder({
           name: p.name,
           qty: 1,
           price: Number(p.price),
-          kind: 'labor',
+          // P2-AP：kind 统一走 motoItemKind（与加项一致；REPAIR→part，其余→labor）
+          kind: motoItemKind(p.maintenanceType),
           maintenanceType: (p.maintenanceType ?? 'REPAIR') as MotoServiceItem['maintenanceType'],
           intervalKm: p.intervalKm,
           intervalDays: p.intervalDays,

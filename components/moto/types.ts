@@ -18,6 +18,12 @@ export type MotoServiceItem = {
   intervalDays?: number | null
 }
 
+// 统一 kind 推断（开单 addService 与加单 addMotoItems 共用）：REPAIR→part 配件，其余→labor 工费
+// 2026-09-01 P2-AP：消除 quick-order 硬编码 kind:'labor' 与加项推断不一致
+export function motoItemKind(maintenanceType?: string): 'part' | 'labor' {
+  return maintenanceType === 'REPAIR' ? 'part' : 'labor'
+}
+
 // 进度流（与 lib/moto-actions PROGRESS_SEQ 一致，唯一权威见计划 10.6）
 export type MotoProgress =
   | 'queued'

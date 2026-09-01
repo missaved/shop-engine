@@ -798,7 +798,11 @@
     "zalopayQr": "ลิงก์ QR ZaloPay",
     "customerLink": "ลิงก์ลูกค้า (ส่งให้เจ้าของรถสแกนดูความคืบหน้า)",
     "amountReceived": "จำนวนที่รับ",
-    "collectFull": "ชำระเต็มจำนวน"
+    "collectFull": "ชำระเต็มจำนวน",
+    "addItem": "เพิ่มบริการ",
+    "confirmAdd": "ยืนยัน",
+    "removeItem": "ลบ",
+    "noService": "ไม่มีบริการ"
   },
   "customer": {
     "title": "ตรวจสอบรถ",

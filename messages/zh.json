@@ -798,7 +798,11 @@
     "removeConfirm": "确定移除该服务？",
     "customerLink": "客户入口链接（发车主扫码查进度）",
     "amountReceived": "实收金额",
-    "collectFull": "收全款"
+    "collectFull": "收全款",
+    "addItem": "加服务项",
+    "confirmAdd": "确认加项",
+    "removeItem": "删除",
+    "noService": "暂无服务项"
   },
   "customer": {
     "title": "车辆查询",

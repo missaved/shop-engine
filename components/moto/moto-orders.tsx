@@ -3,10 +3,18 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from '@/i18n/navigation'
 import { useTranslations } from 'next-intl'
-import { getMotoOrders, updateMotoOrderProgress, cancelMotoOrder, settleMotoOrder } from '@/lib/moto-actions'
+import { getMotoOrders, getMotoPresetCatalog, addMotoItems, removeMotoItem, updateMotoOrderProgress, cancelMotoOrder, settleMotoOrder } from '@/lib/moto-actions'
 import { formatPrice } from '@/lib/format'
 import { shopSubUrl } from '@/lib/urls'
 import type { Vertical } from '@/lib/vertical'
+import type { MotoServiceItem } from './types'
+
+// 加项下拉用全库预设（getMotoPresetCatalog），与开单向导「本店大按钮」不同源
+type CatalogItem = {
+  serviceKey: string
+  nameVi: string
+  price: string
+}
 
 type MotoOrder = {
   id: string
@@ -19,6 +27,8 @@ type MotoOrder = {
   total: string
   paidAmount: string
   createdAt: string
+  // P2-AP：维修中加/删服务项展示
+  items: MotoServiceItem[]
 }
 
 // 推进序列（与 lib/moto-actions PROGRESS_SEQ 一致）
@@ -45,6 +55,11 @@ export function MotoOrders({
   const [pays, setPays] = useState<Record<string, string>>({})
   // M4.2 车牌筛选（纯前端过滤，normalize 后大写精确包含）
   const [filter, setFilter] = useState('')
+  // P2-AP 加/删服务项：一次展开一单（addOpenId）；全库预设下拉（catalog）+ 选中 key + 数量
+  const [addOpenId, setAddOpenId] = useState('')
+  const [addServiceKey, setAddServiceKey] = useState('')
+  const [addQty, setAddQty] = useState('1')
+  const [catalog, setCatalog] = useState<CatalogItem[]>([])
 
   const load = useCallback(async () => {
     try {
@@ -59,6 +74,16 @@ export function MotoOrders({
     const timer = setInterval(load, 30_000) // 30s 轮询（新单自动出现）
     return () => clearInterval(timer)
   }, [load])
+
+  // P2-AP：加项下拉数据（全库预设；加载后默认选中第一个，便于直接确认）
+  useEffect(() => {
+    getMotoPresetCatalog()
+      .then((rows) => {
+        setCatalog(rows)
+        setAddServiceKey((k) => k || rows[0]?.serviceKey || '')
+      })
+      .catch(() => setCatalog([]))
+  }, [])
 
   const advance = async (o: MotoOrder) => {
     const next = nextOf(o.progress)
@@ -94,6 +119,30 @@ export function MotoOrders({
     setBusyId(o.id)
     try {
       await settleMotoOrder(o.id, { paidAmount: amt, paymentMethod: 'cash' })
+      await load()
+    } finally {
+      setBusyId('')
+    }
+  }
+
+  // P2-AP 加服务项：服务端计价，客户端只传 serviceKey+qty（不传价）
+  const addItem = async (o: MotoOrder) => {
+    const key = addServiceKey || catalog[0]?.serviceKey
+    if (!key) return
+    setBusyId(o.id)
+    try {
+      await addMotoItems(o.id, [{ serviceKey: key, qty: Number(addQty || '1') }])
+      await load()
+    } finally {
+      setBusyId('')
+    }
+  }
+
+  // P2-AP 删服务项：按行 index
+  const removeItem = async (o: MotoOrder, idx: number) => {
+    setBusyId(o.id)
+    try {
+      await removeMotoItem(o.id, idx)
       await load()
     } finally {
       setBusyId('')
@@ -141,22 +190,91 @@ export function MotoOrders({
                   {o.estimatedDue && <span className="text-xs text-zinc-400">{o.estimatedDue}</span>}
                 </div>
                 {!done && (
-                  <div className="mt-2 flex gap-2">
-                    <button
-                      onClick={() => advance(o)}
-                      disabled={busyId === o.id || !next}
-                      className="flex-1 rounded-lg bg-zinc-900 py-2 text-sm font-medium text-white disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-900"
-                    >
-                      {next ? `→ ${t(next as never)}` : '…'}
-                    </button>
-                    <button
-                      onClick={() => cancel(o)}
-                      disabled={busyId === o.id}
-                      className="rounded-lg border border-zinc-200 px-3 py-2 text-sm text-red-600 dark:border-zinc-700"
-                    >
-                      {t('cancel')}
-                    </button>
-                  </div>
+                  <>
+                    <div className="mt-2 flex gap-2">
+                      <button
+                        onClick={() => advance(o)}
+                        disabled={busyId === o.id || !next}
+                        className="flex-1 rounded-lg bg-zinc-900 py-2 text-sm font-medium text-white disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-900"
+                      >
+                        {next ? `→ ${t(next as never)}` : '…'}
+                      </button>
+                      <button
+                        onClick={() => cancel(o)}
+                        disabled={busyId === o.id}
+                        className="rounded-lg border border-zinc-200 px-3 py-2 text-sm text-red-600 dark:border-zinc-700"
+                      >
+                        {t('cancel')}
+                      </button>
+                    </div>
+                    {/* P2-AP 维修中加/删服务项：一次展开一单；全库预设下拉 + 当前 items 列表 */}
+                    <div className="mt-2">
+                      <button
+                        onClick={() => setAddOpenId(addOpenId === o.id ? '' : o.id)}
+                        disabled={busyId === o.id}
+                        className="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs text-zinc-600 dark:border-zinc-700 dark:text-zinc-300"
+                      >
+                        {t('addItem')}
+                      </button>
+                      {addOpenId === o.id && (
+                        <div className="mt-2 rounded-lg border border-dashed border-amber-300 p-2 dark:border-amber-600">
+                          <div className="flex gap-2">
+                            <select
+                              value={addServiceKey}
+                              onChange={(e) => setAddServiceKey(e.target.value)}
+                              className="flex-1 rounded-lg border border-zinc-300 bg-white px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                            >
+                              {catalog.map((p) => (
+                                <option key={p.serviceKey} value={p.serviceKey}>
+                                  {p.nameVi}（{formatPrice(Number(p.price), currency)}）
+                                </option>
+                              ))}
+                            </select>
+                            <input
+                              type="number"
+                              value={addQty}
+                              onChange={(e) => setAddQty(e.target.value)}
+                              min="1"
+                              className="w-16 rounded-lg border border-zinc-300 px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
+                            />
+                            <button
+                              onClick={() => addItem(o)}
+                              disabled={busyId === o.id || !addServiceKey}
+                              className="rounded-lg bg-amber-500 px-3 py-1.5 text-sm text-white disabled:opacity-40"
+                            >
+                              {t('confirmAdd')}
+                            </button>
+                          </div>
+                          {o.items.length > 0 ? (
+                            <div className="mt-2 divide-y divide-zinc-100 dark:divide-zinc-800">
+                              {o.items.map((it, idx) => (
+                                <div key={idx} className="flex items-center justify-between py-1.5 text-sm">
+                                  <span>
+                                    {it.name} ×{it.qty}
+                                    <span className="ml-1 text-xs text-zinc-400">
+                                      {it.kind === 'part' ? t('partFee') : t('laborFee')}
+                                    </span>
+                                  </span>
+                                  <span className="flex items-center gap-2">
+                                    <span>{formatPrice(it.price * it.qty, currency)}</span>
+                                    <button
+                                      onClick={() => removeItem(o, idx)}
+                                      disabled={busyId === o.id}
+                                      className="text-red-500"
+                                    >
+                                      {t('removeItem')}
+                                    </button>
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="mt-2 text-xs text-zinc-400">{t('noService')}</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </>
                 )}
                 {/* 收款（补录实收）：picked_up 后 done 但仍可收款；取消单禁止 */}
                 {o.status !== 'CANCELLED' && (

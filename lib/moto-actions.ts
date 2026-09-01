@@ -17,6 +17,7 @@ import {
   nextOrderNumbers,
   findIdempotentOrder,
 } from '@/lib/order-shared'
+import { motoItemKind } from '@/components/moto/types'
 
 // —— 常量与类型 ——
 // moto 细化进度流（唯一权威，见计划 10.6）；取消单走公共 Order.status=CANCELLED，motoProgress 置空
@@ -441,6 +442,8 @@ export async function getVehicleDetail(vehicleId: string) {
       paidAmount: o.paidAmount.toString(),
       createdAt: o.createdAt.toISOString(),
       progress: (o.config as { motoProgress?: string | null } | null)?.motoProgress ?? null,
+      // P2-AP：返回 items，档案页订单履历展示/加删项用
+      items: (o.items as MotoServiceItem[]) ?? [],
     })),
     samePhoneVehicles,
   }
@@ -484,6 +487,8 @@ export async function getMotoOrders() {
       total: o.total.toString(),
       paidAmount: o.paidAmount.toString(),
       createdAt: o.createdAt.toISOString(),
+      // P2-AP：返回 items，老板端维修中加/删项用
+      items: (o.items as MotoServiceItem[]) ?? [],
     }
   })
 }
@@ -750,4 +755,84 @@ export async function settleMotoOrder(
     console.error('moto 收款失败（orderId=%s）:', orderId, e)
     throw e
   }
+}
+
+// —— P2-AP 维修中加/删服务项（改单：开单后老板可中途加件/删行）——
+
+// 加服务项：仅按 serviceKey 从 MotoPreset 查默认价（服务端计价，不信任客户端传价）；
+// 费用守恒：fee=旧 total−旧 subtotal（=开单折扣），加项只增 subtotal。终态（COMPLETED/CANCELLED）守卫。
+export async function addMotoItems(
+  orderId: string,
+  items: { serviceKey: string; qty: number }[],
+): Promise<void> {
+  const user = await requireOwner()
+  const order = assertShopOwned(
+    user.shopId,
+    await prisma.order.findUnique({ where: { id: orderId } }),
+  )
+  if (order.status === 'COMPLETED' || order.status === 'CANCELLED')
+    throw new Error('订单已结束，不可加项')
+  if (!items?.length) throw new Error('请选择服务项')
+
+  // 服务端计价：查 MotoPreset 默认价（kind 与开单 motoItemKind 统一推断）
+  const presets = await prisma.motoPreset.findMany({
+    where: { serviceKey: { in: items.map((i) => i.serviceKey) } },
+  })
+  const addItems = items.map((item) => {
+    const p = presets.find((x) => x.serviceKey === item.serviceKey)
+    if (!p) throw new Error('服务项不存在')
+    const qty = Math.trunc(Number(item.qty))
+    if (!Number.isFinite(qty) || qty < 1) throw new Error('数量无效')
+    return {
+      name: p.nameVi,
+      price: Number(p.defaultPrice),
+      qty,
+      kind: motoItemKind(p.maintenanceType),
+      maintenanceType: p.maintenanceType as MotoServiceItem['maintenanceType'],
+      intervalKm: p.intervalKm,
+      intervalDays: p.intervalDays,
+    }
+  })
+
+  // 费用守恒：fee 不变，只增 subtotal
+  const oldItems = (order.items as MotoServiceItem[]) ?? []
+  const oldSubtotal = oldItems.reduce((s, it) => s + it.price * it.qty, 0)
+  const fee = Number(order.total) - oldSubtotal
+  const newSubtotal = oldSubtotal + addItems.reduce((s, it) => s + it.price * it.qty, 0)
+  const newTotal = newSubtotal + fee
+  if (newTotal > MAX_ORDER_AMOUNT) throw new Error('订单金额超出上限')
+
+  await prisma.order.update({
+    where: { id: orderId },
+    data: { items: [...oldItems, ...addItems], total: newTotal },
+  })
+  revalidatePath('/[locale]/dashboard', 'page')
+}
+
+// 删服务项：按 index 删除；费用守恒（删空 items→total 归 0，费用一并取消）。终态守卫。
+export async function removeMotoItem(orderId: string, index: number): Promise<void> {
+  const user = await requireOwner()
+  const order = assertShopOwned(
+    user.shopId,
+    await prisma.order.findUnique({ where: { id: orderId } }),
+  )
+  if (order.status === 'COMPLETED' || order.status === 'CANCELLED')
+    throw new Error('订单已结束，不可删项')
+
+  const oldItems = (order.items as MotoServiceItem[]) ?? []
+  const idx = Math.trunc(Number(index))
+  if (!Number.isFinite(idx) || idx < 0 || idx >= oldItems.length) throw new Error('服务项不存在')
+
+  const removed = oldItems[idx].price * oldItems[idx].qty
+  const newItems = oldItems.filter((_, i) => i !== idx)
+  const oldSubtotal = oldItems.reduce((s, it) => s + it.price * it.qty, 0)
+  const fee = Number(order.total) - oldSubtotal
+  const newSubtotal = oldSubtotal - removed
+  const newTotal = newItems.length === 0 ? 0 : newSubtotal + fee
+
+  await prisma.order.update({
+    where: { id: orderId },
+    data: { items: newItems, total: newTotal },
+  })
+  revalidatePath('/[locale]/dashboard', 'page')
 }

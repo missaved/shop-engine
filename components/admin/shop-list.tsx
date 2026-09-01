@@ -168,7 +168,7 @@ export async function ShopList({
 
       {/* 卡片列表 */}
       {shops.length === 0 ? (
-        <p className="text-sm text-zinc-500">{t('empty')}</p>
+        <p className="text-sm text-zinc-500 dark:text-zinc-300">{t('empty')}</p>
       ) : (
         shops.map((s) => {
           const st = subStatus(s)
@@ -182,7 +182,7 @@ export async function ShopList({
             >
               <div className="flex items-center justify-between gap-2">
                 <div className="flex min-w-0 items-center gap-2">
-                  <span className="truncate text-sm font-semibold">{s.name}</span>
+                  <span className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">{s.name}</span>
                   {s.featured && (
                     <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
                       {t('featured')}
@@ -203,7 +203,7 @@ export async function ShopList({
                   </span>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-zinc-500">
+              <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-zinc-500 dark:text-zinc-300">
                 <span>{s.slug}</span>
                 <span>
                   {t(`vertical${s.vertical.charAt(0)}${s.vertical.slice(1).toLowerCase()}`)}
@@ -253,7 +253,7 @@ export async function ShopList({
           >
             {t('prev')}
           </a>
-          <span className="text-zinc-500">{t('pageInfo', { page, total })}</span>
+          <span className="text-zinc-500 dark:text-zinc-300">{t('pageInfo', { page, total })}</span>
           <a
             href={page < totalPages ? `?page=${page + 1}${extraQs ? `&${extraQs}` : ''}` : undefined}
             className={

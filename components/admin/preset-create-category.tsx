@@ -84,30 +84,30 @@ export function CreatePresetCategory() {
           >
             <div>
               <h3 className="text-base font-semibold">{t('catNew')}</h3>
-              <p className="text-xs text-zinc-500">{t('catFormHint')}</p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-300">{t('catFormHint')}</p>
             </div>
 
             <label className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-zinc-500">{t('catKey')}</span>
+              <span className="text-xs font-medium text-zinc-500 dark:text-zinc-300">{t('catKey')}</span>
               <input value={form.key} onChange={(e) => set('key', e.target.value)} className={inputCls} placeholder="nhau-dry / bao-bun" />
             </label>
             <div className="grid grid-cols-2 gap-3">
               <label className="flex flex-col gap-1">
-                <span className="text-xs font-medium text-zinc-500">{t('catNameVi')}</span>
+                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-300">{t('catNameVi')}</span>
                 <input value={form.nameVi} onChange={(e) => set('nameVi', e.target.value)} className={inputCls} />
               </label>
               <label className="flex flex-col gap-1">
-                <span className="text-xs font-medium text-zinc-500">{t('catNameZh')}</span>
+                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-300">{t('catNameZh')}</span>
                 <input value={form.nameZh} onChange={(e) => set('nameZh', e.target.value)} className={inputCls} />
               </label>
             </div>
             <label className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-zinc-500">{t('catNameEn')}</span>
+              <span className="text-xs font-medium text-zinc-500 dark:text-zinc-300">{t('catNameEn')}</span>
               <input value={form.nameEn} onChange={(e) => set('nameEn', e.target.value)} className={inputCls} />
             </label>
             <div className="grid grid-cols-2 gap-3">
               <label className="flex flex-col gap-1">
-                <span className="text-xs font-medium text-zinc-500">{t('catCuisine')}</span>
+                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-300">{t('catCuisine')}</span>
                 <select value={form.cuisine} onChange={(e) => set('cuisine', e.target.value)} className={inputCls}>
                   <option value="vn">{t('catCuisineVn')}</option>
                   <option value="cn">{t('catCuisineCn')}</option>
@@ -115,7 +115,7 @@ export function CreatePresetCategory() {
                 </select>
               </label>
               <label className="flex flex-col gap-1">
-                <span className="text-xs font-medium text-zinc-500">{t('catCount')}</span>
+                <span className="text-xs font-medium text-zinc-500 dark:text-zinc-300">{t('catCount')}</span>
                 <input
                   value={form.count}
                   onChange={(e) => set('count', e.target.value)}
@@ -127,7 +127,7 @@ export function CreatePresetCategory() {
               </label>
             </div>
             <label className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-zinc-500">{t('catExamples')}</span>
+              <span className="text-xs font-medium text-zinc-500 dark:text-zinc-300">{t('catExamples')}</span>
               <textarea
                 value={form.examples}
                 onChange={(e) => set('examples', e.target.value)}

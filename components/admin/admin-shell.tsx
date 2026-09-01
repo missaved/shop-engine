@@ -82,7 +82,7 @@ export function AdminShell({
         <nav className="flex flex-col gap-3 p-3">
           {NAV_GROUPS.map((group) => (
             <div key={group.labelKey} className="flex flex-col gap-1">
-              <p className="px-3 pt-1 text-[11px] font-medium uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+              <p className="px-3 pt-1 text-[11px] font-medium uppercase tracking-wider text-zinc-400 dark:text-zinc-300">
                 {t(group.labelKey)}
               </p>
               {group.items.map((item) => (

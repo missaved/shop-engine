@@ -70,11 +70,11 @@ export function PresetList({ rows }: { rows: PresetRow[] }) {
 
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-xs text-zinc-500">{t('presetListHint')}</p>
-      {rows.length === 0 && <p className="text-sm text-zinc-500">{t('presetEmpty')}</p>}
+      <p className="text-xs text-zinc-500 dark:text-zinc-300">{t('presetListHint')}</p>
+      {rows.length === 0 && <p className="text-sm text-zinc-500 dark:text-zinc-300">{t('presetEmpty')}</p>}
       <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
         <table className="w-full text-left text-sm">
-          <thead className="border-b border-zinc-100 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800">
+          <thead className="border-b border-zinc-100 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:text-zinc-300">
             <tr>
               <th className="px-4 py-2.5 font-medium">{t('presetColName')}</th>
               <th className="px-4 py-2.5 font-medium">{t('presetColItems')}</th>
@@ -99,7 +99,7 @@ export function PresetList({ rows }: { rows: PresetRow[] }) {
                 <tr key={r.subcategory} className="border-b border-zinc-50 last:border-0 dark:border-zinc-800/60">
                   <td className="px-4 py-3">
                     <div className="font-medium">{r.name}</div>
-                    <div className="text-xs text-zinc-400">{r.subcategory}</div>
+                    <div className="text-xs text-zinc-400 dark:text-zinc-300">{r.subcategory}</div>
                   </td>
                   <td className="px-4 py-3">{r.exists ? r.itemCount : '—'}</td>
                   <td className="px-4 py-3">
@@ -114,11 +114,11 @@ export function PresetList({ rows }: { rows: PresetRow[] }) {
                         {r.active ? t('presetActive') : t('presetInactive')}
                       </span>
                     ) : (
-                      <span className="text-xs text-zinc-400">{t('presetNever')}</span>
+                      <span className="text-xs text-zinc-400 dark:text-zinc-300">{t('presetNever')}</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-xs text-zinc-500">{r.exists ? (r.modelUsed ?? '—') : '—'}</td>
-                  <td className="px-4 py-3 text-xs text-zinc-500">
+                  <td className="px-4 py-3 text-xs text-zinc-500 dark:text-zinc-300">{r.exists ? (r.modelUsed ?? '—') : '—'}</td>
+                  <td className="px-4 py-3 text-xs text-zinc-500 dark:text-zinc-300">
                     {r.exists && r.generatedAt ? r.generatedAt.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'}
                   </td>
                   <td className="px-4 py-3">

@@ -42,7 +42,7 @@ const btnCls =
   'rounded-full bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-amber-500/25 transition-transform hover:brightness-105 active:scale-[0.98] disabled:opacity-60'
 const dangerBtnCls =
   'rounded-full border border-red-300 px-4 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 disabled:opacity-60 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20'
-const hintCls = 'mt-1 text-xs text-zinc-500'
+const hintCls = 'mt-1 text-xs text-zinc-500 dark:text-zinc-300'
 
 function Card({ title, hint, children }: { title: string; hint?: string; children: React.ReactNode }) {
   return (
@@ -275,24 +275,24 @@ function SiteBlock({ site }: { site: SettingsData['site'] }) {
   return (
     <Card title={t('setSite')} hint={t('setSiteHint')}>
       <label className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-zinc-500">{t('setSiteName')}</span>
+        <span className="text-xs font-medium text-zinc-500 dark:text-zinc-300">{t('setSiteName')}</span>
         <Text value={name} onChange={setName} />
       </label>
       <label className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-zinc-500">{t('setSiteLogo')}</span>
+        <span className="text-xs font-medium text-zinc-500 dark:text-zinc-300">{t('setSiteLogo')}</span>
         <Text value={logoUrl} onChange={setLogoUrl} />
       </label>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
         <label className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-zinc-500">{t('setSiteTimezone')}</span>
+          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-300">{t('setSiteTimezone')}</span>
           <Text value={timezone} onChange={setTimezone} placeholder="Asia/Ho_Chi_Minh" />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-zinc-500">{t('setSiteCurrency')}</span>
+          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-300">{t('setSiteCurrency')}</span>
           <Text value={currency} onChange={setCurrency} placeholder="VND" />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-zinc-500">{t('setSiteDefaultLocale')}</span>
+          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-300">{t('setSiteDefaultLocale')}</span>
           <Text value={defaultLocale} onChange={setDefaultLocale} placeholder="zh" />
         </label>
       </div>
@@ -322,7 +322,7 @@ function MaintenanceBlock({ maintenance }: { maintenance: SettingsData['maintena
       />
       {mode && (
         <label className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-zinc-500">{t('setMaintenanceMessage')}</span>
+          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-300">{t('setMaintenanceMessage')}</span>
           <Text value={message} onChange={setMessage} />
         </label>
       )}
@@ -379,16 +379,16 @@ function BillingBlock({ billing }: { billing: SettingsData['billing'] }) {
     <Card title={t('setBilling')} hint={t('setBillingHint')}>
       <div className="grid grid-cols-2 gap-2">
         <label className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-zinc-500">{t('setBillingTrialDays')}</span>
+          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-300">{t('setBillingTrialDays')}</span>
           <Text value={trialDays} onChange={setTrialDays} type="number" />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-zinc-500">{t('setBillingGraceDays')}</span>
+          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-300">{t('setBillingGraceDays')}</span>
           <Text value={graceDays} onChange={setGraceDays} type="number" />
         </label>
       </div>
       <label className="flex flex-col gap-1">
-        <span className="text-xs font-medium text-zinc-500">{t('setBillingExpiryPolicy')}</span>
+        <span className="text-xs font-medium text-zinc-500 dark:text-zinc-300">{t('setBillingExpiryPolicy')}</span>
         <select
           value={expiryPolicy}
           onChange={(e) => setExpiryPolicy(e.target.value)}
@@ -423,7 +423,7 @@ function SecuritySection({
       <OauthBlock oauth={data.oauth} />
       <LocaleBlock />
       <Card title={t('setHierarchy')} hint={t('setHierarchyHint')}>
-        <span className="self-start rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-500 dark:bg-zinc-800">
+        <span className="self-start rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-500 dark:text-zinc-300 dark:bg-zinc-800">
           {t('comingSoon')}
         </span>
       </Card>
@@ -487,7 +487,7 @@ function TwofaBlock({ totpEnabled }: { totpEnabled: boolean }) {
     <Card title={t('secAccount')} hint={`${t('secTwofa')} · ${t(totpEnabled ? 'twofaOn' : 'twofaOff')}`}>
       {!totpEnabled && !bind && (
         <>
-          <p className="text-xs text-zinc-500">{t('twofaHint')}</p>
+          <p className="text-xs text-zinc-500 dark:text-zinc-300">{t('twofaHint')}</p>
           <div>
             <button onClick={onStartBind} className={btnCls}>
               {t('enableTwofa')}
@@ -501,7 +501,7 @@ function TwofaBlock({ totpEnabled }: { totpEnabled: boolean }) {
           <div className="flex justify-center rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800">
             <QRCode value={bind.uri} size={180} />
           </div>
-          <details className="rounded-xl border border-zinc-200 p-3 text-xs text-zinc-500 dark:border-zinc-800">
+          <details className="rounded-xl border border-zinc-200 p-3 text-xs text-zinc-500 dark:text-zinc-300 dark:border-zinc-800">
             <summary className="cursor-pointer select-none">{t('secretLabel')}</summary>
             <p className="mt-2 break-all font-mono">{bind.secret}</p>
           </details>
@@ -525,7 +525,7 @@ function TwofaBlock({ totpEnabled }: { totpEnabled: boolean }) {
 
       {totpEnabled && (
         <>
-          <p className="text-xs text-zinc-500">{t('disableTwofaHint')}</p>
+          <p className="text-xs text-zinc-500 dark:text-zinc-300">{t('disableTwofaHint')}</p>
           <div className="flex flex-wrap items-center gap-2">
             <input
               value={closeOtp}
@@ -582,19 +582,19 @@ function SecurityBlock({ security }: { security: SettingsData['security'] }) {
       />
       <div className="grid grid-cols-2 gap-2 border-t border-zinc-100 pt-3 dark:border-zinc-800">
         <label className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-zinc-500">{t('setRateLimitMax')}</span>
+          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-300">{t('setRateLimitMax')}</span>
           <Text value={rateLimitMax} onChange={setRateLimitMax} type="number" placeholder="3" />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-zinc-500">{t('setRateLimitWindow')}</span>
+          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-300">{t('setRateLimitWindow')}</span>
           <Text value={rateLimitWindowMin} onChange={setRateLimitWindowMin} type="number" placeholder="5" />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-zinc-500">{t('setLockThreshold')}</span>
+          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-300">{t('setLockThreshold')}</span>
           <Text value={lockThreshold} onChange={setLockThreshold} type="number" placeholder="5" />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-xs font-medium text-zinc-500">{t('setLockMinutes')}</span>
+          <span className="text-xs font-medium text-zinc-500 dark:text-zinc-300">{t('setLockMinutes')}</span>
           <Text value={lockMinutes} onChange={setLockMinutes} type="number" placeholder="15" />
         </label>
       </div>
@@ -625,7 +625,7 @@ function OauthBlock({ oauth }: { oauth: SettingsData['oauth'] }) {
 
   return (
     <Card title={t('setOauth')} hint={t('setOauthHint')}>
-      {!oauth && <p className="text-xs text-zinc-500">{t('setOauthEmpty')}</p>}
+      {!oauth && <p className="text-xs text-zinc-500 dark:text-zinc-300">{t('setOauthEmpty')}</p>}
       {providers.map((p) => {
         const configured = p.cfg.enabled ?? false
         return (
@@ -636,7 +636,7 @@ function OauthBlock({ oauth }: { oauth: SettingsData['oauth'] }) {
             <span className="text-sm font-medium">
               {providerLabel[p.id]}
               {p.id === 'zalo' && (
-                <span className="ml-1.5 text-xs font-normal text-zinc-400">
+                <span className="ml-1.5 text-xs font-normal text-zinc-400 dark:text-zinc-300">
                   {t('setOauthZaloHint')}
                 </span>
               )}
@@ -645,7 +645,7 @@ function OauthBlock({ oauth }: { oauth: SettingsData['oauth'] }) {
               className={`rounded-full px-2 py-0.5 text-xs ${
                 configured
                   ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
-                  : 'bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400'
+                  : 'bg-zinc-100 text-zinc-500 dark:text-zinc-300 dark:bg-zinc-800 dark:text-zinc-300'
               }`}
             >
               {configured ? t('setOauthSecretConfigured') : t('setOauthSecretNotConfigured')}
@@ -766,17 +766,17 @@ function AiBlock({ ai }: { ai: SettingsData['ai'] }) {
                 {t('setKeyConfigured')}
               </span>
             ) : (
-              <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-500 dark:bg-zinc-800">
+              <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-500 dark:text-zinc-300 dark:bg-zinc-800">
                 {t('setKeyNotConfigured')}
               </span>
             )}
           </div>
           <label className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-zinc-500">{t('setAiKey')}</span>
+            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-300">{t('setAiKey')}</span>
             <Text value={p.key} onChange={p.setKey} type="password" placeholder="sk-•••" />
           </label>
           <label className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-zinc-500">{t('setAiModel')}</span>
+            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-300">{t('setAiModel')}</span>
             <Text value={p.model} onChange={p.setModel} />
           </label>
         </div>
@@ -828,19 +828,19 @@ function NotificationBlock({ notification }: { notification: SettingsData['notif
         {smtpEnabled && (
           <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
             <label className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-zinc-500">{t('setSmtpHost')}</span>
+              <span className="text-xs font-medium text-zinc-500 dark:text-zinc-300">{t('setSmtpHost')}</span>
               <Text value={smtpHost} onChange={setSmtpHost} />
             </label>
             <label className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-zinc-500">{t('setSmtpPort')}</span>
+              <span className="text-xs font-medium text-zinc-500 dark:text-zinc-300">{t('setSmtpPort')}</span>
               <Text value={smtpPort} onChange={setSmtpPort} type="number" placeholder="587" />
             </label>
             <label className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-zinc-500">{t('setSmtpUser')}</span>
+              <span className="text-xs font-medium text-zinc-500 dark:text-zinc-300">{t('setSmtpUser')}</span>
               <Text value={smtpUser} onChange={setSmtpUser} />
             </label>
             <label className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-zinc-500">{t('setSmtpPassword')}</span>
+              <span className="text-xs font-medium text-zinc-500 dark:text-zinc-300">{t('setSmtpPassword')}</span>
               <Text value={smtpPassword} onChange={setSmtpPassword} type="password" />
               <span className={hintCls}>
                 {smtp.passwordConfigured
@@ -849,7 +849,7 @@ function NotificationBlock({ notification }: { notification: SettingsData['notif
               </span>
             </label>
             <label className="flex flex-col gap-1 sm:col-span-2">
-              <span className="text-xs font-medium text-zinc-500">{t('setSmtpFrom')}</span>
+              <span className="text-xs font-medium text-zinc-500 dark:text-zinc-300">{t('setSmtpFrom')}</span>
               <Text value={smtpFrom} onChange={setSmtpFrom} />
             </label>
           </div>
@@ -860,11 +860,11 @@ function NotificationBlock({ notification }: { notification: SettingsData['notif
         {smsEnabled && (
           <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
             <label className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-zinc-500">{t('setSmsProvider')}</span>
+              <span className="text-xs font-medium text-zinc-500 dark:text-zinc-300">{t('setSmsProvider')}</span>
               <Text value={smsProvider} onChange={setSmsProvider} placeholder="twilio" />
             </label>
             <label className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-zinc-500">{t('setSmsApiKey')}</span>
+              <span className="text-xs font-medium text-zinc-500 dark:text-zinc-300">{t('setSmsApiKey')}</span>
               <Text value={smsApiKey} onChange={setSmsApiKey} type="password" />
               <span className={hintCls}>
                 {sms.apiKeyConfigured
@@ -873,7 +873,7 @@ function NotificationBlock({ notification }: { notification: SettingsData['notif
               </span>
             </label>
             <label className="flex flex-col gap-1 sm:col-span-2">
-              <span className="text-xs font-medium text-zinc-500">{t('setSmsFrom')}</span>
+              <span className="text-xs font-medium text-zinc-500 dark:text-zinc-300">{t('setSmsFrom')}</span>
               <Text value={smsFrom} onChange={setSmsFrom} />
             </label>
           </div>
@@ -947,7 +947,7 @@ function TierBlock({ tiers }: { tiers: SettingsData['tiers'] }) {
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-zinc-200 text-left text-xs text-zinc-500 dark:border-zinc-700">
+            <tr className="border-b border-zinc-200 text-left text-xs text-zinc-500 dark:text-zinc-300 dark:border-zinc-700">
               <th className="py-1 pr-2">{t('setTierKey')}</th>
               <th className="py-1 pr-2">{t('setTierName')}</th>
               <th className="py-1 pr-2">{t('setTierPrice')}</th>
@@ -963,7 +963,7 @@ function TierBlock({ tiers }: { tiers: SettingsData['tiers'] }) {
                 <td className="py-1.5 pr-2">{tier.name}</td>
                 <td className="py-1.5 pr-2">{tier.price}</td>
                 <td className="py-1.5 pr-2">{tier.months}</td>
-                <td className="py-1.5 pr-2 text-xs text-zinc-500">
+                <td className="py-1.5 pr-2 text-xs text-zinc-500 dark:text-zinc-300">
                   {tier.shopLimit != null ? `${tier.shopLimit}店/` : '∞店/'}
                   {tier.productLimit != null ? `${tier.productLimit}品` : '∞品'}
                 </td>
@@ -997,7 +997,7 @@ function TierBlock({ tiers }: { tiers: SettingsData['tiers'] }) {
         </p>
         <div className="grid grid-cols-2 gap-2">
           <label className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-zinc-500">{t('setTierKey')}</span>
+            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-300">{t('setTierKey')}</span>
             <input
               value={form.key}
               onChange={(e) => setForm((f) => ({ ...f, key: e.target.value }))}
@@ -1007,7 +1007,7 @@ function TierBlock({ tiers }: { tiers: SettingsData['tiers'] }) {
             />
           </label>
           <label className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-zinc-500">{t('setTierName')}</span>
+            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-300">{t('setTierName')}</span>
             <input
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
@@ -1015,7 +1015,7 @@ function TierBlock({ tiers }: { tiers: SettingsData['tiers'] }) {
             />
           </label>
           <label className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-zinc-500">{t('setTierPrice')}</span>
+            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-300">{t('setTierPrice')}</span>
             <input
               value={form.price}
               onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
@@ -1024,7 +1024,7 @@ function TierBlock({ tiers }: { tiers: SettingsData['tiers'] }) {
             />
           </label>
           <label className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-zinc-500">{t('setTierMonths')}</span>
+            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-300">{t('setTierMonths')}</span>
             <input
               value={form.months}
               onChange={(e) => setForm((f) => ({ ...f, months: e.target.value }))}
@@ -1033,7 +1033,7 @@ function TierBlock({ tiers }: { tiers: SettingsData['tiers'] }) {
             />
           </label>
           <label className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-zinc-500">{t('setTierShopLimit')}</span>
+            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-300">{t('setTierShopLimit')}</span>
             <input
               value={form.shopLimit}
               onChange={(e) => setForm((f) => ({ ...f, shopLimit: e.target.value }))}
@@ -1042,7 +1042,7 @@ function TierBlock({ tiers }: { tiers: SettingsData['tiers'] }) {
             />
           </label>
           <label className="flex flex-col gap-1">
-            <span className="text-xs font-medium text-zinc-500">{t('setTierProductLimit')}</span>
+            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-300">{t('setTierProductLimit')}</span>
             <input
               value={form.productLimit}
               onChange={(e) => setForm((f) => ({ ...f, productLimit: e.target.value }))}
@@ -1051,7 +1051,7 @@ function TierBlock({ tiers }: { tiers: SettingsData['tiers'] }) {
             />
           </label>
           <label className="col-span-2 flex flex-col gap-1">
-            <span className="text-xs font-medium text-zinc-500">{t('setTierAiQuota')}</span>
+            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-300">{t('setTierAiQuota')}</span>
             <input
               value={form.aiQuota}
               onChange={(e) => setForm((f) => ({ ...f, aiQuota: e.target.value }))}
@@ -1070,7 +1070,7 @@ function TierBlock({ tiers }: { tiers: SettingsData['tiers'] }) {
                 setForm(empty)
                 setEditKey(null)
               }}
-              className="text-sm text-zinc-500 hover:underline"
+              className="text-sm text-zinc-500 dark:text-zinc-300 hover:underline"
             >
               {t('setCancel')}
             </button>
@@ -1120,7 +1120,7 @@ function ApiKeyBlock({ apiKeys }: { apiKeys: SettingsData['apiKeys'] }) {
           {t('setApiKeyCreate')}
         </button>
       </div>
-      {apiKeys.length === 0 && <p className="text-xs text-zinc-500">{t('setApiKeysEmpty')}</p>}
+      {apiKeys.length === 0 && <p className="text-xs text-zinc-500 dark:text-zinc-300">{t('setApiKeysEmpty')}</p>}
       <ul className="flex flex-col gap-2">
         {apiKeys.map((k) => (
           <li
@@ -1129,7 +1129,7 @@ function ApiKeyBlock({ apiKeys }: { apiKeys: SettingsData['apiKeys'] }) {
           >
             <div className="flex flex-col">
               <span className="text-sm">{k.name}</span>
-              <span className="text-xs text-zinc-500">
+              <span className="text-xs text-zinc-500 dark:text-zinc-300">
                 {k.revokedAt
                   ? t('setApiKeyRevoked')
                   : `${t('setApiKeyScope')} ${k.scope}`}
@@ -1211,7 +1211,7 @@ function AnnouncementBlock({ announcements }: { announcements: SettingsData['ann
           label={editId ? t('setAnnouncementUpdate') : t('setAnnouncementAdd')}
         />
       </div>
-      {announcements.length === 0 && <p className="text-xs text-zinc-500">{t('setAnnouncementEmpty')}</p>}
+      {announcements.length === 0 && <p className="text-xs text-zinc-500 dark:text-zinc-300">{t('setAnnouncementEmpty')}</p>}
       <ul className="flex flex-col gap-2">
         {announcements.map((a) => (
           <li
@@ -1220,7 +1220,7 @@ function AnnouncementBlock({ announcements }: { announcements: SettingsData['ann
           >
             <div className="flex flex-col">
               <span className="text-sm">{a.title}</span>
-              <span className="text-xs text-zinc-500">
+              <span className="text-xs text-zinc-500 dark:text-zinc-300">
                 {a.active ? t('setAnnouncementActiveYes') : t('setAnnouncementActiveNo')}
                 {a.locale ? ` · ${a.locale}` : ''}
               </span>
@@ -1309,9 +1309,9 @@ function AuditBlock() {
       </div>
 
       {loading ? (
-        <p className="text-xs text-zinc-500">{t('setAuditLoading')}</p>
+        <p className="text-xs text-zinc-500 dark:text-zinc-300">{t('setAuditLoading')}</p>
       ) : rows.length === 0 ? (
-        <p className="text-xs text-zinc-500">{t('setAuditEmpty')}</p>
+        <p className="text-xs text-zinc-500 dark:text-zinc-300">{t('setAuditEmpty')}</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {rows.map((r) => (
@@ -1320,7 +1320,7 @@ function AuditBlock() {
               className="rounded-lg border border-zinc-200 p-2 text-xs dark:border-zinc-800"
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="font-mono text-[11px] text-zinc-500">
+                <span className="font-mono text-[11px] text-zinc-500 dark:text-zinc-300">
                   {new Date(r.createdAt).toLocaleString()}
                 </span>
                 <span className="rounded-full bg-zinc-100 px-2 py-0.5 font-mono text-[10px] text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
@@ -1334,17 +1334,17 @@ function AuditBlock() {
                 {r.targetId ? ` · ${r.targetId}` : ''}
               </p>
               {r.detail && (
-                <p className="mt-0.5 break-all text-zinc-500">
+                <p className="mt-0.5 break-all text-zinc-500 dark:text-zinc-300">
                   {JSON.stringify(r.detail).slice(0, 120)}
                 </p>
               )}
-              {r.ip && <p className="mt-0.5 text-zinc-400">{r.ip}</p>}
+              {r.ip && <p className="mt-0.5 text-zinc-400 dark:text-zinc-300">{r.ip}</p>}
             </li>
           ))}
         </ul>
       )}
 
-      <div className="flex items-center justify-between text-xs text-zinc-500">
+      <div className="flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-300">
         <button
           onClick={() => setPage((p) => Math.max(1, p - 1))}
           disabled={page <= 1}

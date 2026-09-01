@@ -110,7 +110,7 @@ export function MotoPresetManager({ initial }: { initial: AdminMotoPreset[] }) {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <p className="text-xs text-zinc-500">{t('mpHint')}</p>
+        <p className="text-xs text-zinc-500 dark:text-zinc-300">{t('mpHint')}</p>
         <button
           onClick={() => setForm(emptyForm())}
           className="rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-medium text-white dark:bg-zinc-100 dark:text-zinc-900"
@@ -122,7 +122,7 @@ export function MotoPresetManager({ initial }: { initial: AdminMotoPreset[] }) {
       {form && (
         <div className="flex flex-col gap-3 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-            <label className="flex flex-col gap-1 text-xs text-zinc-500">
+            <label className="flex flex-col gap-1 text-xs text-zinc-500 dark:text-zinc-300">
               {t('mpServiceKey')}
               <input
                 className={inputCls}
@@ -132,7 +132,7 @@ export function MotoPresetManager({ initial }: { initial: AdminMotoPreset[] }) {
                 disabled={!!form.id}
               />
             </label>
-            <label className="flex flex-col gap-1 text-xs text-zinc-500">
+            <label className="flex flex-col gap-1 text-xs text-zinc-500 dark:text-zinc-300">
               {t('mpNameVi')}
               <input
                 className={inputCls}
@@ -140,7 +140,7 @@ export function MotoPresetManager({ initial }: { initial: AdminMotoPreset[] }) {
                 onChange={(e) => set({ nameVi: e.target.value })}
               />
             </label>
-            <label className="flex flex-col gap-1 text-xs text-zinc-500">
+            <label className="flex flex-col gap-1 text-xs text-zinc-500 dark:text-zinc-300">
               {t('mpNameZh')}
               <input
                 className={inputCls}
@@ -148,7 +148,7 @@ export function MotoPresetManager({ initial }: { initial: AdminMotoPreset[] }) {
                 onChange={(e) => set({ nameZh: e.target.value })}
               />
             </label>
-            <label className="flex flex-col gap-1 text-xs text-zinc-500">
+            <label className="flex flex-col gap-1 text-xs text-zinc-500 dark:text-zinc-300">
               {t('mpNameEn')}
               <input
                 className={inputCls}
@@ -156,7 +156,7 @@ export function MotoPresetManager({ initial }: { initial: AdminMotoPreset[] }) {
                 onChange={(e) => set({ nameEn: e.target.value })}
               />
             </label>
-            <label className="flex flex-col gap-1 text-xs text-zinc-500">
+            <label className="flex flex-col gap-1 text-xs text-zinc-500 dark:text-zinc-300">
               {t('mpPrice')}
               <input
                 className={inputCls}
@@ -165,7 +165,7 @@ export function MotoPresetManager({ initial }: { initial: AdminMotoPreset[] }) {
                 onChange={(e) => set({ defaultPrice: e.target.value })}
               />
             </label>
-            <label className="flex flex-col gap-1 text-xs text-zinc-500">
+            <label className="flex flex-col gap-1 text-xs text-zinc-500 dark:text-zinc-300">
               {t('mpUnit')}
               <input
                 className={inputCls}
@@ -174,7 +174,7 @@ export function MotoPresetManager({ initial }: { initial: AdminMotoPreset[] }) {
                 placeholder="次/升/个"
               />
             </label>
-            <label className="flex flex-col gap-1 text-xs text-zinc-500">
+            <label className="flex flex-col gap-1 text-xs text-zinc-500 dark:text-zinc-300">
               {t('mpCategory')}
               <select
                 className={inputCls}
@@ -188,7 +188,7 @@ export function MotoPresetManager({ initial }: { initial: AdminMotoPreset[] }) {
                 ))}
               </select>
             </label>
-            <label className="flex flex-col gap-1 text-xs text-zinc-500">
+            <label className="flex flex-col gap-1 text-xs text-zinc-500 dark:text-zinc-300">
               {t('mpMaint')}
               <select
                 className={inputCls}
@@ -202,7 +202,7 @@ export function MotoPresetManager({ initial }: { initial: AdminMotoPreset[] }) {
                 ))}
               </select>
             </label>
-            <label className="flex flex-col gap-1 text-xs text-zinc-500">
+            <label className="flex flex-col gap-1 text-xs text-zinc-500 dark:text-zinc-300">
               {t('mpKm')}
               <input
                 className={inputCls}
@@ -211,7 +211,7 @@ export function MotoPresetManager({ initial }: { initial: AdminMotoPreset[] }) {
                 onChange={(e) => set({ intervalKm: e.target.value })}
               />
             </label>
-            <label className="flex flex-col gap-1 text-xs text-zinc-500">
+            <label className="flex flex-col gap-1 text-xs text-zinc-500 dark:text-zinc-300">
               {t('mpDays')}
               <input
                 className={inputCls}
@@ -220,7 +220,7 @@ export function MotoPresetManager({ initial }: { initial: AdminMotoPreset[] }) {
                 onChange={(e) => set({ intervalDays: e.target.value })}
               />
             </label>
-            <label className="flex items-center gap-2 pt-5 text-xs text-zinc-500">
+            <label className="flex items-center gap-2 pt-5 text-xs text-zinc-500 dark:text-zinc-300">
               <input
                 type="checkbox"
                 checked={form.active}
@@ -249,7 +249,7 @@ export function MotoPresetManager({ initial }: { initial: AdminMotoPreset[] }) {
 
       <div className="overflow-x-auto rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
         <table className="w-full text-left text-sm">
-          <thead className="border-b border-zinc-100 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800">
+          <thead className="border-b border-zinc-100 text-xs uppercase tracking-wide text-zinc-500 dark:border-zinc-800 dark:text-zinc-300">
             <tr>
               <th className="px-4 py-2.5 font-medium">{t('mpServiceKey')}</th>
               <th className="px-4 py-2.5 font-medium">{t('mpColName')}</th>
@@ -263,7 +263,7 @@ export function MotoPresetManager({ initial }: { initial: AdminMotoPreset[] }) {
           <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
             {rows.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-6 text-center text-sm text-zinc-400">
+                <td colSpan={7} className="px-4 py-6 text-center text-sm text-zinc-400 dark:text-zinc-300">
                   {t('mpEmpty')}
                 </td>
               </tr>
@@ -273,7 +273,7 @@ export function MotoPresetManager({ initial }: { initial: AdminMotoPreset[] }) {
                 <td className="px-4 py-2.5 font-mono text-xs">{r.serviceKey}</td>
                 <td className="px-4 py-2.5">
                   <div className="font-medium">{r.nameVi}</div>
-                  <div className="text-xs text-zinc-400">
+                  <div className="text-xs text-zinc-400 dark:text-zinc-300">
                     {r.nameZh} · {r.nameEn}
                   </div>
                 </td>
@@ -282,7 +282,7 @@ export function MotoPresetManager({ initial }: { initial: AdminMotoPreset[] }) {
                 <td className="px-4 py-2.5 text-xs">
                   {r.maintenanceType}
                   {(r.intervalKm != null || r.intervalDays != null) && (
-                    <div className="text-zinc-400">
+                    <div className="text-zinc-400 dark:text-zinc-300">
                       {r.intervalKm != null && `${r.intervalKm}km`}
                       {r.intervalDays != null && ` / ${r.intervalDays}d`}
                     </div>

@@ -75,7 +75,7 @@ export function PresetGrid({
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-xs text-zinc-500">{t('presetGridHint')}</p>
+      <p className="text-xs text-zinc-500 dark:text-zinc-300">{t('presetGridHint')}</p>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         {items.map((it, i) => {
           const isPlaceholder = it.imageUrl === placeholderUrl
@@ -107,11 +107,11 @@ export function PresetGrid({
                   return (
                     <>
                       <div className="text-sm font-medium leading-tight">{mainName}</div>
-                      {subName && <div className="text-xs text-zinc-500">{subName}</div>}
+                      {subName && <div className="text-xs text-zinc-500 dark:text-zinc-300">{subName}</div>}
                     </>
                   )
                 })()}
-                <div className="text-xs text-zinc-500">
+                <div className="text-xs text-zinc-500 dark:text-zinc-300">
                   {Number(it.defaultPrice ?? 0).toLocaleString('en-US')} {currency}
                 </div>
                 <div className="mt-1.5 flex gap-1.5">
@@ -145,13 +145,13 @@ export function PresetGrid({
           >
             <div>
               <h3 className="text-base font-semibold">{t('presetRegenTitle')}</h3>
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-zinc-500 dark:text-zinc-300">
                 {regen.nativeName}
                 {regen.nameZh ? ` · ${regen.nameZh}` : ''}
               </p>
             </div>
             <label className="flex flex-col gap-1">
-              <span className="text-xs font-medium text-zinc-500">{t('presetRegenPromptLabel')}</span>
+              <span className="text-xs font-medium text-zinc-500 dark:text-zinc-300">{t('presetRegenPromptLabel')}</span>
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}

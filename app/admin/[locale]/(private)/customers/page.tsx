@@ -36,12 +36,12 @@ export default async function CustomersPage() {
     <div className="flex flex-col gap-4">
       <header>
         <h1 className="text-xl font-semibold">{t('customersTitle')}</h1>
-        <p className="text-sm text-zinc-500">{t('customersHint')}</p>
+        <p className="text-sm text-zinc-500 dark:text-zinc-300">{t('customersHint')}</p>
       </header>
 
       <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
         <table className="w-full text-sm">
-          <thead className="border-b border-zinc-100 text-left text-xs text-zinc-500 dark:border-zinc-800">
+          <thead className="border-b border-zinc-100 text-left text-xs text-zinc-500 dark:border-zinc-800 dark:text-zinc-300">
             <tr>
               <th className="px-4 py-3 font-medium">{t('colName')}</th>
               <th className="px-4 py-3 font-medium">{t('colPhone')}</th>
@@ -69,7 +69,7 @@ export default async function CustomersPage() {
                 <td className="px-4 py-3 text-right tabular-nums">{fmt(Number(r.spend))}</td>
                 <td
                   className={`px-4 py-3 text-right tabular-nums ${
-                    Number(r.owed) > 0 ? 'text-red-600 dark:text-red-400' : 'text-zinc-500'
+                    Number(r.owed) > 0 ? 'text-red-600 dark:text-red-400' : 'text-zinc-500 dark:text-zinc-300'
                   }`}
                 >
                   {fmt(Number(r.owed))}

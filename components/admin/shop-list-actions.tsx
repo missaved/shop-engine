@@ -120,7 +120,7 @@ export function ShopListActions({
       <Link
         href={shopUrl({ vertical, slug, city })}
         target="_blank"
-        className="rounded-md border border-zinc-300 px-3 py-1.5 text-xs transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
+        className="rounded-md border border-zinc-300 px-3 py-1.5 text-xs transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800 dark:text-zinc-200"
       >
         {t('viewMenu')}
       </Link>
@@ -133,7 +133,7 @@ export function ShopListActions({
           )
         }
         disabled={pending}
-        className="rounded-md border border-zinc-300 px-3 py-1.5 text-xs transition-colors hover:bg-zinc-100 disabled:opacity-60 dark:border-zinc-700 dark:hover:bg-zinc-800"
+        className="rounded-md border border-zinc-300 px-3 py-1.5 text-xs transition-colors hover:bg-zinc-100 disabled:opacity-60 dark:border-zinc-700 dark:hover:bg-zinc-800 dark:text-zinc-200"
       >
         {suspended ? t('unsuspend') : t('suspend')}
       </button>
@@ -148,7 +148,7 @@ export function ShopListActions({
         className={`rounded-md px-3 py-1.5 text-xs transition-colors disabled:opacity-60 ${
           featured
             ? 'bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-300'
-            : 'border border-zinc-300 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800'
+            : 'border border-zinc-300 hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800 dark:text-zinc-200'
         }`}
       >
         {featured ? t('unfeature') : t('feature')}
@@ -156,7 +156,7 @@ export function ShopListActions({
       <button
         onClick={() => setResetOpen((v) => !v)}
         disabled={pending}
-        className="rounded-md border border-zinc-300 px-3 py-1.5 text-xs transition-colors hover:bg-zinc-100 disabled:opacity-60 dark:border-zinc-700 dark:hover:bg-zinc-800"
+        className="rounded-md border border-zinc-300 px-3 py-1.5 text-xs transition-colors hover:bg-zinc-100 disabled:opacity-60 dark:border-zinc-700 dark:hover:bg-zinc-800 dark:text-zinc-200"
       >
         {t('resetPwd')}
       </button>
@@ -210,7 +210,7 @@ export function ShopListActions({
             value={newPwd}
             onChange={(e) => setNewPwd(e.target.value)}
             placeholder={t('newPwd')}
-            className="rounded-md border border-zinc-300 px-2 py-1.5 text-xs dark:border-zinc-700 dark:bg-zinc-800"
+            className="rounded-md border border-zinc-300 px-2 py-1.5 text-xs dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
           />
           <button
             onClick={onReset}
@@ -226,7 +226,7 @@ export function ShopListActions({
           <select
             value={renewPlan}
             onChange={(e) => setRenewPlan(e.target.value)}
-            className="rounded-md border border-zinc-300 px-2 py-1.5 text-xs dark:border-zinc-700 dark:bg-zinc-800"
+            className="rounded-md border border-zinc-300 px-2 py-1.5 text-xs dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
           >
             <option value="TRIAL">{t('planTrial')}</option>
             <option value="BASIC">{t('planBasic')}</option>
@@ -238,7 +238,7 @@ export function ShopListActions({
             value={months}
             onChange={(e) => setMonths(e.target.value)}
             placeholder={t('months')}
-            className="w-16 rounded-md border border-zinc-300 px-2 py-1.5 text-xs dark:border-zinc-700 dark:bg-zinc-800"
+            className="w-16 rounded-md border border-zinc-300 px-2 py-1.5 text-xs dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
           />
           <input
             type="number"
@@ -246,14 +246,14 @@ export function ShopListActions({
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder={t('amount')}
-            className="w-24 rounded-md border border-zinc-300 px-2 py-1.5 text-xs dark:border-zinc-700 dark:bg-zinc-800"
+            className="w-24 rounded-md border border-zinc-300 px-2 py-1.5 text-xs dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
           />
           <input
             type="text"
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder={t('note')}
-            className="w-24 rounded-md border border-zinc-300 px-2 py-1.5 text-xs dark:border-zinc-700 dark:bg-zinc-800"
+            className="w-24 rounded-md border border-zinc-300 px-2 py-1.5 text-xs dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-200"
           />
           <button
             onClick={onRenew}

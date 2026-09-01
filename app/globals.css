@@ -227,6 +227,16 @@
   }
 }
 
+/* 手动切深色（html.dark class，中台 admin 点 🌙 切换）：body 前景/背景色也必须跟着变，
+   否则 .dark 只触发 Tailwind dark: 变体，但 body{color:var(--foreground)} 里的 --foreground
+   仍保持浅色值（黑），导致依赖 body 继承色的文字（如表格 <td>）黑字黑底看不清。
+   与上方 @media 取值一致；仅影响走 body{color/background:var(--foreground/--background)} 的页面
+   （中台 admin），客户/老板端 body 用的是固定类（bg-[#111] text-zinc-100），不依赖此变量。 */
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

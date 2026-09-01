@@ -8,17 +8,29 @@ import { getSetting } from '@/lib/platform-settings'
 // - expiryPolicy：'downgrade' → 宽限过后不锁死（降档续用；plan 降级动作本期预留）；
 //   'lock'/'freeze'/未配置 → 宽限过后锁死（默认现状）
 // 无 billing 配置时行为与旧版完全一致（向后兼容）
+export type BillingPolicy = { graceDays?: number; expiryPolicy?: string }
+
+// 到期判定（纯同步，唯一真源）：isShopExpired 与聚合卡 cardAvailability 共用此判定，
+// 中台配置 graceDays/expiryPolicy（宽限/降级）后两处行为一致，避免卡片提前标「已到期」。null=无期限。
+export function isExpiredByPolicy(
+  subscribedUntil: Date | null | undefined,
+  billing?: BillingPolicy | null,
+): boolean {
+  if (!subscribedUntil) return false
+  const expiredAt = subscribedUntil.getTime()
+  if (expiredAt >= Date.now()) return false
+  const graceMs = (billing?.graceDays ?? 0) * 24 * 60 * 60 * 1000
+  if (Date.now() <= expiredAt + graceMs) return false // 宽限期内仍可用
+  if (billing?.expiryPolicy === 'downgrade') return false // 降级策略：宽限后不锁死
+  return true
+}
+
+// 订阅是否已到期（读中台 billing 配置；判定与聚合卡共用 isExpiredByPolicy）
 export async function isShopExpired(shop: {
   subscribedUntil: Date | null
 }): Promise<boolean> {
-  if (!shop.subscribedUntil) return false
-  const expiredAt = shop.subscribedUntil.getTime()
-  if (expiredAt >= Date.now()) return false
-  const billing = (await getSetting<{ graceDays?: number; expiryPolicy?: string }>('billing')) ?? {}
-  const graceMs = (billing.graceDays ?? 0) * 24 * 60 * 60 * 1000
-  if (Date.now() <= expiredAt + graceMs) return false // 宽限期内仍可用
-  if (billing.expiryPolicy === 'downgrade') return false // 降级策略：宽限后不锁死
-  return true
+  const billing = await getSetting<BillingPolicy>('billing')
+  return isExpiredByPolicy(shop.subscribedUntil, billing)
 }
 
 // 当前订阅到期时间（供中台/老板显示；null = 无期限）

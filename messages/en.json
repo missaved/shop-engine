@@ -32,6 +32,8 @@
     "onSale": "On sale",
     "open": "Open",
     "closed": "Closed",
+    "suspended": "Suspended",
+    "expired": "Expired",
     "toggleOpen": "Status",
     "language": "Language",
     "openHours": "Open hours",

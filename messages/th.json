@@ -32,6 +32,8 @@
     "onSale": "วางขาย",
     "open": "เปิด",
     "closed": "ปิด",
+    "suspended": "ระงับแล้ว",
+    "expired": "หมดอายุแล้ว",
     "toggleOpen": "สถานะ",
     "language": "ภาษา",
     "openHours": "เวลาเปิด",

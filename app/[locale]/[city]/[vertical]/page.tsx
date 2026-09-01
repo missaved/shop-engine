@@ -12,6 +12,8 @@ import { Link } from '@/i18n/navigation'
 import { shopUrl } from '@/lib/urls'
 import { getVerticalModule } from '@/lib/vertical-modules'
 import { listVerifiedShops, defaultAggCard } from '@/lib/aggs'
+import { getSetting } from '@/lib/platform-settings'
+import type { BillingPolicy } from '@/lib/billing'
 import { ShopCard } from '@/components/shop-card'
 
 export default async function VerticalHomePage({
@@ -35,6 +37,8 @@ export default async function VerticalHomePage({
 
   // 垂直差异注入：模块 aggregation.card 可覆盖为差异化卡片；未实现 → 通用 defaultAggCard 兜底
   const cardFn = getVerticalModule(vertical).aggregation?.card ?? defaultAggCard
+  // P3-S：到期判定与 isShopExpired 一致，一次取中台 billing 配置注入 ctx（避免每店重复查 DB）
+  const billing = await getSetting<BillingPolicy>('billing')
   const shops = await listVerifiedShops(vertical, city)
 
   // 垂直名：admin.vertical{Food/Moto/Salon/Pet/Laundry}（FOOD→'verticalFood' 等，matched messages）
@@ -76,7 +80,7 @@ export default async function VerticalHomePage({
       ) : (
         <div className="flex flex-col gap-3">
           {shops.map((s) => {
-            const card = cardFn(s, { locale })
+            const card = cardFn(s, { locale, billing })
             return (
               <ShopCard
                 key={card.slug}

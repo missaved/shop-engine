@@ -32,6 +32,8 @@
     "onSale": "Dijual",
     "open": "Buka",
     "closed": "Tutup",
+    "suspended": "Digantung",
+    "expired": "Tamat Tempoh",
     "toggleOpen": "Status",
     "language": "Bahasa",
     "openHours": "Waktu operasi",

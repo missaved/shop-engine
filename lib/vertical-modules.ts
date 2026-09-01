@@ -5,6 +5,8 @@
 import { prisma } from '@/lib/prisma'
 import type { StoredOrderItem } from '@/lib/cart-pricing'
 import type { Order, Shop, Vertical } from '@/generated/prisma/client'
+import { isExpiredByPolicy } from '@/lib/billing'
+import type { BillingPolicy } from '@/lib/billing'
 
 // 建单输入（跨垂直的公共子集；细化的垂直校验/副作用在 hook 内部展开）
 export interface RawOrderInput {
@@ -56,10 +58,17 @@ export interface AggCard {
   subtitle?: string
 }
 
+// 聚合卡上下文：locale 供 i18n（预留）；billing 供到期判定（与 isShopExpired 共用 isExpiredByPolicy，
+// 由聚合页一次注入，避免每店重复查 DB）。P3-S。
+export interface AggCtx {
+  locale: string
+  billing?: BillingPolicy | null
+}
+
 // 聚合差异扩展点：加垂直需差异化卡片（不只泛化模板）时 implement card；留空由聚合页兜底通用 defaultAggCard。
 export interface VerticalAggregation<V extends Vertical = Vertical> {
   vertical: V
-  card?(shop: AggShopInput, ctx: { locale: string }): AggCard
+  card?(shop: AggShopInput, ctx: AggCtx): AggCard
 }
 
 export interface VerticalModule<V extends Vertical = Vertical> {
@@ -105,22 +114,26 @@ function noopModule<V extends Vertical>(vertical: V): VerticalModule<V> {
   return { vertical }
 }
 
-// 聚合卡徽章态（P2-N）：平台停用 > 订阅到期 > 营业态。expired 用同步 subscribedUntil<now（默认 grace0 一致；若启用 grace 策略需异步 isShopExpired）。
-export function cardAvailability(shop: AggShopInput): NonNullable<AggCard['badge']> {
+// 聚合卡徽章态（P2-N）：平台停用 > 订阅到期 > 营业态。expired 用 isExpiredByPolicy 判定
+//（与 isShopExpired 共用，读中台 graceDays/expiryPolicy，配置宽限/降级时不提前标「已到期」）。P3-S。
+export function cardAvailability(
+  shop: AggShopInput,
+  billing?: BillingPolicy | null,
+): NonNullable<AggCard['badge']> {
   if (shop.platformSuspended) return 'suspended'
-  if (shop.subscribedUntil && shop.subscribedUntil.getTime() < Date.now()) return 'expired'
+  if (isExpiredByPolicy(shop.subscribedUntil, billing)) return 'expired'
   return shop.open ? 'open' : 'closed'
 }
 
 // 聚合卡共用投影：badge=徽章态（页面映射四态），差异化卡需保留（否则页面误判为 closed）
-function aggBase(shop: AggShopInput): AggCard {
+function aggBase(shop: AggShopInput, billing?: BillingPolicy | null): AggCard {
   return {
     title: shop.name,
     slug: shop.slug,
     vertical: shop.vertical,
     open: shop.open,
     currency: shop.currency,
-    badge: cardAvailability(shop),
+    badge: cardAvailability(shop, billing),
   }
 }
 
@@ -128,10 +141,10 @@ function aggBase(shop: AggShopInput): AggCard {
 function foodAggregation(): VerticalAggregation<'FOOD'> {
   return {
     vertical: 'FOOD',
-    card(shop) {
+    card(shop, ctx) {
       const cfg = (shop.config ?? {}) as Record<string, unknown>
       const desc = typeof cfg.description === 'string' ? cfg.description : ''
-      return { ...aggBase(shop), subtitle: desc ? desc.slice(0, 40) : undefined }
+      return { ...aggBase(shop, ctx.billing), subtitle: desc ? desc.slice(0, 40) : undefined }
     },
   }
 }
@@ -140,13 +153,13 @@ function foodAggregation(): VerticalAggregation<'FOOD'> {
 function motoAggregation(): VerticalAggregation<'MOTO'> {
   return {
     vertical: 'MOTO',
-    card(shop) {
+    card(shop, ctx) {
       const cfg = (shop.config ?? {}) as Record<string, unknown>
       const presets = Array.isArray(cfg.presets)
         ? (cfg.presets as Array<{ category?: string }>)
         : []
       const cats = [...new Set(presets.map((p) => p.category).filter(Boolean))] as string[]
-      return { ...aggBase(shop), subtitle: cats.length ? cats.slice(0, 2).join(' · ') : undefined }
+      return { ...aggBase(shop, ctx.billing), subtitle: cats.length ? cats.slice(0, 2).join(' · ') : undefined }
     },
   }
 }

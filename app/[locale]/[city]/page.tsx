@@ -7,6 +7,8 @@ import { parseCitySlug, cityMeta } from '@/lib/city'
 import { VERTICALS } from '@/lib/vertical'
 import { getVerticalModule } from '@/lib/vertical-modules'
 import { listVerifiedShops, defaultAggCard } from '@/lib/aggs'
+import { getSetting } from '@/lib/platform-settings'
+import type { BillingPolicy } from '@/lib/billing'
 import { ShopCard } from '@/components/shop-card'
 import { CitySwitcher } from '@/components/city-switcher'
 
@@ -19,6 +21,8 @@ export default async function CityHomePage({
   const city = parseCitySlug(cityParam)
   if (!city) notFound()
   const meta = cityMeta(city)
+  // P3-S：到期判定与 isShopExpired 一致，一次取中台 billing 配置注入 ctx（避免每垂直重复查 DB）
+  const billing = await getSetting<BillingPolicy>('billing')
   const ta = await getTranslations('admin')
   const td = await getTranslations('dashboard')
   const tc = await getTranslations('city') // 城市名 6 语
@@ -55,7 +59,7 @@ export default async function CityHomePage({
             ) : (
               <div className="flex flex-col gap-3">
                 {shops.map((s) => {
-                  const card = cardFn(s, { locale })
+                  const card = cardFn(s, { locale, billing })
                   return (
                     <ShopCard
                       key={card.slug}

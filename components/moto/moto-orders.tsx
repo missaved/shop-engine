@@ -168,6 +168,16 @@ export function MotoOrders({
                       placeholder={t('amountReceived')}
                       className="w-28 rounded-lg border border-zinc-300 px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-900"
                     />
+                    {Number(o.total) > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setPays((p) => ({ ...p, [o.id]: String(o.total) }))}
+                        disabled={busyId === o.id}
+                        className="rounded-lg border border-zinc-300 px-2 py-1.5 text-xs text-zinc-600 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+                      >
+                        {t('collectFull')}
+                      </button>
+                    )}
                     <button
                       onClick={() => collect(o)}
                       disabled={busyId === o.id}

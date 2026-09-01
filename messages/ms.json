@@ -795,7 +795,8 @@
     "year": "Tahun",
     "zalopayQr": "Pautan QR ZaloPay",
     "customerLink": "Pautan pelanggan (hantar kepada pemilik untuk semak kemajuan)",
-    "amountReceived": "Jumlah diterima"
+    "amountReceived": "Jumlah diterima",
+    "collectFull": "Terima penuh"
   },
   "customer": {
     "title": "Semak kenderaan",

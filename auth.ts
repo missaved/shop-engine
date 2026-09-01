@@ -48,11 +48,10 @@ class NeedTotpSetupSignin extends CredentialsSignin {
 export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: 'jwt', maxAge: 7 * 24 * 60 * 60 }, // 会话 7 天过期（显式生命周期，替换默认 30 天）
   trustHost: true, // 局域网 IP 访问时信任 host，否则报 UntrustedHost
-  // 局域网 http 兼容：AUTH_URL=https 会让 cookie 全部带 __Secure-/__Host- 前缀 + Secure 属性，
-  // 浏览器在 http 局域网 IP（192.168.5.210:3000）下不发送 Secure cookie → 登录必 MissingCSRF。
-  // 显式关掉后 cookie 变普通 host-only（authjs.* 无前缀、非 Secure），http/https 都能登录；
-  // 生产 https 仍安全（cloudflare 只暴露 https，http 会 301 到 https，2026-08-29 修复）。
-  useSecureCookies: false,
+  // Secure cookie 按环境区分（P2-D）：生产 Vercel(https)=true 走安全 cookie；
+  // 本地(无 VERCEL)保持 false —— 局域网 http/IP(192.168.5.210:3000) 不发送 Secure cookie，否则登录必 MissingCSRF。
+  // 本地即使经隧道 https 访问，不设 Secure 也不崩（cookie 只在 http 下受限），统一按 VERCEL 判，最稳。
+  useSecureCookies: process.env.VERCEL === '1',
   pages: { signIn: '/login' },
   providers: [
     Credentials({

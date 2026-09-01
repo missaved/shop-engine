@@ -795,7 +795,8 @@
     "toastError": "Lỗi, thử lại",
     "removeConfirm": "Xóa dịch vụ này?",
     "customerLink": "Liên kết khách hàng (gửi cho chủ xe để quét xem tiến độ)",
-    "amountReceived": "Số tiền nhận"
+    "amountReceived": "Số tiền nhận",
+    "collectFull": "Thu đủ"
   },
   "customer": {
     "title": "Tra cứu xe",

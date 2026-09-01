@@ -275,7 +275,7 @@ export async function deleteMyData(input: {
 
   await prisma.order.update({
     where: { id: order.id },
-    data: { customerPhone: null, customerName: null, note: null },
+    data: { customerPhone: null, customerName: null, note: null, customerId: null },
   })
 
   // 清关联提醒 payload 的客户 PII（displayNo/total 保留）

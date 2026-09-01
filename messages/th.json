@@ -795,7 +795,8 @@
     "year": "ปี",
     "zalopayQr": "ลิงก์ QR ZaloPay",
     "customerLink": "ลิงก์ลูกค้า (ส่งให้เจ้าของรถสแกนดูความคืบหน้า)",
-    "amountReceived": "จำนวนที่รับ"
+    "amountReceived": "จำนวนที่รับ",
+    "collectFull": "ชำระเต็มจำนวน"
   },
   "customer": {
     "title": "ตรวจสอบรถ",

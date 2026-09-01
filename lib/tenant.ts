@@ -1,5 +1,7 @@
 // 租户隔离：shopId 一律服务端派生，客户端永不传 shopId
-// 约定：URL 形如 /{locale}/{vertical}/{shopSlug}/...，页面/接口用 getShopBySlug 加载租户，
+// 约定：URL 为「多垂直三态」/ {locale}/{city}/{vertical}/{slug}[/{sub}]
+//       ① 垂直内单店（/zh/hcm/food/foo）② 垂直聚合（/zh/hcm/food）③ 城市门户（/zh/hcm）
+//       页面/接口用 getShopBySlug 加载租户（expectVertical/expectCity 校验垂直与城市段），
 // 之后所有查询 where 必须带 shop.shopId，杜绝跨店访问
 import { prisma } from './prisma'
 import { notFound } from 'next/navigation'

@@ -795,7 +795,8 @@
     "year": "年份",
     "zalopayQr": "ZaloPay 收款碼連結",
     "customerLink": "客戶入口連結（發車主掃碼查進度）",
-    "amountReceived": "實收金額"
+    "amountReceived": "實收金額",
+    "collectFull": "收全款"
   },
   "customer": {
     "title": "車輛查詢",

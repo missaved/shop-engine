@@ -795,7 +795,8 @@
     "toastError": "操作失败，请重试",
     "removeConfirm": "确定移除该服务？",
     "customerLink": "客户入口链接（发车主扫码查进度）",
-    "amountReceived": "实收金额"
+    "amountReceived": "实收金额",
+    "collectFull": "收全款"
   },
   "customer": {
     "title": "车辆查询",

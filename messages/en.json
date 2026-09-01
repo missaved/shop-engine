@@ -795,7 +795,8 @@
     "year": "Year",
     "zalopayQr": "ZaloPay QR link",
     "customerLink": "Customer link (send to owner to scan & track progress)",
-    "amountReceived": "Received"
+    "amountReceived": "Received",
+    "collectFull": "Collect full amount"
   },
   "customer": {
     "title": "Vehicle lookup",

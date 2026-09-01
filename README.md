@@ -14,6 +14,7 @@
   - 落地页三语 + `/api/health` 健康检查
 - [x] 老板侧一页后台（2026-08-26 完成）：Auth.js Credentials 登录（手机号+密码）+ 订单列表 + 复制摘要发 Zalo + 标记收款 + 售罄/营业时间/起送价；`pnpm build` ✅ + Playwright E2E 14/14 ✅
 - [x] food 垂直客户侧（2026-08-26 完成）：`/s/[slug]` 菜单（售罄自动隐藏）+ 点单（服务端计价 + 店内订单号自增）+ `/s/[slug]/track` 查单（手机号+订单号）；`pnpm build` ✅ + Playwright E2E 9/9 ✅
+- [x] 多垂直地基（2026-08-31 完成）：三态 URL `/{locale}/{city}/{vertical}/{slug}`（垂直单店 / `[vertical]` 聚合 / `[city]` 门户）+ `lib/vertical-modules.ts` 垂直扩展点 + `Customer / Vehicle / MotoPreset / FoodPreset` 模型 + next-intl **6 语**（en/ms/th/vi/zh-Hant/zh）+ OAuth 顾客侧登录；**旧 `/s/{slug}` 已废弃**（无过渡，404）。
 
 ## 本地开发
 

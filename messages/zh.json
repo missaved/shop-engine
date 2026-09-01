@@ -1,13 +1,14 @@
 {
   "home": {
-    "title": "轻量开单引擎",
-    "subtitle": "一家店一个租户，一个引擎支持所有类目。",
-    "tagline": "从订单到 Zalo 提醒，老板侧一页后台。",
+    "title": "发现附近好店",
+    "subtitle": "餐饮 · 维修 · 美业 · 宠物 · 洗衣洗护",
+    "tagline": "一站式社区生活，附近服务一个入口找到",
     "switchLocale": "语言：",
     "shopDemo": "进入演示店 · 立即下单",
     "bossLogin": "老板后台登录",
     "freeOpen": "免费开店",
-    "verticalCount": "{n} 家店铺"
+    "verticalCount": "{n} 家店铺",
+    "chooseService": "选择服务"
   },
   "login": {
     "title": "老板登录",

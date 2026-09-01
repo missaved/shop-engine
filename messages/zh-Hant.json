@@ -1,13 +1,14 @@
 {
   "home": {
-    "title": "輕量開單引擎",
-    "subtitle": "一家店一個租戶，一個引擎支援所有類目。",
-    "tagline": "從訂單到 Zalo 提醒，老闆側一頁後台。",
+    "title": "發現附近好店",
+    "subtitle": "餐飲 · 維修 · 美業 · 寵物 · 洗衣洗護",
+    "tagline": "一站式社區生活，附近服務一個入口找到",
     "switchLocale": "語言：",
     "shopDemo": "進入示範店 · 立即下單",
     "bossLogin": "老闆後台登入",
     "freeOpen": "免費開店",
-    "verticalCount": "{n} 家店鋪"
+    "verticalCount": "{n} 家店鋪",
+    "chooseService": "選擇服務"
   },
   "login": {
     "title": "老闆登入",

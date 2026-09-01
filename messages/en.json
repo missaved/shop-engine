@@ -1,13 +1,14 @@
 {
   "home": {
-    "title": "Lightweight Order Engine",
-    "subtitle": "One shop, one tenant. One engine for every vertical.",
-    "tagline": "From orders to Zalo reminders — a one-page boss dashboard.",
+    "title": "Good shops, near you",
+    "subtitle": "Food · Repair · Beauty · Pet · Laundry",
+    "tagline": "One-stop community living — every nearby service in one place",
     "switchLocale": "Language:",
     "shopDemo": "Demo shop · Order now",
     "bossLogin": "Boss dashboard",
     "freeOpen": "Open for free",
-    "verticalCount": "{n} shops"
+    "verticalCount": "{n} shops",
+    "chooseService": "Choose a service"
   },
   "login": {
     "title": "Boss Login",

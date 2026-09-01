@@ -1,13 +1,14 @@
 {
   "home": {
-    "title": "Enjin Pesanan Ringan",
-    "subtitle": "Satu kedai, satu penyewa. Satu enjin untuk semua kategori.",
-    "tagline": "Daripada pesanan hingga peringatan Zalo — satu papan pemuka bos.",
+    "title": "Kedai bagus, dekat anda",
+    "subtitle": "Makanan · Baiki · Kecantikan · Haiwan · Cuci",
+    "tagline": "Hidup komuniti sehenti — semua servis berdekatan dalam satu pintu",
     "switchLocale": "Bahasa:",
     "shopDemo": "Kedai demo · Pesan sekarang",
     "bossLogin": "Papan pemuka bos",
     "freeOpen": "Buka percuma",
-    "verticalCount": "{n} kedai"
+    "verticalCount": "{n} kedai",
+    "chooseService": "Pilih perkhidmatan"
   },
   "login": {
     "title": "Log Masuk Bos",

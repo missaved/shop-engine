@@ -1,13 +1,14 @@
 {
   "home": {
-    "title": "Công cụ bán hàng gọn nhẹ",
-    "subtitle": "Một cửa hàng, một khách thuê. Một nền tảng cho mọi ngành nghề.",
-    "tagline": "Từ đơn hàng đến nhắc Zalo — trang quản lý chỉ một trang.",
+    "title": "Quán ngon gần bạn",
+    "subtitle": "Ẩm thực · Sửa chữa · Làm đẹp · Thú cưng · Giặt ủi",
+    "tagline": "Tiện ích cộng đồng — mọi dịch vụ gần nhà trong một lối vào",
     "switchLocale": "Ngôn ngữ:",
     "shopDemo": "Cửa hàng demo · Đặt hàng",
     "bossLogin": "Trang quản lý",
     "freeOpen": "Mở miễn phí",
-    "verticalCount": "{n} cửa hàng"
+    "verticalCount": "{n} cửa hàng",
+    "chooseService": "Chọn dịch vụ"
   },
   "login": {
     "title": "Đăng nhập",

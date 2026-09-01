@@ -17,6 +17,9 @@ import type { BillingPolicy } from '@/lib/billing'
 import { ShopCard } from '@/components/shop-card'
 import { CitySwitcher } from '@/components/city-switcher'
 
+// 本页读 DB（某垂直已验证店铺 + 演示店入口），保持动态渲染；否则 build 期静态预渲染固化店铺快照，seed/新店上线后看不到
+export const dynamic = 'force-dynamic'
+
 export default async function VerticalHomePage({
   params,
 }: {

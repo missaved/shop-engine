@@ -25,6 +25,9 @@ const VERTICAL_IMG: Record<string, string> = {
   LAUNDRY: '/vertical/laundry.jpg',
 }
 
+// 本页读 DB（各垂直该城市已验证店铺 + shopCount），保持动态渲染；否则 build 期静态预渲染会把当时的店铺快照固化，seed/新店上线后看不到
+export const dynamic = 'force-dynamic'
+
 export default async function CityHomePage({
   params,
 }: {

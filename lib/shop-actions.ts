@@ -73,7 +73,18 @@ export async function createOrder(input: {
   // 有 CUSTOMER 会话 → 写 order.customerId + customerName（老板端看昵称、track 按账号锁单）；
   // 无会话 → 静默走 guestKey/guestIp/phone 匿名兜底，**不 throw、不强制登录**。
   const sessionUser = await getCurrentUser()
-  const customerId = sessionUser?.customerId ?? null
+  // 身份融合 FK 健壮性（2026-08-31 生产 P2003 根治）：JWT 会话 7 天有效，Customer 被删/更换后
+  // token.customerId 仍是孤儿 → order.create 写 customerId 触发 Order_customerId_fkey 外键失败（500，客户「登录后下单崩」）。
+  // 写入前校验 Customer 存在：孤儿/失效 id 降级匿名（customerId=null，customerName 自动回退单内输入），
+  // 符合「只写身份不强制、游客照常匿名下单」定案，不 throw。
+  let customerId: string | null = sessionUser?.customerId ?? null
+  if (customerId) {
+    const cust = await prisma.customer.findUnique({
+      where: { id: customerId },
+      select: { id: true },
+    })
+    if (!cust) customerId = null
+  }
   // 通用购物车建单，不绑定垂直（原 expectVertical:'FOOD' 硬编码已移除）。
   // 垂直差异由 getVerticalModule(shop.vertical).onOrderCreated 承载（建单后副作用），此处只做纯流水。
   const shop = await getShopBySlug(input.slug)

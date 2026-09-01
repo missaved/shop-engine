@@ -2,7 +2,7 @@ import { getTranslations } from 'next-intl/server'
 import { LocaleSwitcher } from '@/components/locale-switcher'
 import { Link } from '@/i18n/navigation'
 import { verticalUrl } from '@/lib/urls'
-import { DEFAULT_CITY } from '@/lib/city'
+import { getVisitorCity } from '@/lib/visitor-city'
 import { VERTICALS, type Vertical } from '@/lib/vertical'
 import { CitySwitcher } from '@/components/city-switcher'
 import { listVerifiedShops } from '@/lib/aggs'
@@ -23,10 +23,12 @@ const VERTICAL_ICON: Record<Vertical, string> = {
 export default async function HomePage() {
   const t = await getTranslations('home')
   const ta = await getTranslations('admin')
+  // P4-Z：落地页跟随访客最近选择的城市（cookie 记忆，缺省 DEFAULT_CITY）
+  const city = await getVisitorCity()
 
   // 各垂直已入驻店铺数（并行查询；「敬请期待」= 0）
   const counts = await Promise.all(
-    VERTICALS.map(async (v) => (await listVerifiedShops(v, DEFAULT_CITY)).length),
+    VERTICALS.map(async (v) => (await listVerifiedShops(v, city)).length),
   )
 
   return (
@@ -56,7 +58,7 @@ export default async function HomePage() {
           return (
             <Link
               key={v}
-              href={verticalUrl(v, DEFAULT_CITY)}
+              href={verticalUrl(v, city)}
               className="group flex flex-col items-center gap-1.5 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm transition-shadow hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900"
             >
               <span className="text-3xl">{VERTICAL_ICON[v]}</span>

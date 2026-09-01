@@ -14,6 +14,8 @@ export function CitySwitcher({ className }: { className?: string }) {
     segs.length >= 3 && isCitySlug(segs[2]) ? (segs[2] as CitySlug) : undefined
 
   function go(next: CitySlug) {
+    // 记忆最近城市（供落地页等无 city 段页读 cookie 做缺省；不改跳转语义，仍按路径段/插入切城）
+    document.cookie = `spotnear.city=${next}; max-age=31536000; path=/; SameSite=Lax`
     const s = pathname.split('/')
     if (s.length >= 3 && isCitySlug(s[2])) {
       s[2] = next

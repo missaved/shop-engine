@@ -15,6 +15,7 @@ import { listVerifiedShops, defaultAggCard } from '@/lib/aggs'
 import { getSetting } from '@/lib/platform-settings'
 import type { BillingPolicy } from '@/lib/billing'
 import { ShopCard } from '@/components/shop-card'
+import { CitySwitcher } from '@/components/city-switcher'
 
 export default async function VerticalHomePage({
   params,
@@ -47,6 +48,10 @@ export default async function VerticalHomePage({
   return (
     <main className="mx-auto flex w-full max-w-xl flex-col gap-6 px-6 py-12">
       <h1 className="text-center text-3xl font-bold">{tc(city)} · {t(labelKey)}</h1>
+      {/* P3-Y：垂直聚合页支持切城市（CitySwitcher 替换 city 段、保留 vertical 段：/hcm/food → /hn/food） */}
+      <div className="flex justify-center">
+        <CitySwitcher />
+      </div>
 
       {/* 顶部入口：演示店 / 老板登录 / 免费开店（2026-09-01 #6：这些入口进垂直应用；聚合页已移除） */}
       <div className="flex flex-col gap-2">

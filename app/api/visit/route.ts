@@ -15,16 +15,26 @@ export async function POST(req: NextRequest) {
   }
   const path = (body.path ?? req.nextUrl.pathname).slice(0, 500)
   const referer = (body.referer ?? '').slice(0, 500) || null
+  const ip =
+    (req.headers.get('cf-connecting-ip') ??
+      req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+      null)?.slice(0, 64) ?? null
 
   try {
+    // P3-AD（2026-09-01）：同一 IP + 同一 path 在 60min 内已记录则跳过写（防跨会话/多设备同 IP 的
+    // PV 虚高与 DB 行膨胀）。命中返回 deduped。无 IP（直连）才不查（防误判）。
+    if (ip) {
+      const exists = await prisma.visitLog.findFirst({
+        where: { ip, path, createdAt: { gte: new Date(Date.now() - 60 * 60 * 1000) } },
+        select: { id: true },
+      })
+      if (exists) return Response.json({ ok: true, deduped: true })
+    }
     await prisma.visitLog.create({
       data: {
         path,
         referer,
-        ip:
-          (req.headers.get('cf-connecting-ip') ??
-            req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
-            null)?.slice(0, 64) ?? null,
+        ip,
         country: req.headers.get('cf-ipcountry')?.slice(0, 2) ?? null,
         ua: req.headers.get('user-agent')?.slice(0, 300) ?? null,
       },

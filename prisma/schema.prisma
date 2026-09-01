@@ -118,6 +118,8 @@ model Order {
   @@unique([shopId, displayNo])
   @@unique([shopId, idempotencyKey])
   @@index([shopId, createdAt])
+  // P4-AF：大店订单列表过滤（findOrdersForDashboard 的 where shopId+status in[...] + orderBy createdAt desc）
+  @@index([shopId, status, createdAt])
   @@index([customerId]) // 「我的订单」按账号列出的查询键
 }
 

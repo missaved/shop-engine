@@ -32,6 +32,8 @@
     "onSale": "Đang bán",
     "open": "Đang mở",
     "closed": "Đã đóng",
+    "suspended": "Tạm ngừng",
+    "expired": "Đã hết hạn",
     "toggleOpen": "Trạng thái",
     "language": "Ngôn ngữ",
     "openHours": "Giờ mở cửa",

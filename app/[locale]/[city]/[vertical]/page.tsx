@@ -85,6 +85,8 @@ export default async function VerticalHomePage({
                 city={city}
                 openLabel={td('open')}
                 closedLabel={td('closed')}
+                suspendedLabel={td('suspended')}
+                expiredLabel={td('expired')}
               />
             )
           })}

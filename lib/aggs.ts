@@ -4,6 +4,7 @@
 import { prisma } from '@/lib/prisma'
 import type { Vertical } from '@/lib/vertical'
 import type { CitySlug } from '@/lib/city'
+import { cardAvailability } from '@/lib/vertical-modules'
 import type { AggCard, AggShopInput } from '@/lib/vertical-modules'
 
 // 聚合 feed 的店铺投影（子集，够卡片渲染用；与 vertical-modules 的 AggShopInput 兼容）
@@ -24,6 +25,8 @@ export async function listVerifiedShops(vertical: Vertical, city?: CitySlug): Pr
       currency: true,
       open: true,
       featured: true,
+      platformSuspended: true, // P2-N：卡片标「已停用」
+      subscribedUntil: true, // P2-N：卡片标「已到期」
       config: true, // 差异化卡读（food 简介 / moto 服务范围）
     },
   })
@@ -40,6 +43,6 @@ export function defaultAggCard(shop: ShopPublic, _ctx: { locale: string }): AggC
     vertical: shop.vertical,
     open: shop.open,
     currency: shop.currency,
-    badge: shop.open ? 'open' : 'closed', // 由页面侧映射为「营业中/已打烊」（i18n 在聚合页做）
+    badge: cardAvailability(shop), // 由页面侧映射为「营业中/已打烊/已停用/已到期」（i18n 在聚合页做）
   }
 }

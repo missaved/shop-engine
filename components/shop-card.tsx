@@ -11,12 +11,16 @@ export function ShopCard({
   city,
   openLabel,
   closedLabel,
+  suspendedLabel,
+  expiredLabel,
 }: {
   card: AggCard
   vertical: Vertical
   city: string
   openLabel: string
   closedLabel: string
+  suspendedLabel: string
+  expiredLabel: string
 }) {
   return (
     <Link
@@ -30,7 +34,13 @@ export function ShopCard({
         )}
       </span>
       <span className="shrink-0 text-sm text-zinc-500 dark:text-zinc-400">
-        {card.badge === 'open' ? openLabel : closedLabel}
+        {card.badge === 'open'
+          ? openLabel
+          : card.badge === 'suspended'
+            ? suspendedLabel
+            : card.badge === 'expired'
+              ? expiredLabel
+              : closedLabel}
       </span>
     </Link>
   )

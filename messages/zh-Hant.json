@@ -32,6 +32,8 @@
     "onSale": "上架",
     "open": "營業中",
     "closed": "已打烊",
+    "suspended": "已停用",
+    "expired": "已到期",
     "toggleOpen": "營業狀態",
     "language": "語言",
     "openHours": "營業時間",

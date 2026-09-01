@@ -35,6 +35,10 @@ export interface AggShopInput {
   currency: string
   open: boolean
   featured: boolean
+  /** 平台停用（违规/冻结）：卡片标「已停用」而非过滤（P2-N 徽章） */
+  platformSuspended?: boolean | null
+  /** 订阅到期（null=无期限）：卡片标「已到期」，简化判 subscribedUntil < now（默认 grace0） */
+  subscribedUntil?: Date | null
   /** 垂直 config（差异化卡读：food 简介 / moto 服务范围等）；JsonValue 强转而入 */
   config?: Record<string, unknown> | null
 }
@@ -46,8 +50,8 @@ export interface AggCard {
   vertical: Vertical
   open: boolean
   currency: string
-  /** 徽章文案（本地化；可选） */
-  badge?: string
+  /** 徽章态（本地化由页面侧映射；可选，默认 undefined 不显示徽章）；P2-N 四态 */
+  badge?: 'open' | 'closed' | 'suspended' | 'expired'
   /** 副信息（如品类/服务范围；可选） */
   subtitle?: string
 }
@@ -101,7 +105,14 @@ function noopModule<V extends Vertical>(vertical: V): VerticalModule<V> {
   return { vertical }
 }
 
-// 聚合卡共用投影：badge=营业态（页面映射 open/closed），差异化卡需保留（否则页面误判为 closed）
+// 聚合卡徽章态（P2-N）：平台停用 > 订阅到期 > 营业态。expired 用同步 subscribedUntil<now（默认 grace0 一致；若启用 grace 策略需异步 isShopExpired）。
+export function cardAvailability(shop: AggShopInput): NonNullable<AggCard['badge']> {
+  if (shop.platformSuspended) return 'suspended'
+  if (shop.subscribedUntil && shop.subscribedUntil.getTime() < Date.now()) return 'expired'
+  return shop.open ? 'open' : 'closed'
+}
+
+// 聚合卡共用投影：badge=徽章态（页面映射四态），差异化卡需保留（否则页面误判为 closed）
 function aggBase(shop: AggShopInput): AggCard {
   return {
     title: shop.name,
@@ -109,7 +120,7 @@ function aggBase(shop: AggShopInput): AggCard {
     vertical: shop.vertical,
     open: shop.open,
     currency: shop.currency,
-    badge: shop.open ? 'open' : 'closed',
+    badge: cardAvailability(shop),
   }
 }
 

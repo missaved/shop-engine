@@ -1033,6 +1033,7 @@
     "itemName": "Name (shirt...)",
     "wantWash": "I want laundry",
     "gateTitle": "Log in or enter phone to order",
-    "guestGo": "Continue"
+    "guestGo": "Continue",
+    "gatePhone": "Enter phone to order"
   }
 }

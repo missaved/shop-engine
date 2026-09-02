@@ -46,8 +46,8 @@ export function LaundryStorefront({ slug, currency, shopName, address, city, goo
             {googleEnabled !== false && <button onClick={() => signIn('google', { callbackUrl: `/${locale}/${city}/laundry/${slug}/order` })} className="rounded-xl bg-zinc-900 py-2.5 text-sm font-semibold text-white">{t('continueGoogle')}</button>}
             {facebookEnabled && <button onClick={() => signIn('facebook', { callbackUrl: `/${locale}/${city}/laundry/${slug}/order` })} className="rounded-xl bg-[#1877F2] py-2.5 text-sm font-semibold text-white">{t('continueFacebook')}</button>}
             <div className="flex gap-2">
-              <input value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} placeholder={t('customerPhone')} className="flex-1 rounded-lg border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800" />
-              <button onClick={() => guestPhone.trim() && router.push(`/${locale}/${city}/laundry/${slug}/order?phone=${encodeURIComponent(guestPhone.trim())}`)} className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-semibold text-white">{t('guestGo')}</button>
+              <input value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} placeholder={t('gatePhone')} className="flex-1 rounded-lg border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800" />
+              <button onClick={() => guestPhone.trim() && router.push(`/${city}/laundry/${slug}/order?phone=${encodeURIComponent(guestPhone.trim())}`)} className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-semibold text-white">{t('guestGo')}</button>
             </div>
           </div>
         </section>

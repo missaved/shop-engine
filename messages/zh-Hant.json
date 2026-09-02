@@ -1033,6 +1033,7 @@
     "itemName": "名稱(襯衫…)",
     "wantWash": "我要洗衣",
     "gateTitle": "登入或輸入手機號以自助下單",
-    "guestGo": "繼續"
+    "guestGo": "繼續",
+    "gatePhone": "輸入手機號下單"
   }
 }

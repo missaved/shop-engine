@@ -13,6 +13,7 @@ import {
   payLaundryByCard,
   addLaundryClaim,
   confirmLaundryHandover,
+  searchLaundryOrders,
   type LaundryProgress,
 } from '@/lib/laundry-actions'
 import { formatPrice } from '@/lib/format'
@@ -53,6 +54,15 @@ export function LaundryOrders({ currency, shop }: { currency: string; shop: Laun
   const [busyId, setBusyId] = useState('')
   const [settleOpenId, setSettleOpenId] = useState<string | null>(null)
   const [showAllCollected, setShowAllCollected] = useState(false)
+  const [searchQ, setSearchQ] = useState('')
+  const [searchResults, setSearchResults] = useState<LaundryOrderPlain[] | null>(null)
+  const [searchBusy, setSearchBusy] = useState(false)
+  const doSearch = async (q: string) => {
+    const query = (q ?? '').trim()
+    if (!query) { setSearchResults(null); return }
+    setSearchBusy(true)
+    try { setSearchResults(await searchLaundryOrders(query)) } catch { setSearchResults([]) } finally { setSearchBusy(false) }
+  }
 
   const load = useCallback(async () => {
     try {
@@ -121,6 +131,38 @@ export function LaundryOrders({ currency, shop }: { currency: string; shop: Laun
 
   return (
     <section className="flex flex-col gap-3">
+      <div className="flex items-center gap-2">
+        <input
+          value={searchQ}
+          onChange={(e) => { setSearchQ(e.target.value); doSearch(e.target.value) }}
+          placeholder={t('searchPlaceholder')}
+          className="flex-1 rounded-lg border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
+        />
+        <button onClick={() => doSearch(searchQ)} className="rounded-lg bg-zinc-900 px-3 py-2 text-sm font-medium text-white dark:bg-zinc-100 dark:text-zinc-900">{searchBusy ? '…' : t('search')}</button>
+      </div>
+      {searchResults !== null && (
+        <div className="flex flex-col gap-3">
+          {searchResults.length === 0 && <p className="py-6 text-center text-sm text-zinc-400">{t('histEmpty')}</p>}
+          {searchResults.map((o) => {
+            const debt = Number(o.total) - Number(o.paidAmount)
+            const next = nextOf(o.laundryStatus)
+            const st = STATUS_STYLE[o.laundryStatus ?? ''] ?? STATUS_STYLE.cancelled
+            return (
+              <div key={o.id} className={`rounded-xl border border-l-4 border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 ${st.bar}`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold">{o.displayNo}</span>
+                    {o.tagCode && <span className="text-xs text-zinc-400">{o.tagCode}</span>}
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${st.badge}`}>{t(STATUS_KEY[o.laundryStatus] ?? 'progressWashingPending')}</span>
+                  </div>
+                  <span className="text-sm font-medium">{formatPrice(Number(o.total), currency)}</span>
+                </div>
+                <p className="mt-1 text-xs text-zinc-500">{o.customerName || o.customerPhone || ''}</p>
+              </div>
+            )
+          })}
+        </div>
+      )}
       <div className="flex gap-1 overflow-x-auto rounded-xl bg-zinc-100 p-1 dark:bg-zinc-800">
         {(['all', 'submitted', 'washing_pending', 'washing', 'qc', 'ready', 'collected'] as const).map((k) => (
           <button

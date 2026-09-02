@@ -1074,6 +1074,9 @@
     "paid": "Dibayar",
     "partial": "Sebahagian",
     "unpaid": "Belum bayar",
-    "activeCount": "Aktif {n}"
+    "activeCount": "Aktif {n}",
+    "searchPlaceholder": "Cari pesanan/kod/telefon",
+    "search": "Cari",
+    "histEmpty": "Tiada"
   }
 }

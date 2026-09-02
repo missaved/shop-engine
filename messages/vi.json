@@ -1074,6 +1074,9 @@
     "paid": "Đã thu",
     "partial": "Thu một phần",
     "unpaid": "Chưa thu",
-    "activeCount": "Đang xử lý {n}"
+    "activeCount": "Đang xử lý {n}",
+    "searchPlaceholder": "Tìm đơn (mã/SĐT/khách)",
+    "search": "Tìm",
+    "histEmpty": "Không tìm thấy"
   }
 }

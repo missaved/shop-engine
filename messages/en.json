@@ -1074,6 +1074,9 @@
     "paid": "Paid",
     "partial": "Partial",
     "unpaid": "Unpaid",
-    "activeCount": "Active {n}"
+    "activeCount": "Active {n}",
+    "searchPlaceholder": "Search order/code/phone",
+    "search": "Search",
+    "histEmpty": "Not found"
   }
 }

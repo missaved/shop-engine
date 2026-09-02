@@ -816,3 +816,24 @@ export async function countLaundryActive() {
   const ACTIVE = ['submitted', 'washing_pending', 'washing', 'qc', 'ready']
   return orders.filter((o) => ACTIVE.includes((o.config as Record<string, unknown> | null)?.laundryStatus as string)).length
 }
+
+// —— C1 订单搜索：检索本店全部订单（不限日期），按 单号/取件码/手机号/客户名，默认最多 50 条 ——
+export async function searchLaundryOrders(query: string) {
+  const user = await requireOwner()
+  const q = (query ?? '').trim()
+  if (!q) return []
+  const rows = await prisma.order.findMany({
+    where: {
+      shopId: user.shopId,
+      OR: [
+        { displayNo: { contains: q, mode: 'insensitive' } },
+        { customerPhone: { contains: q } },
+        { customerName: { contains: q, mode: 'insensitive' } },
+        { config: { path: ['tagCode'], string_contains: q } },
+      ],
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 50,
+  })
+  return rows.map(serializeLaundryOrder)
+}

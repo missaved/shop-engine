@@ -1074,6 +1074,9 @@
     "paid": "已收清",
     "partial": "部分",
     "unpaid": "未收",
-    "activeCount": "進行中 {n}"
+    "activeCount": "進行中 {n}",
+    "searchPlaceholder": "搜尋單號/取件碼/手機號",
+    "search": "搜尋",
+    "histEmpty": "未找到"
   }
 }

@@ -1074,6 +1074,9 @@
     "paid": "ชำระแล้ว",
     "partial": "บางส่วน",
     "unpaid": "ยังไม่ชำระ",
-    "activeCount": "กำลังดำเนินการ {n}"
+    "activeCount": "กำลังดำเนินการ {n}",
+    "searchPlaceholder": "ค้นหาคำสั่งซื้อ/รหัส/เบอร์",
+    "search": "ค้นหา",
+    "histEmpty": "ไม่พบ"
   }
 }

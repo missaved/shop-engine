@@ -1016,6 +1016,7 @@
     "orderCount": "Pesanan",
     "spend": "Perbelanjaan",
     "readyBadge": "Sedia",
-    "reorder": "Pesan semula"
+    "reorder": "Pesan semula",
+    "rechargeHint": "Tambah nilai di kedai / hubungi staff"
   }
 }

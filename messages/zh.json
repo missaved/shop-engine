@@ -1016,6 +1016,7 @@
     "orderCount": "订单",
     "spend": "消费",
     "readyBadge": "可取",
-    "reorder": "再来一次"
+    "reorder": "再来一次",
+    "rechargeHint": "充值请到店/联系老板"
   }
 }

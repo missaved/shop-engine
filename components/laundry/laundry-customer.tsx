@@ -28,21 +28,22 @@ export function LaundryCustomer({ slug, currency, shopName }: { slug: string; cu
     <main className="mx-auto flex w-full max-w-lg flex-col gap-4 px-5 py-6">
       <h1 className="text-lg font-bold">{shopName}</h1>
       {data?.customer && (
-        <section className="rounded-2xl border border-zinc-200 p-4 dark:border-zinc-800">
-          <div className="flex justify-between text-sm">
-            <span className="text-zinc-500">{t('balance')}</span>
-            <span className="font-bold">{formatPrice(Number(data.customer.balance), currency)}</span>
+        <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-zinc-500">{t('balance')}</span>
+            <span className="text-2xl font-extrabold text-amber-600">{formatPrice(Number(data.customer.balance), currency)}</span>
           </div>
           {data.customer.cards.length > 0 && (
             <ul className="mt-2 text-sm text-zinc-600">
               {data.customer.cards.map((c) => (
                 <li key={c.id} className="flex justify-between">
                   <span>{c.name ?? (c.type === 'count' ? t('cardCountName') : t('cardCreditName'))}</span>
-                  <span>{c.type === 'count' ? `${c.remainingCount} ${t('times')}` : formatPrice(Number(c.balance), currency)}</span>
+                  <span className="font-medium">{c.type === 'count' ? `${c.remainingCount} ${t('times')}` : formatPrice(Number(c.balance), currency)}</span>
                 </li>
               ))}
             </ul>
           )}
+          <p className="mt-2 text-xs text-zinc-500">{t('rechargeHint')}</p>
         </section>
       )}
       <section className="flex flex-col gap-2">

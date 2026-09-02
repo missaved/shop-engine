@@ -1016,6 +1016,7 @@
     "orderCount": "Đơn",
     "spend": "Chi tiêu",
     "readyBadge": "Sẵn sàng lấy",
-    "reorder": "Đặt lại"
+    "reorder": "Đặt lại",
+    "rechargeHint": "Nạp tiền vui lòng liên hệ cửa hàng"
   }
 }

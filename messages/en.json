@@ -1016,6 +1016,7 @@
     "orderCount": "Orders",
     "spend": "Spend",
     "readyBadge": "Ready",
-    "reorder": "Reorder"
+    "reorder": "Reorder",
+    "rechargeHint": "Top up at the shop / contact staff"
   }
 }

@@ -1016,6 +1016,7 @@
     "orderCount": "訂單",
     "spend": "消費",
     "readyBadge": "可取",
-    "reorder": "再來一次"
+    "reorder": "再來一次",
+    "rechargeHint": "儲值請到店/聯絡老闆"
   }
 }

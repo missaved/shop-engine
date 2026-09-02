@@ -167,7 +167,7 @@ export function LaundryOrders({ currency, shop }: { currency: string; shop: Laun
                 </p>
               )}
 
-              <div className="mt-2 flex items-center gap-2">
+              <div className="mt-2 flex flex-wrap items-center gap-2">
                 {/* 推进 / 结单（含质检） */}
                 {next === 'qc' && (
                   <button

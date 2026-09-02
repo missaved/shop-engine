@@ -1027,6 +1027,9 @@
     "submitOrder": "提交订单",
     "submitOk": "已提交——等老板确认",
     "estimateNote": "预估金额，收衣时结算",
-    "itemHint": "逐件填写(衬衫/裤)，之后到店送洗"
+    "itemHint": "逐件填写(衬衫/裤)，之后到店送洗",
+    "itemDetailLabel": "衣物明细",
+    "addItem": "+ 添加",
+    "itemName": "名称(衬衫…)"
   }
 }

@@ -12,6 +12,7 @@ export function LaundrySelfOrder({ slug, currency }: { slug: string; currency: s
   const t = useTranslations('laundry')
   const [mode, setMode] = useState<LaundryMode>('kg')
   const [kg, setKg] = useState(5)
+  const [items, setItems] = useState<{ name: string; count: number; mark?: string }[]>([])
   const [phone, setPhone] = useState('')
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
@@ -26,9 +27,9 @@ export function LaundrySelfOrder({ slug, currency }: { slug: string; currency: s
   const submit = async () => {
     setBusy(true); setErr(''); setDone('')
     try {
-      await submitCustomerLaundryOrder(slug, { mode, kg: mode === 'kg' ? kg : undefined, customerPhone: phone || undefined, note: note || undefined, idempotencyKey: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}` })
+      await submitCustomerLaundryOrder(slug, { mode, kg: mode === 'kg' ? kg : undefined, itemDetail: items, customerPhone: phone || undefined, note: note || undefined, idempotencyKey: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}` })
       setDone(t('submitOk'))
-      setPhone(''); setNote('')
+      setPhone(''); setNote(''); setItems([])
     } catch (e) { setErr(e instanceof Error ? e.message : t('error')) } finally { setBusy(false) }
   }
 
@@ -57,6 +58,22 @@ export function LaundrySelfOrder({ slug, currency }: { slug: string; currency: s
           ))}
         </div>
       )}
+      {/* 衣物明细（可多件，带污渍点） */}
+      <div className="rounded-xl border border-zinc-200 p-3 dark:border-zinc-800">
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-sm text-zinc-600 dark:text-zinc-300">{t('itemDetailLabel')}</span>
+          <button onClick={() => setItems((a) => [...a, { name: '', count: 1 }])} className="text-xs font-semibold text-amber-600">{t('addItem')}</button>
+        </div>
+        {items.map((it, i) => (
+          <div key={i} className="mb-2 flex items-center gap-2">
+            <input value={it.name} onChange={(e) => setItems((a) => a.map((x, idx) => (idx === i ? { ...x, name: e.target.value } : x)))} placeholder={t('itemName')} className="flex-1 rounded-lg border border-zinc-200 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800" />
+            <input value={it.count} onChange={(e) => setItems((a) => a.map((x, idx) => (idx === i ? { ...x, count: Number(e.target.value) || 0 } : x)))} inputMode="numeric" className="w-12 rounded-lg border border-zinc-200 px-2 py-1 text-sm text-center dark:border-zinc-700 dark:bg-zinc-800" />
+            <input value={it.mark ?? ''} onChange={(e) => setItems((a) => a.map((x, idx) => (idx === i ? { ...x, mark: e.target.value } : x)))} placeholder={t('itemMark')} className="flex-1 rounded-lg border border-zinc-200 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800" />
+            <button onClick={() => setItems((a) => a.filter((_, idx) => idx !== i))} className="text-zinc-400">✕</button>
+          </div>
+        ))}
+      </div>
+
       <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={t('customerPhone')} className="rounded-lg border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800" />
       <input value={note} onChange={(e) => setNote(e.target.value)} placeholder={t('note')} className="rounded-lg border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800" />
       <div className="flex items-center justify-between text-sm">

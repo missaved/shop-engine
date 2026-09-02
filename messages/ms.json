@@ -1027,6 +1027,9 @@
     "submitOrder": "Hantar",
     "submitOk": "Dihantar — tunggu sah",
     "estimateNote": "Anggaran, bayar semasa ambil",
-    "itemHint": "Senarai setiap item"
+    "itemHint": "Senarai setiap item",
+    "itemDetailLabel": "Butiran",
+    "addItem": "+ Tambah",
+    "itemName": "Nama (baju...)"
   }
 }

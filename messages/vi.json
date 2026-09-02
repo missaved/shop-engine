@@ -1027,6 +1027,9 @@
     "submitOrder": "Gửi yêu cầu",
     "submitOk": "Đã gửi — chờ chủ tiệm xác nhận",
     "estimateNote": "Giá ước tính, chốt khi nhận đồ",
-    "itemHint": "Điền từng món (áo/quần) — sau đó vào cửa hàng mang đồ đến"
+    "itemHint": "Điền từng món (áo/quần) — sau đó vào cửa hàng mang đồ đến",
+    "itemDetailLabel": "Chi tiết đồ",
+    "addItem": "+ Thêm món",
+    "itemName": "Tên (áo sơ mi...)"
   }
 }

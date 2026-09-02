@@ -1027,6 +1027,9 @@
     "submitOrder": "提交訂單",
     "submitOk": "已提交——等老闆確認",
     "estimateNote": "預估金額，收衣時結算",
-    "itemHint": "逐件填寫(襯衫/褲)，之後到店送洗"
+    "itemHint": "逐件填寫(襯衫/褲)，之後到店送洗",
+    "itemDetailLabel": "衣物明細",
+    "addItem": "+ 新增",
+    "itemName": "名稱(襯衫…)"
   }
 }

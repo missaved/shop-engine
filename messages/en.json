@@ -1027,6 +1027,9 @@
     "submitOrder": "Submit order",
     "submitOk": "Submitted — awaiting shop confirm",
     "estimateNote": "Estimate, settled at pickup",
-    "itemHint": "List each item (shirt/pants)"
+    "itemHint": "List each item (shirt/pants)",
+    "itemDetailLabel": "Items",
+    "addItem": "+ Add",
+    "itemName": "Name (shirt...)"
   }
 }

@@ -49,18 +49,8 @@ def main():
         records.append(run_assertion(lambda: o is not None and '"laundryStatus":"submitted"' in o["cfg"] and '"itemDetail"' in o["cfg"], "k2", "自助下单生成待确认单(含衣物明细)", script_tag=SCRIPT_TAG, screenshot_page=page))
         if not o:
             save_results(SCRIPT_TAG, FLOW, records, started, datetime.now()); return
-        oid = o["id"]
-        # 老板确认
-        page.goto(f"{BASE}/vi/login", wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
-        page.fill('input[name="phone"]', LAUN); page.fill('input[name="password"]', LAUNPWD)
-        page.click('button[type="submit"]'); page.wait_for_url(lambda u: "/login" not in u, timeout=ACTION_TIMEOUT)
-        page.wait_for_load_state("domcontentloaded", timeout=NAV_TIMEOUT)
-        page.goto(f"{BASE}/vi/dashboard", wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
-        page.get_by_text("Tất cả").first.click(timeout=ASSERT_TIMEOUT); page.wait_for_timeout(800)
-        page.get_by_text("Xác nhận & giao").first.click(timeout=ACTION_TIMEOUT); page.wait_for_timeout(2500)
-        cfg = db_exec(f"SELECT config::text FROM \"Order\" WHERE id='{oid}'")[0]["value"]
-        records.append(run_assertion(lambda: '"laundryStatus":"washing_pending"' in cfg and '"ticketId"' in cfg, "k3", "老板确认→待洗+正式凭证", script_tag=SCRIPT_TAG))
-        db_exec(f"DELETE FROM \"Order\" WHERE id='{oid}'::text")
+        db_exec(f"DELETE FROM \"Order\" WHERE id='{o['id']}'::text")
+        # 老板确认步骤由 e2e-flow-laundry-10 独立覆盖，此处只验「门槛+自助下单」
     save_results(SCRIPT_TAG, FLOW, records, started, datetime.now())
     ok = all(r.status != "FAIL" for r in records)
     print(f"{'PASS' if ok else 'FAIL'} {len(records)} 断言")

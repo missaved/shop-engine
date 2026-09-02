@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from '@/i18n/navigation'
 import { useTranslations } from 'next-intl'
-import { getMotoOrders, getMotoPresetCatalog, addMotoItems, removeMotoItem, updateMotoOrderProgress, cancelMotoOrder, settleMotoOrder } from '@/lib/moto-actions'
+import { getMotoOrders, getMotoPresetCatalog, addMotoItems, removeMotoItem, updateMotoOrderProgress, cancelMotoOrder, settleMotoOrder, searchMotoOrders } from '@/lib/moto-actions'
 import { formatPrice } from '@/lib/format'
 import { shopSubUrl } from '@/lib/urls'
 import type { Vertical } from '@/lib/vertical'
@@ -55,6 +55,15 @@ export function MotoOrders({
   const [pays, setPays] = useState<Record<string, string>>({})
   // M4.2 车牌筛选（纯前端过滤，normalize 后大写精确包含）
   const [filter, setFilter] = useState('')
+  const [searchQ, setSearchQ] = useState('')
+  const [searchResults, setSearchResults] = useState<Awaited<ReturnType<typeof searchMotoOrders>> | null>(null)
+  const [searchBusy, setSearchBusy] = useState(false)
+  const doSearch = async (q: string) => {
+    const query = (q ?? '').trim()
+    if (!query) { setSearchResults(null); return }
+    setSearchBusy(true)
+    try { setSearchResults(await searchMotoOrders(query)) } catch { setSearchResults([]) } finally { setSearchBusy(false) }
+  }
   // P2-AP 加/删服务项：一次展开一单（addOpenId）；全库预设下拉（catalog）+ 选中 key + 数量
   const [addOpenId, setAddOpenId] = useState('')
   const [addServiceKey, setAddServiceKey] = useState('')
@@ -157,15 +166,29 @@ export function MotoOrders({
         <h2 className="text-base font-semibold text-zinc-700 dark:text-zinc-200">{t('todayOrders')}</h2>
         <span className="text-xs text-zinc-400">{shown.length}</span>
       </div>
-      {/* M4.2 车牌筛选 */}
+      {/* M4.2 车牌筛选 / 搜索 */}
       <input
         value={filter}
-        onChange={(e) => setFilter(e.target.value)}
+        onChange={(e) => { setFilter(e.target.value); doSearch(e.target.value) }}
         placeholder={t('searchPlaceholder')}
         className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
       />
       {shown.length === 0 ? (
         <p className="py-4 text-center text-sm text-zinc-400">{t('needVehicle')}</p>
+      ) : searchResults !== null ? (
+        <div className="divide-y divide-zinc-100 rounded-xl border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
+          {searchResults.length === 0 && <p className="py-4 text-center text-sm text-zinc-400">{t('noMatch')}</p>}
+          {searchResults.map((o) => (
+            <div key={o.id} className="flex items-center justify-between px-3 py-2.5">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium">{o.displayNo}</span>
+                <span className="text-xs font-bold tracking-wider text-zinc-500">{o.plate}</span>
+                <span className="text-xs text-zinc-400">{o.progress ? t(o.progress as never) : o.status}</span>
+              </div>
+              <span className="text-sm font-medium">{formatPrice(Number(o.total), currency)}</span>
+            </div>
+          ))}
+        </div>
       ) : (
         <div className="divide-y divide-zinc-100 rounded-xl border border-zinc-200 dark:divide-zinc-800 dark:border-zinc-800">
           {shown.map((o) => {

@@ -458,6 +458,22 @@ export async function motoOcr(imageDataUrl: string): Promise<{ plate?: string; m
 }
 
 // 今日维修单列表（老板端订单列表/进度推进）：业务日边界用 UTC+7（同 food）
+function serializeMotoOrder(o: {
+  id: string; displayNo: string; status: string; total: unknown; paidAmount: unknown; createdAt: Date; items: unknown; config: unknown
+}) {
+  const cfg = (o.config as {
+    motoProgress?: string | null; plate?: string; symptom?: string[]; laborFee?: number; estimatedDue?: string | null; ticketId?: string | null
+  } | null) ?? {}
+  return {
+    id: o.id, displayNo: o.displayNo, status: o.status,
+    progress: cfg.motoProgress ?? null, plate: cfg.plate ?? '', symptom: cfg.symptom ?? [],
+    laborFee: cfg.laborFee ?? 0, estimatedDue: cfg.estimatedDue ?? null,
+    total: String(o.total), paidAmount: String(o.paidAmount),
+    createdAt: o.createdAt.toISOString(),
+    items: (o.items as MotoServiceItem[]) ?? [],
+  }
+}
+
 export async function getMotoOrders() {
   const user = await requireOwner()
   const todayStart = vietnamTodayStartUtc()
@@ -466,31 +482,7 @@ export async function getMotoOrders() {
     orderBy: { createdAt: 'desc' },
     take: 50,
   })
-  return orders.map((o) => {
-    const cfg = (o.config as {
-      motoProgress?: string | null
-      plate?: string
-      symptom?: string[]
-      laborFee?: number
-      estimatedDue?: string | null
-      ticketId?: string | null
-    } | null) ?? {}
-    return {
-      id: o.id,
-      displayNo: o.displayNo,
-      status: o.status,
-      progress: cfg.motoProgress ?? null,
-      plate: cfg.plate ?? '',
-      symptom: cfg.symptom ?? [],
-      laborFee: cfg.laborFee ?? 0,
-      estimatedDue: cfg.estimatedDue ?? null,
-      total: o.total.toString(),
-      paidAmount: o.paidAmount.toString(),
-      createdAt: o.createdAt.toISOString(),
-      // P2-AP：返回 items，老板端维修中加/删项用
-      items: (o.items as MotoServiceItem[]) ?? [],
-    }
-  })
+  return orders.map(serializeMotoOrder)
 }
 
 // —— M3 保养提醒 ——
@@ -873,4 +865,25 @@ export async function countMotoActive() {
   })
   const ACTIVE = ['queued', 'diagnosing', 'quoted', 'repairing', 'waiting_pickup']
   return orders.filter((o) => ACTIVE.includes((o.config as Record<string, unknown> | null)?.motoProgress as string)).length
+}
+
+// —— M3 摩托订单搜索：检索本店全部订单（不限日期），按 单号/车牌/手机号/客户名，最多 50 条 ——
+export async function searchMotoOrders(query: string) {
+  const user = await requireOwner()
+  const q = (query ?? '').trim()
+  if (!q) return []
+  const rows = await prisma.order.findMany({
+    where: {
+      shopId: user.shopId,
+      OR: [
+        { displayNo: { contains: q, mode: 'insensitive' } },
+        { customerPhone: { contains: q } },
+        { customerName: { contains: q, mode: 'insensitive' } },
+        { config: { path: ['plate'], string_contains: q } },
+      ],
+    },
+    orderBy: { createdAt: 'desc' },
+    take: 50,
+  })
+  return rows.map(serializeMotoOrder)
 }

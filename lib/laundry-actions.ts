@@ -398,6 +398,7 @@ function serializeLaundryOrder(o: {
     itemDetail: Array.isArray(cfg.itemDetail) ? (cfg.itemDetail as { name: string; count: number; mark?: string }[]) : [],
     qcNote: (cfg.qcNote as string) ?? null,
     ticketId: (cfg.ticketId as string) ?? null,
+    claim: Array.isArray(cfg.claim) ? (cfg.claim as { type: string; note?: string; resolution: string; amount: number }[]) : [],
   }
 }
 
@@ -549,5 +550,23 @@ export async function payLaundryByCard(orderId: string, cardId: string) {
     prisma.customerCard.update({ where: { id: card.id }, data: { remainingCount: rem - 1 } }),
     prisma.order.update({ where: { id: order.id }, data: { paidAmount: order.total } }),
   ])
+  revalidatePath('/[locale]/dashboard', 'page')
+}
+
+// —— P3 理赔单（记录损坏/丢失 → 处理方式/金额；存 Order.config.claim[]，拍照已存 photo）——
+export async function addLaundryClaim(orderId: string, input: { type: 'damage' | 'lost'; note?: string; resolution: 'refund' | 'partial' | 'credit'; amount: number }) {
+  const user = await requireOwner()
+  const order = assertShopOwned(user.shopId, await prisma.order.findUnique({ where: { id: orderId } }))
+  const cfg = (order.config as Record<string, unknown> | null) ?? {}
+  const claim = Array.isArray(cfg.claim) ? (cfg.claim as Record<string, unknown>[]) : []
+  await prisma.order.update({
+    where: { id: order.id },
+    data: {
+      config: {
+        ...cfg,
+        claim: [...claim, { type: input.type, note: input.note?.trim() ?? null, resolution: input.resolution, amount: Math.max(Number(input.amount ?? 0), 0) }],
+      } as Prisma.InputJsonValue,
+    },
+  })
   revalidatePath('/[locale]/dashboard', 'page')
 }

@@ -148,6 +148,11 @@ export function LaundryOrders({ currency, shop }: { currency: string; shop: Laun
                 </p>
               )}
               {o.qcNote && <p className="mt-1 text-xs text-zinc-500">{t('qcNoteLabel')}: {o.qcNote}</p>}
+              {o.claim.length > 0 && (
+                <p className="mt-1 text-xs text-red-600">
+                  {t('claimTitle')}: {o.claim.map((c) => `${c.type === 'lost' ? t('claimTypeLost') : t('claimTypeDamage')} · ${c.amount}`).join(' / ')}
+                </p>
+              )}
 
               {/* 逾期分级提示 */}
               {isReady && o.overdueClass > 0 && (

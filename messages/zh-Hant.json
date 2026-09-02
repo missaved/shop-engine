@@ -993,6 +993,12 @@
     "cardCountName": "次數卡",
     "cardCreditName": "儲值卡",
     "times": "次",
-    "openCard": "開卡"
+    "openCard": "開卡",
+    "claimTitle": "理賠",
+    "claimTypeDamage": "損壞",
+    "claimTypeLost": "遺失",
+    "claimResolutionRefund": "退款",
+    "claimResolutionPartial": "部分退",
+    "claimResolutionCredit": "轉儲值"
   }
 }

@@ -993,6 +993,12 @@
     "cardCountName": "Kad kiraan",
     "cardCreditName": "Kad kredit",
     "times": "kali",
-    "openCard": "Buka kad"
+    "openCard": "Buka kad",
+    "claimTitle": "Tuntutan",
+    "claimTypeDamage": "Rosak",
+    "claimTypeLost": "Hilang",
+    "claimResolutionRefund": "Bayar balik",
+    "claimResolutionPartial": "Sebahagian",
+    "claimResolutionCredit": "Ke kredit"
   }
 }

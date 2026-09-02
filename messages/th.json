@@ -993,6 +993,12 @@
     "cardCountName": "บัตรครั้ง",
     "cardCreditName": "บัตรเครดิต",
     "times": "ครั้ง",
-    "openCard": "เปิดบัตร"
+    "openCard": "เปิดบัตร",
+    "claimTitle": "การเคลม",
+    "claimTypeDamage": "เสียหาย",
+    "claimTypeLost": "หาย",
+    "claimResolutionRefund": "คืนเงิน",
+    "claimResolutionPartial": "คืนบางส่วน",
+    "claimResolutionCredit": "เข้าเครดิต"
   }
 }

@@ -61,4 +61,5 @@ export type LaundryOrderPlain = {
   itemDetail: { name: string; count: number; mark?: string }[]
   qcNote: string | null
   ticketId: string | null
+  claim: { type: string; note?: string; resolution: string; amount: number }[]
 }

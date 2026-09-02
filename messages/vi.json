@@ -993,6 +993,12 @@
     "cardCountName": "Thẻ lần",
     "cardCreditName": "Thẻ nạp",
     "times": "lần",
-    "openCard": "Mở thẻ"
+    "openCard": "Mở thẻ",
+    "claimTitle": "Bồi thường",
+    "claimTypeDamage": "Hư hỏng",
+    "claimTypeLost": "Mất",
+    "claimResolutionRefund": "Hoàn tiền",
+    "claimResolutionPartial": "Hoàn một phần",
+    "claimResolutionCredit": "Cộng thẻ"
   }
 }

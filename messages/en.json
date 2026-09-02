@@ -993,6 +993,12 @@
     "cardCountName": "Count card",
     "cardCreditName": "Credit card",
     "times": "times",
-    "openCard": "Open card"
+    "openCard": "Open card",
+    "claimTitle": "Claim",
+    "claimTypeDamage": "Damage",
+    "claimTypeLost": "Lost",
+    "claimResolutionRefund": "Refund",
+    "claimResolutionPartial": "Partial",
+    "claimResolutionCredit": "To credit"
   }
 }

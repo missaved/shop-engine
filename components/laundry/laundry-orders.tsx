@@ -176,12 +176,12 @@ export function LaundryOrders({ currency, shop }: { currency: string; shop: Laun
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-sm">
-                  {debt > 0 ? (
-                    <span className="font-semibold text-red-600 dark:text-red-400">
-                      {t('debtAmount', { amount: formatPrice(debt, currency) })}
-                    </span>
+                  {debt <= 0 ? (
+                    <span className="font-semibold text-green-600 dark:text-green-400">{t('paid')}</span>
+                  ) : Number(o.paidAmount) > 0 ? (
+                    <span className="font-semibold text-amber-600 dark:text-amber-400">{t('partial')} · {t('debtAmount', { amount: formatPrice(debt, currency) })}</span>
                   ) : (
-                    <span className="font-semibold text-green-600 dark:text-green-400">{t('allPaid')}</span>
+                    <span className="font-semibold text-zinc-500 dark:text-zinc-400">{t('unpaid')} · {t('debtAmount', { amount: formatPrice(debt, currency) })}</span>
                   )}
                 </div>
               </div>

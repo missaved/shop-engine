@@ -1070,6 +1070,9 @@
     "description": "Description",
     "collectAll": "Collect full",
     "roundToK": "Round to 1000đ",
-    "copySummary": "Copy summary"
+    "copySummary": "Copy summary",
+    "paid": "Paid",
+    "partial": "Partial",
+    "unpaid": "Unpaid"
   }
 }

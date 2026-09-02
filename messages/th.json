@@ -1070,6 +1070,9 @@
     "description": "รายละเอียด",
     "collectAll": "เก็บเต็ม",
     "roundToK": "ปัดเป็น 1000đ",
-    "copySummary": "คัดลอกสรุป"
+    "copySummary": "คัดลอกสรุป",
+    "paid": "ชำระแล้ว",
+    "partial": "บางส่วน",
+    "unpaid": "ยังไม่ชำระ"
   }
 }

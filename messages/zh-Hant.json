@@ -1070,6 +1070,9 @@
     "description": "店鋪簡介",
     "collectAll": "收全款",
     "roundToK": "抹零(到千)",
-    "copySummary": "複製摘要"
+    "copySummary": "複製摘要",
+    "paid": "已收清",
+    "partial": "部分",
+    "unpaid": "未收"
   }
 }

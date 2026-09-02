@@ -1070,6 +1070,9 @@
     "description": "Penerangan",
     "collectAll": "Terima penuh",
     "roundToK": "Bulat ke 1000đ",
-    "copySummary": "Salin ringkasan"
+    "copySummary": "Salin ringkasan",
+    "paid": "Dibayar",
+    "partial": "Sebahagian",
+    "unpaid": "Belum bayar"
   }
 }

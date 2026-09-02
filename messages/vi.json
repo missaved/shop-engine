@@ -1070,6 +1070,9 @@
     "description": "Giới thiệu",
     "collectAll": "Thu đủ",
     "roundToK": "Bỏ lẻ (làm tròn 1000đ)",
-    "copySummary": "Sao chép tóm tắt"
+    "copySummary": "Sao chép tóm tắt",
+    "paid": "Đã thu",
+    "partial": "Thu một phần",
+    "unpaid": "Chưa thu"
   }
 }

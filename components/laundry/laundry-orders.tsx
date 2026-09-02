@@ -6,6 +6,7 @@ import {
   getLaundryOrders,
   advanceLaundryStatus,
   rewashLaundry,
+  cancelLaundryOrder,
   settleLaundry,
   getLaundryCustomer,
   payLaundryByBalance,

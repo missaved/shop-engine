@@ -70,22 +70,26 @@ export function LaundryOrders({ currency, shop }: { currency: string; shop: Laun
   }
 
   const filtered = orders.filter((o) => (tab === 'all' ? true : o.laundryStatus === tab))
+  const submittedCount = orders.filter((o) => o.laundryStatus === 'submitted').length
 
   const tabLabel = (k: LaundryProgress | 'all') =>
     k === 'all' ? t('tabAll') : t(STATUS_KEY[k] ?? 'progressWashingPending')
 
   return (
     <section className="flex flex-col gap-3">
-      <div className="flex gap-1 rounded-xl bg-zinc-100 p-1 dark:bg-zinc-800">
-        {(['all', 'washing', 'qc', 'ready', 'collected'] as const).map((k) => (
+      <div className="flex gap-1 overflow-x-auto rounded-xl bg-zinc-100 p-1 dark:bg-zinc-800">
+        {(['all', 'submitted', 'washing_pending', 'washing', 'qc', 'ready', 'collected'] as const).map((k) => (
           <button
             key={k}
             onClick={() => setTab(k)}
-            className={`flex-1 rounded-lg px-2 py-1.5 text-sm font-medium transition-colors ${
+            className={`flex-none whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
               tab === k ? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-700 dark:text-white' : 'text-zinc-500'
             }`}
           >
             {tabLabel(k)}
+            {k === 'submitted' && submittedCount > 0 && (
+              <span className="ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-xs font-bold text-white">{submittedCount}</span>
+            )}
           </button>
         ))}
       </div>

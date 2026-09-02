@@ -1034,6 +1034,10 @@
     "wantWash": "我要洗衣",
     "gateTitle": "登录或输入手机号以自助下单",
     "guestGo": "继续",
-    "gatePhone": "输入手机号下单"
+    "gatePhone": "输入手机号下单",
+    "tagCode": "取件码",
+    "trackOrder": "追踪我的订单",
+    "viewMyOrder": "查看我的订单",
+    "trackHint": "用取件码+手机号可查询进度"
   }
 }

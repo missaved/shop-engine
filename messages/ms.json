@@ -1034,6 +1034,10 @@
     "wantWash": "Saya mahu cuci",
     "gateTitle": "Log masuk atau isi telefon",
     "guestGo": "Teruskan",
-    "gatePhone": "Isi telefon untuk pesan"
+    "gatePhone": "Isi telefon untuk pesan",
+    "tagCode": "Kod ambil",
+    "trackOrder": "Jejak pesanan saya",
+    "viewMyOrder": "Lihat pesanan saya",
+    "trackHint": "Guna kod ambil + nombor telefon untuk semak"
   }
 }

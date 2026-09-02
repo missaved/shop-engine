@@ -1034,6 +1034,10 @@
     "wantWash": "I want laundry",
     "gateTitle": "Log in or enter phone to order",
     "guestGo": "Continue",
-    "gatePhone": "Enter phone to order"
+    "gatePhone": "Enter phone to order",
+    "tagCode": "Pickup code",
+    "trackOrder": "Track my order",
+    "viewMyOrder": "View my orders",
+    "trackHint": "Use pickup code + phone number to track progress"
   }
 }

@@ -1034,6 +1034,10 @@
     "wantWash": "Tôi muốn giặt",
     "gateTitle": "Đăng nhập hoặc nhập SĐT để đặt giặt",
     "guestGo": "Tiếp tục",
-    "gatePhone": "Nhập SĐT để đặt giặt"
+    "gatePhone": "Nhập SĐT để đặt giặt",
+    "tagCode": "Mã phiếu",
+    "trackOrder": "Theo dõi đơn của tôi",
+    "viewMyOrder": "Xem đơn của tôi",
+    "trackHint": "Dùng mã phiếu + số điện thoại tra cứu tiến độ"
   }
 }

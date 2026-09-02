@@ -9,7 +9,7 @@ import { formatPrice } from '@/lib/format'
 type Order = { id: string; displayNo: string; status: string; laundryStatus: string; tagCode: string | null; total: string; paidAmount: string; createdAt: string }
 
 const STATUS_KEY: Record<string, string> = {
-  washing_pending: 'progressWashingPending', washing: 'progressWashing', qc: 'progressQc', ready: 'progressReady', collected: 'progressCollected',
+  submitted: 'progressSubmitted', washing_pending: 'progressWashingPending', washing: 'progressWashing', qc: 'progressQc', ready: 'progressReady', collected: 'progressCollected',
 }
 
 export function LaundryCustomer({ slug, currency, shopName, city }: { slug: string; currency: string; shopName: string; city: string }) {
@@ -71,7 +71,7 @@ export function LaundryCustomer({ slug, currency, shopName, city }: { slug: stri
               {/* 进度步骤 */}
               <div className="mt-2 flex gap-1">
                 {['washing_pending', 'washing', 'qc', 'ready', 'collected'].map((s, i) => (
-                  <div key={s} className={`h-1 flex-1 rounded ${['washing_pending', 'washing', 'qc', 'ready', 'collected'].indexOf(o.laundryStatus) >= i ? 'bg-amber-500' : 'bg-zinc-200 dark:bg-zinc-700'}`} />
+                  <div key={s} className={`h-1 flex-1 rounded ${['submitted', 'washing_pending', 'washing', 'qc', 'ready', 'collected'].indexOf(o.laundryStatus) >= i ? 'bg-amber-500' : 'bg-zinc-200 dark:bg-zinc-700'}`} />
                 ))}
               </div>
               <button onClick={() => doReorder(o.id)} className="mt-2 w-full rounded-lg bg-zinc-900 py-1.5 text-xs font-semibold text-white">{t('reorder')}</button>

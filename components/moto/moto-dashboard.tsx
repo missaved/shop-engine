@@ -13,6 +13,7 @@ import { MotoReminderList } from './moto-reminder-list'
 import { MotoStats } from './moto-stats'
 import { MotoLedger } from './moto-ledger'
 import { MotoSettings } from './moto-settings'
+import { BackToTop } from '@/components/dashboard/back-to-top'
 import { LocaleSwitcher } from '@/components/locale-switcher'
 import type { MotoShop, VehiclePlain } from './types'
 
@@ -155,6 +156,7 @@ export function MotoDashboard({
           onBack={() => setView('home')}
         />
       )}
+      <BackToTop />
     </main>
   )
 }

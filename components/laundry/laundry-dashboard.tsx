@@ -11,6 +11,7 @@ import { QuickLaundry } from './quick-laundry'
 import { LaundrySettings } from './laundry-settings'
 import { LaundryCustomers } from './laundry-customers'
 import { LaundryActiveCount } from './laundry-active-count'
+import { BackToTop } from '@/components/dashboard/back-to-top'
 
 export function LaundryDashboard({
   shop,
@@ -88,6 +89,7 @@ export function LaundryDashboard({
 
       {view === 'settings' && <LaundrySettings shop={shop} onLogout={onLogout} />}
       {view === 'customers' && <LaundryCustomers currency={shop.currency} />}
+      <BackToTop />
     </main>
   )
 }

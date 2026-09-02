@@ -7,6 +7,7 @@ import { useRouter } from '@/i18n/navigation'
 import { signIn } from 'next-auth/react'
 import { lookupLaundryOrder } from '@/lib/laundry-actions'
 import { formatPrice } from '@/lib/format'
+import { LocaleSwitcher } from '@/components/locale-switcher'
 
 const STATUS_KEY: Record<string, string> = {
   washing_pending: 'progressWashingPending', washing: 'progressWashing', qc: 'progressQc', ready: 'progressReady', collected: 'progressCollected',
@@ -33,7 +34,10 @@ export function LaundryStorefront({ slug, currency, shopName, address, city, goo
 
   return (
     <main className="mx-auto flex w-full max-w-lg flex-col gap-4 px-5 py-8">
-      <h1 className="text-2xl font-bold">{shopName}</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">{shopName}</h1>
+        <LocaleSwitcher />
+      </div>
       {address && <p className="text-sm text-zinc-500">{address}</p>}
       <p className="text-sm text-zinc-500">🧺 {t('shopTagline')}</p>
 

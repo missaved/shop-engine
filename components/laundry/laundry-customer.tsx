@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import { getMyLaundry, reorderLaundry } from '@/lib/laundry-actions'
 import { formatPrice } from '@/lib/format'
+import { LocaleSwitcher } from '@/components/locale-switcher'
 
 type Order = { id: string; displayNo: string; status: string; laundryStatus: string; tagCode: string | null; total: string; paidAmount: string; createdAt: string }
 
@@ -27,7 +28,10 @@ export function LaundryCustomer({ slug, currency, shopName, city }: { slug: stri
 
   return (
     <main className="mx-auto flex w-full max-w-lg flex-col gap-4 px-5 py-6">
-      <h1 className="text-lg font-bold">{shopName}</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-lg font-bold">{shopName}</h1>
+        <LocaleSwitcher />
+      </div>
       <Link href={`/${city}/laundry/${slug}/order`}>
         <span className="block rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 py-3 text-center text-sm font-bold text-white shadow-md">{t('wantWash')} →</span>
       </Link>

@@ -1073,6 +1073,7 @@
     "copySummary": "Sao chép tóm tắt",
     "paid": "Đã thu",
     "partial": "Thu một phần",
-    "unpaid": "Chưa thu"
+    "unpaid": "Chưa thu",
+    "activeCount": "Đang xử lý {n}"
   }
 }

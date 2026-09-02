@@ -1073,6 +1073,7 @@
     "copySummary": "复制摘要",
     "paid": "已收清",
     "partial": "部分",
-    "unpaid": "未收"
+    "unpaid": "未收",
+    "activeCount": "进行中 {n}"
   }
 }

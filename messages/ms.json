@@ -1073,6 +1073,7 @@
     "copySummary": "Salin ringkasan",
     "paid": "Dibayar",
     "partial": "Sebahagian",
-    "unpaid": "Belum bayar"
+    "unpaid": "Belum bayar",
+    "activeCount": "Aktif {n}"
   }
 }

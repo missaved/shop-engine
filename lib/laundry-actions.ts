@@ -805,3 +805,14 @@ export async function confirmLaundryHandover(orderId: string, override?: { items
   })
   revalidatePath('/[locale]/dashboard', 'page')
 }
+
+// —— B2 进行中 N（未结单数：submitted/待洗/洗涤中/质检/待取，不含已取/取消）——
+export async function countLaundryActive() {
+  const user = await requireOwner()
+  const orders = await prisma.order.findMany({
+    where: { shopId: user.shopId, status: { not: 'CANCELLED' } },
+    select: { config: true },
+  })
+  const ACTIVE = ['submitted', 'washing_pending', 'washing', 'qc', 'ready']
+  return orders.filter((o) => ACTIVE.includes((o.config as Record<string, unknown> | null)?.laundryStatus as string)).length
+}

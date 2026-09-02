@@ -10,7 +10,7 @@ export type ShoeStyle = 'sport' | 'leather' | 'suede'
 /** 计价配置（L_RATE，老板在设置里配）：公斤单价 / 按件价 / 洗鞋加成 / 增值项 */
 export type LaundryRates = {
   kgRate: number
-  itemRates: { name: string; price: number }[]
+  itemRates: { name: string; nameZh?: string; nameEn?: string; price: number }[]
   shoeBase: Partial<Record<ShoeStyle, number>>
   shoeAddons: { name: string; price: number }[]
 }

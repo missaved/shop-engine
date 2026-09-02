@@ -341,13 +341,17 @@ async function main() {
         laundryRates: {
           kgRate: 20000,
           itemRates: [
-            { name: 'Áo sơ mi', price: 30000 },
-            { name: 'Quần jeans', price: 30000 },
+            { name: 'Áo sơ mi', nameZh: '衬衫', nameEn: 'Shirt', price: 30000 },
+            { name: 'Quần jeans', nameZh: '牛仔裤', nameEn: 'Jeans', price: 30000 },
+            { name: 'Áo thun', nameZh: 'T恤', nameEn: 'T-shirt', price: 25000 },
+            { name: 'Áo khoác', nameZh: '外套', nameEn: 'Jacket', price: 45000 },
+            { name: 'Váy', nameZh: '裙子', nameEn: 'Dress', price: 40000 },
+            { name: 'Chăn mỏng', nameZh: '薄被', nameEn: 'Blanket', price: 60000 },
           ],
           shoeBase: { sport: 40000, leather: 60000, suede: 70000 },
           shoeAddons: [
-            { name: 'Khử mùi', price: 20000 },
-            { name: 'Tẩy vết ố', price: 30000 },
+            { name: 'Khử mùi', nameZh: '除臭', nameEn: 'Deodorize', price: 20000 },
+            { name: 'Tẩy vết ố', nameZh: '去渍', nameEn: 'Stain removal', price: 30000 },
           ],
         },
       },

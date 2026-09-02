@@ -1,15 +1,18 @@
 'use client'
 // 顾客自助下单：选服务(kg/件/洗鞋)+添加衣物明细+护理+取送 → 提交「待确认」单（老板交接确认出凭证）
 import { useMemo, useState } from 'react'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import { submitCustomerLaundryOrder } from '@/lib/laundry-actions'
 import { formatPrice } from '@/lib/format'
 import type { LaundryMode } from './types'
 
 const SHOE: ('sport' | 'leather' | 'suede')[] = ['sport', 'leather', 'suede']
 
-export function LaundrySelfOrder({ slug, currency }: { slug: string; currency: string }) {
+export function LaundrySelfOrder({ slug, currency, itemRates }: { slug: string; currency: string; itemRates?: { name: string; nameZh?: string; nameEn?: string; price: number }[] }) {
   const t = useTranslations('laundry')
+  const locale = useLocale()
+  const nm = (r: { name: string; nameZh?: string; nameEn?: string }) =>
+    locale === 'zh' || locale === 'zh-Hant' ? r.nameZh || r.name : locale === 'en' || locale === 'ms' || locale === 'th' ? r.nameEn || r.name : r.name
   const [mode, setMode] = useState<LaundryMode>('kg')
   const [kg, setKg] = useState(5)
   const [items, setItems] = useState<{ name: string; count: number; mark?: string }[]>([])
@@ -50,7 +53,15 @@ export function LaundrySelfOrder({ slug, currency }: { slug: string; currency: s
           <button onClick={() => setKg(kg + 1)} className="h-12 w-12 rounded-lg bg-white text-xl font-bold dark:bg-zinc-800">＋</button>
         </div>
       )}
-      {mode === 'item' && <p className="rounded-xl bg-zinc-50 p-4 text-sm text-zinc-500 dark:bg-zinc-900">{t('itemHint')}</p>}
+      {mode === 'item' && (
+        <div className="flex flex-wrap gap-2">
+          {(itemRates ?? []).map((r) => (
+            <button key={r.name} onClick={() => setItems((a) => { const f = a.find((x) => x.name === r.name); return f ? a.map((x) => (x.name === r.name ? { ...x, count: x.count + 1 } : x)) : [...a, { name: r.name, count: 1 }] })} className="rounded-full border border-zinc-200 px-3 py-2 text-sm font-semibold dark:border-zinc-700 dark:bg-zinc-800">
+              {nm(r)} <span className="text-xs text-zinc-400">{formatPrice(r.price, currency)}</span>
+            </button>
+          ))}
+        </div>
+      )}
       {mode === 'shoe' && (
         <div className="flex gap-2">
           {SHOE.map((s) => (

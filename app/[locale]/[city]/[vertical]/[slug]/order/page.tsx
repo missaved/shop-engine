@@ -18,5 +18,6 @@ export default async function LaundrySelfOrderPage({ params }: { params: Promise
     if (e instanceof ShopUnavailableError) return <ShopUnavailableView reason={e.reason} rejectReason={e.rejectReason} />
     throw e
   }
-  return <LaundrySelfOrder slug={slug} currency={shop.currency} />
+  const cfg = (shop.config as { laundryRates?: { itemRates?: { name: string; price: number }[]; kgRate?: number; shoeBase?: Record<string, number> } } | null) ?? {}
+  return <LaundrySelfOrder slug={slug} currency={shop.currency} itemRates={cfg.laundryRates?.itemRates ?? []} />
 }

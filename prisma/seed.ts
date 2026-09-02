@@ -340,13 +340,28 @@ async function main() {
         laundryTagSeq: 2,
         laundryRates: {
           kgRate: 20000,
+          // 丰富预设目录（多分类 · 三语 · 带价）——顾客自助/老板开单点选
           itemRates: [
             { name: 'Áo sơ mi', nameZh: '衬衫', nameEn: 'Shirt', price: 30000 },
-            { name: 'Quần jeans', nameZh: '牛仔裤', nameEn: 'Jeans', price: 30000 },
             { name: 'Áo thun', nameZh: 'T恤', nameEn: 'T-shirt', price: 25000 },
+            { name: 'Quần jeans', nameZh: '牛仔裤', nameEn: 'Jeans', price: 30000 },
+            { name: 'Quần tây', nameZh: '西裤', nameEn: 'Trousers', price: 35000 },
             { name: 'Áo khoác', nameZh: '外套', nameEn: 'Jacket', price: 45000 },
             { name: 'Váy', nameZh: '裙子', nameEn: 'Dress', price: 40000 },
+            { name: 'Đầm', nameZh: '连衣裙', nameEn: 'Gown', price: 50000 },
+            { name: 'Bộ vest', nameZh: '西装', nameEn: 'Suit', price: 90000 },
+            { name: 'Áo len', nameZh: '毛衣', nameEn: 'Sweater', price: 40000 },
+            { name: 'Áo dạ', nameZh: '大衣', nameEn: 'Coat', price: 60000 },
+            { name: 'Đồ bông', nameZh: '羽绒服', nameEn: 'Down jacket', price: 80000 },
+            { name: 'Quần áo trẻ em', nameZh: '童装', nameEn: 'Kids clothes', price: 25000 },
+            { name: 'Đồ lót', nameZh: '内衣', nameEn: 'Underwear', price: 20000 },
+            { name: 'Tất', nameZh: '袜子', nameEn: 'Socks', price: 15000 },
+            { name: 'Khăn tắm', nameZh: '毛巾', nameEn: 'Towel', price: 20000 },
+            { name: 'Ga giường', nameZh: '床单', nameEn: 'Bedsheet', price: 50000 },
+            { name: 'Vỏ gối', nameZh: '枕套', nameEn: 'Pillowcase', price: 25000 },
             { name: 'Chăn mỏng', nameZh: '薄被', nameEn: 'Blanket', price: 60000 },
+            { name: 'Màn', nameZh: '窗帘', nameEn: 'Curtain', price: 80000 },
+            { name: 'Thú bông', nameZh: '毛绒玩具', nameEn: 'Plush toy', price: 40000 },
           ],
           shoeBase: { sport: 40000, leather: 60000, suede: 70000 },
           shoeAddons: [
@@ -355,6 +370,48 @@ async function main() {
           ],
         },
       },
+    },
+  })
+
+  // 重跑 seed 时刷新 demo 店预设目录（否则 upsert 的 update 不写 config，旧目录残留）
+  await prisma.shop.update({
+    where: { id: laundShop.id },
+    data: {
+      config: {
+        openHours: '07:00-20:30',
+        image: '/vertical/laundry.jpg',
+        laundryTagSeq: 2,
+        laundryRates: {
+          kgRate: 20000,
+          itemRates: [
+            { name: 'Áo sơ mi', nameZh: '衬衫', nameEn: 'Shirt', price: 30000 },
+            { name: 'Áo thun', nameZh: 'T恤', nameEn: 'T-shirt', price: 25000 },
+            { name: 'Quần jeans', nameZh: '牛仔裤', nameEn: 'Jeans', price: 30000 },
+            { name: 'Quần tây', nameZh: '西裤', nameEn: 'Trousers', price: 35000 },
+            { name: 'Áo khoác', nameZh: '外套', nameEn: 'Jacket', price: 45000 },
+            { name: 'Váy', nameZh: '裙子', nameEn: 'Dress', price: 40000 },
+            { name: 'Đầm', nameZh: '连衣裙', nameEn: 'Gown', price: 50000 },
+            { name: 'Bộ vest', nameZh: '西装', nameEn: 'Suit', price: 90000 },
+            { name: 'Áo len', nameZh: '毛衣', nameEn: 'Sweater', price: 40000 },
+            { name: 'Áo dạ', nameZh: '大衣', nameEn: 'Coat', price: 60000 },
+            { name: 'Đồ bông', nameZh: '羽绒服', nameEn: 'Down jacket', price: 80000 },
+            { name: 'Quần áo trẻ em', nameZh: '童装', nameEn: 'Kids clothes', price: 25000 },
+            { name: 'Đồ lót', nameZh: '内衣', nameEn: 'Underwear', price: 20000 },
+            { name: 'Tất', nameZh: '袜子', nameEn: 'Socks', price: 15000 },
+            { name: 'Khăn tắm', nameZh: '毛巾', nameEn: 'Towel', price: 20000 },
+            { name: 'Ga giường', nameZh: '床单', nameEn: 'Bedsheet', price: 50000 },
+            { name: 'Vỏ gối', nameZh: '枕套', nameEn: 'Pillowcase', price: 25000 },
+            { name: 'Chăn mỏng', nameZh: '薄被', nameEn: 'Blanket', price: 60000 },
+            { name: 'Màn', nameZh: '窗帘', nameEn: 'Curtain', price: 80000 },
+            { name: 'Thú bông', nameZh: '毛绒玩具', nameEn: 'Plush toy', price: 40000 },
+          ],
+          shoeBase: { sport: 40000, leather: 60000, suede: 70000 },
+          shoeAddons: [
+            { name: 'Khử mùi', nameZh: '除臭', nameEn: 'Deodorize', price: 20000 },
+            { name: 'Tẩy vết ố', nameZh: '去渍', nameEn: 'Stain removal', price: 30000 },
+          ],
+        },
+      } as never,
     },
   })
 

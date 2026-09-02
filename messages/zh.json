@@ -815,7 +815,9 @@
     "noService": "暂无服务项",
     "language": "语言",
     "logout": "退出登录",
-    "logoutConfirm": "确认退出登录?"
+    "logoutConfirm": "确认退出登录?",
+    "openHours": "营业时间",
+    "description": "店铺简介"
   },
   "customer": {
     "title": "车辆查询",

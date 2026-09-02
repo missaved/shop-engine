@@ -815,7 +815,9 @@
     "noService": "Chưa có dịch vụ",
     "language": "Ngôn ngữ",
     "logout": "Đăng xuất",
-    "logoutConfirm": "Đăng xuất?"
+    "logoutConfirm": "Đăng xuất?",
+    "openHours": "Giờ mở cửa",
+    "description": "Giới thiệu"
   },
   "customer": {
     "title": "Tra cứu xe",

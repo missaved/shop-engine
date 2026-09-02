@@ -815,7 +815,9 @@
     "noService": "No services",
     "language": "Language",
     "logout": "Log out",
-    "logoutConfirm": "Log out?"
+    "logoutConfirm": "Log out?",
+    "openHours": "Open hours",
+    "description": "Description"
   },
   "customer": {
     "title": "Vehicle lookup",

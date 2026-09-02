@@ -815,7 +815,9 @@
     "noService": "Tiada servis",
     "language": "Bahasa",
     "logout": "Log keluar",
-    "logoutConfirm": "Log keluar?"
+    "logoutConfirm": "Log keluar?",
+    "openHours": "Waktu buka",
+    "description": "Penerangan"
   },
   "customer": {
     "title": "Semak kenderaan",

@@ -815,7 +815,9 @@
     "noService": "ไม่มีบริการ",
     "language": "ภาษา",
     "logout": "ออกจากระบบ",
-    "logoutConfirm": "ออกจากระบบ?"
+    "logoutConfirm": "ออกจากระบบ?",
+    "openHours": "เวลาทำการ",
+    "description": "รายละเอียด"
   },
   "customer": {
     "title": "ตรวจสอบรถ",

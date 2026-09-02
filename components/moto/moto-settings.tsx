@@ -64,6 +64,8 @@ export function MotoSettings({ shop, onSaved, onLogout }: { shop: MotoShop; onSa
   // —— 店铺信息 ——
   const [name, setName] = useState(shop.name)
   const [phone, setPhone] = useState(shop.phone ?? '')
+  const [openHours, setOpenHours] = useState((shop.config as { openHours?: string } | null)?.openHours ?? '')
+  const [description, setDescription] = useState((shop.config as { description?: string } | null)?.description ?? '')
 
   const loadCatalog = useCallback(async () => {
     try {
@@ -117,7 +119,7 @@ export function MotoSettings({ shop, onSaved, onLogout }: { shop: MotoShop; onSa
           wallet: { momoQrUrl: momoQr, zalopayQrUrl: zalopayQr },
         },
       })
-      await saveMotoShopInfo({ name, phone })
+      await saveMotoShopInfo({ name, phone, openHours, description })
       show(t('toastSaved'))
       onSaved?.()
     } catch {
@@ -343,6 +345,14 @@ export function MotoSettings({ shop, onSaved, onLogout }: { shop: MotoShop; onSa
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
             />
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-zinc-500">
+            {t('openHours')}
+            <input className={inputCls} value={openHours} onChange={(e) => setOpenHours(e.target.value)} placeholder="07:00-20:30" />
+          </label>
+          <label className="col-span-2 flex flex-col gap-1 text-xs text-zinc-500">
+            {t('description')}
+            <textarea className={`${inputCls} resize-none`} value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
           </label>
         </div>
         {/* M6a 6.2 店码：客户入口链接（只读文本，发车主扫码查进度；MVP 不引 qrcode 依赖） */}

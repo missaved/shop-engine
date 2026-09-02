@@ -692,15 +692,21 @@ export async function saveMotoSettings(input: {
 }
 
 // 店铺基础信息：店名 / 联系电话（moto 设置页「店铺信息」）
-export async function saveMotoShopInfo(input: { name?: string; phone?: string | null }) {
+export async function saveMotoShopInfo(input: { name?: string; phone?: string | null; openHours?: string; description?: string }) {
   const user = await requireOwner()
   const shop = await prisma.shop.findUnique({ where: { id: user.shopId } })
   if (!shop) throw new Error('shop not found')
+  const cfg = (shop.config as Record<string, unknown> | null) ?? {}
   await prisma.shop.update({
     where: { id: shop.id },
     data: {
       ...(input.name?.trim() ? { name: input.name.trim() } : {}),
       ...(typeof input.phone === 'string' ? { phone: input.phone.trim() || null } : {}),
+      config: {
+        ...cfg,
+        ...(input.openHours != null ? { openHours: input.openHours } : {}),
+        ...(input.description != null ? { description: input.description } : {}),
+      } as Prisma.InputJsonValue,
     },
   })
   revalidatePath('/[locale]/dashboard', 'page')

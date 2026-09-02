@@ -1040,6 +1040,7 @@
     "viewMyOrder": "查看我的订单",
     "trackHint": "用取件码+手机号可查询进度",
     "todayOnly": "仅今天",
-    "viewAll": "查看全部"
+    "viewAll": "查看全部",
+    "customerLink": "客户入口链接(扫码下单洗衣)"
   }
 }

@@ -1040,6 +1040,7 @@
     "viewMyOrder": "Lihat pesanan saya",
     "trackHint": "Guna kod ambil + nombor telefon untuk semak",
     "todayOnly": "Hari ini sahaja",
-    "viewAll": "Lihat semua"
+    "viewAll": "Lihat semua",
+    "customerLink": "Pautan pelanggan (imbas untuk pesan)"
   }
 }

@@ -1040,6 +1040,7 @@
     "viewMyOrder": "View my orders",
     "trackHint": "Use pickup code + phone number to track progress",
     "todayOnly": "Today only",
-    "viewAll": "View all"
+    "viewAll": "View all",
+    "customerLink": "Customer link (scan to order laundry)"
   }
 }

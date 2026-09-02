@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { saveLaundrySettings } from '@/lib/laundry-actions'
+import { shopSubUrl, absoluteUrl } from '@/lib/urls'
 import type { LaundryRates, LaundryShop, ShoeStyle } from './types'
 import { LaundryMembership } from './laundry-membership'
 
@@ -211,6 +212,16 @@ export function LaundrySettings({ shop }: { shop: LaundryShop }) {
       </div>
 
       <LaundryMembership currency={shop.currency} />
+
+      {/* 店码：顾客入口链接（发客户扫码/下单洗衣，只读文本，MVP 不引 qrcode 依赖） */}
+      <div className="flex flex-col gap-1 border-t border-zinc-100 pt-3 dark:border-zinc-800">
+        <span className="text-xs text-zinc-500">{t('customerLink')}</span>
+        <code className="break-all rounded-lg bg-zinc-100 px-2.5 py-1.5 text-xs dark:bg-zinc-800">
+          {typeof window !== 'undefined'
+            ? absoluteUrl(shopSubUrl({ vertical: shop.vertical, slug: shop.slug, city: shop.city }, 'storefront'))
+            : shopSubUrl({ vertical: shop.vertical, slug: shop.slug, city: shop.city }, 'storefront')}
+        </code>
+      </div>
 
       <button
         onClick={save}

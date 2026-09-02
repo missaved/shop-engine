@@ -1030,6 +1030,9 @@
     "itemHint": "Điền từng món (áo/quần) — sau đó vào cửa hàng mang đồ đến",
     "itemDetailLabel": "Chi tiết đồ",
     "addItem": "+ Thêm món",
-    "itemName": "Tên (áo sơ mi...)"
+    "itemName": "Tên (áo sơ mi...)",
+    "wantWash": "Tôi muốn giặt",
+    "gateTitle": "Đăng nhập hoặc nhập SĐT để đặt giặt",
+    "guestGo": "Tiếp tục"
   }
 }

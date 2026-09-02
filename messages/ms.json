@@ -1030,6 +1030,9 @@
     "itemHint": "Senarai setiap item",
     "itemDetailLabel": "Butiran",
     "addItem": "+ Tambah",
-    "itemName": "Nama (baju...)"
+    "itemName": "Nama (baju...)",
+    "wantWash": "Saya mahu cuci",
+    "gateTitle": "Log masuk atau isi telefon",
+    "guestGo": "Teruskan"
   }
 }

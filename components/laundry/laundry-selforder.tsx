@@ -8,7 +8,7 @@ import type { LaundryMode } from './types'
 
 const SHOE: ('sport' | 'leather' | 'suede')[] = ['sport', 'leather', 'suede']
 
-export function LaundrySelfOrder({ slug, currency, itemRates }: { slug: string; currency: string; itemRates?: { name: string; nameZh?: string; nameEn?: string; price: number }[] }) {
+export function LaundrySelfOrder({ slug, currency, itemRates, initialPhone = '' }: { slug: string; currency: string; itemRates?: { name: string; nameZh?: string; nameEn?: string; price: number }[]; initialPhone?: string }) {
   const t = useTranslations('laundry')
   const locale = useLocale()
   const nm = (r: { name: string; nameZh?: string; nameEn?: string }) =>
@@ -16,7 +16,7 @@ export function LaundrySelfOrder({ slug, currency, itemRates }: { slug: string; 
   const [mode, setMode] = useState<LaundryMode>('kg')
   const [kg, setKg] = useState(5)
   const [items, setItems] = useState<{ name: string; count: number; mark?: string }[]>([])
-  const [phone, setPhone] = useState('')
+  const [phone, setPhone] = useState(initialPhone)
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')

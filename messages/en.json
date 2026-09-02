@@ -1030,6 +1030,9 @@
     "itemHint": "List each item (shirt/pants)",
     "itemDetailLabel": "Items",
     "addItem": "+ Add",
-    "itemName": "Name (shirt...)"
+    "itemName": "Name (shirt...)",
+    "wantWash": "I want laundry",
+    "gateTitle": "Log in or enter phone to order",
+    "guestGo": "Continue"
   }
 }

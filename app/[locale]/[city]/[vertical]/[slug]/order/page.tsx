@@ -5,8 +5,9 @@ import { parseVerticalSlug } from '@/lib/vertical'
 import { parseCitySlug } from '@/lib/city'
 import { LaundrySelfOrder } from '@/components/laundry/laundry-selforder'
 
-export default async function LaundrySelfOrderPage({ params }: { params: Promise<{ locale: string; city: string; vertical: string; slug: string }> }) {
+export default async function LaundrySelfOrderPage({ params, searchParams }: { params: Promise<{ locale: string; city: string; vertical: string; slug: string }>; searchParams: Promise<{ phone?: string }> }) {
   const { slug, city: cityParam, vertical: verticalParam } = await params
+  const { phone } = await searchParams
   const vertical = parseVerticalSlug(verticalParam)
   if (vertical !== 'LAUNDRY') notFound()
   const city = parseCitySlug(cityParam)
@@ -19,5 +20,5 @@ export default async function LaundrySelfOrderPage({ params }: { params: Promise
     throw e
   }
   const cfg = (shop.config as { laundryRates?: { itemRates?: { name: string; price: number }[]; kgRate?: number; shoeBase?: Record<string, number> } } | null) ?? {}
-  return <LaundrySelfOrder slug={slug} currency={shop.currency} itemRates={cfg.laundryRates?.itemRates ?? []} />
+  return <LaundrySelfOrder slug={slug} currency={shop.currency} itemRates={cfg.laundryRates?.itemRates ?? []} initialPhone={phone ?? ''} />
 }

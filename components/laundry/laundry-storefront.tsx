@@ -1,8 +1,9 @@
 'use client'
-// 洗衣客户落地页：店名/地址/营业时间 + 匿名查单(手机号+取件码) + 登录看会员/订单
+// 洗衣客户落地页：店名/地址/营业时间 + 匿名查单(手机号+取件码) + 「我要洗衣」门槛(登录或填手机号) + 登录看会员/订单
 import { useState } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
 import { Link } from '@/i18n/navigation'
+import { useRouter } from '@/i18n/navigation'
 import { signIn } from 'next-auth/react'
 import { lookupLaundryOrder } from '@/lib/laundry-actions'
 import { formatPrice } from '@/lib/format'
@@ -14,12 +15,15 @@ const STATUS_KEY: Record<string, string> = {
 export function LaundryStorefront({ slug, currency, shopName, address, city, googleEnabled, facebookEnabled }: { slug: string; currency: string; shopName: string; address: string | null; city: string; googleEnabled?: boolean; facebookEnabled?: boolean }) {
   const t = useTranslations('laundry')
   const locale = useLocale()
+  const router = useRouter()
   const cb = `/${locale}/${city}/laundry/${slug}/my`
   const [phone, setPhone] = useState('')
   const [tag, setTag] = useState('')
   const [result, setResult] = useState<{ displayNo: string; tagCode: string; laundryStatus: string; total: string; paidAmount: string } | null>(null)
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
+  const [gateOpen, setGateOpen] = useState(false)
+  const [guestPhone, setGuestPhone] = useState('')
 
   const lookup = async () => {
     setBusy(true); setErr(''); setResult(null)
@@ -33,10 +37,21 @@ export function LaundryStorefront({ slug, currency, shopName, address, city, goo
       {address && <p className="text-sm text-zinc-500">{address}</p>}
       <p className="text-sm text-zinc-500">🧺 {t('shopTagline')}</p>
 
-      {/* 顾客自助下单 */}
-      <Link href={`/${city}/laundry/${slug}/order`}>
-        <span className="block rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 py-3 text-center text-sm font-bold text-white shadow-md">{t('selfOrder')} →</span>
-      </Link>
+      {/* 「我要洗衣」门槛：登录(Google/FB/手机号密码) 或 游客输手机号 → 都进自助下单 */}
+      <button onClick={() => setGateOpen((v) => !v)} className="rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 py-3 text-center text-sm font-bold text-white shadow-md">{t('wantWash')}</button>
+      {gateOpen && (
+        <section className="rounded-2xl border border-zinc-200 p-4 dark:border-zinc-800">
+          <h2 className="mb-2 text-sm font-semibold text-zinc-700 dark:text-zinc-200">{t('gateTitle')}</h2>
+          <div className="flex flex-col gap-2">
+            {googleEnabled !== false && <button onClick={() => signIn('google', { callbackUrl: `/${locale}/${city}/laundry/${slug}/order` })} className="rounded-xl bg-zinc-900 py-2.5 text-sm font-semibold text-white">{t('continueGoogle')}</button>}
+            {facebookEnabled && <button onClick={() => signIn('facebook', { callbackUrl: `/${locale}/${city}/laundry/${slug}/order` })} className="rounded-xl bg-[#1877F2] py-2.5 text-sm font-semibold text-white">{t('continueFacebook')}</button>}
+            <div className="flex gap-2">
+              <input value={guestPhone} onChange={(e) => setGuestPhone(e.target.value)} placeholder={t('customerPhone')} className="flex-1 rounded-lg border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800" />
+              <button onClick={() => guestPhone.trim() && router.push(`/${locale}/${city}/laundry/${slug}/order?phone=${encodeURIComponent(guestPhone.trim())}`)} className="rounded-xl bg-zinc-900 px-4 py-2 text-sm font-semibold text-white">{t('guestGo')}</button>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* 匿名查单 */}
       <section className="rounded-2xl border border-zinc-200 p-4 dark:border-zinc-800">

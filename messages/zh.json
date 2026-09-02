@@ -1030,6 +1030,9 @@
     "itemHint": "逐件填写(衬衫/裤)，之后到店送洗",
     "itemDetailLabel": "衣物明细",
     "addItem": "+ 添加",
-    "itemName": "名称(衬衫…)"
+    "itemName": "名称(衬衫…)",
+    "wantWash": "我要洗衣",
+    "gateTitle": "登录或输入手机号以自助下单",
+    "guestGo": "继续"
   }
 }

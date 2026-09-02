@@ -49,7 +49,7 @@ export default async function VerticalHomePage({
   const tc = await getTranslations('city') // 城市名 6 语
 
   // 各垂直演示店（有 → 演示店入口；无 → 只显示 boss/开店；demo 店见 prisma/seed.ts）
-  const DEMO_SLUG: Partial<Record<Vertical, string>> = { FOOD: 'demo-pho', MOTO: 'demo-moto' }
+  const DEMO_SLUG: Partial<Record<Vertical, string>> = { FOOD: 'demo-pho', MOTO: 'demo-moto', LAUNDRY: 'demolaud' }
 
   // 垂直差异注入：模块 aggregation.card 可覆盖为差异化卡片；未实现 → 通用 defaultAggCard 兜底
   const cardFn = getVerticalModule(vertical).aggregation?.card ?? defaultAggCard

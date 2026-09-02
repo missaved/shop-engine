@@ -1006,6 +1006,10 @@
     "noCustomer": "Customer not found",
     "noCard": "No count card",
     "addClaim": "Add claim",
-    "claimConfirm": "Record claim?"
+    "claimConfirm": "Record claim?",
+    "shopTagline": "Laundry · Dry clean · Shoes",
+    "lookupTitle": "Track order",
+    "tagPlaceholder": "Ticket code (e.g. #001)",
+    "orderNo": "Order No."
   }
 }

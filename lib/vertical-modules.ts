@@ -217,7 +217,7 @@ const MODULES: Record<Vertical, VerticalModule> = {
   MOTO: { vertical: 'MOTO', customerEntry: 'lookup', aggregation: motoAggregation() },
   SALON: noopModule('SALON'),
   PET: noopModule('PET'),
-  LAUNDRY: { vertical: 'LAUNDRY', onOrderCreated: genericOnOrderCreated, aggregation: laundryAggregation() },
+  LAUNDRY: { vertical: 'LAUNDRY', customerEntry: 'storefront', onOrderCreated: genericOnOrderCreated, aggregation: laundryAggregation() },
 }
 
 /** 取某垂直的域模块（无注入时返回纯 no-op 默认） */

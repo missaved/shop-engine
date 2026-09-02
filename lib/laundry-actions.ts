@@ -601,3 +601,29 @@ export async function getMyLaundry(slug: string, vertical: 'LAUNDRY', city: stri
     }),
   }
 }
+
+// —— 客户侧：匿名查单（手机号 + 取件码 → 本店该单进度/金额；公开，不需登录）——
+export async function lookupLaundryOrder(slug: string, phone: string, tagCode: string) {
+  const shop = await prisma.shop.findUnique({ where: { slug }, select: { id: true } })
+  if (!shop) throw new Error('店铺不存在')
+  const t = tagCode.trim()
+  const order = await prisma.order.findFirst({
+    where: {
+      shopId: shop.id,
+      customerPhone: phone.trim(),
+      config: { path: ['tagCode'], equals: t },
+      status: { not: 'CANCELLED' },
+    },
+    orderBy: { orderNo: 'desc' },
+  })
+  if (!order) throw new Error('未找到该订单')
+  const cfg = (order.config as Record<string, unknown> | null) ?? {}
+  return {
+    displayNo: order.displayNo,
+    tagCode: (cfg.tagCode as string) ?? t,
+    laundryStatus: (cfg.laundryStatus as string) ?? '',
+    total: String(Number(order.total)),
+    paidAmount: String(Number(order.paidAmount)),
+    createdAt: order.createdAt.toISOString(),
+  }
+}

@@ -1006,6 +1006,10 @@
     "noCustomer": "ไม่พบลูกค้า",
     "noCard": "ไม่มีบัตรครั้ง",
     "addClaim": "เพิ่มการเคลม",
-    "claimConfirm": "บันทึกการเคลม?"
+    "claimConfirm": "บันทึกการเคลม?",
+    "shopTagline": "ซักรีด·ซักแห้ง·รองเท้า",
+    "lookupTitle": "ตรวจสอบคำสั่ง",
+    "tagPlaceholder": "รหัสคูปอง (เช่น #001)",
+    "orderNo": "เลขที่คำสั่ง"
   }
 }

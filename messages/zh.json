@@ -1006,6 +1006,10 @@
     "noCustomer": "未找到顾客",
     "noCard": "顾客无次数卡",
     "addClaim": "记理赔",
-    "claimConfirm": "确认记录理赔?"
+    "claimConfirm": "确认记录理赔?",
+    "shopTagline": "洗衣·干洗·洗鞋",
+    "lookupTitle": "查单进度",
+    "tagPlaceholder": "取件码(如 #001)",
+    "orderNo": "单号"
   }
 }

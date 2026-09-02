@@ -1006,6 +1006,10 @@
     "noCustomer": "Pelanggan tidak dijumpai",
     "noCard": "Tiada kad kiraan",
     "addClaim": "Tambah tuntutan",
-    "claimConfirm": "Rekod tuntutan?"
+    "claimConfirm": "Rekod tuntutan?",
+    "shopTagline": "Dobi · Cuci kering · Kasut",
+    "lookupTitle": "Semak pesanan",
+    "tagPlaceholder": "Kod tiket (cth #001)",
+    "orderNo": "No. Pesanan"
   }
 }

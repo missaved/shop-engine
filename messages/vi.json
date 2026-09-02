@@ -1006,6 +1006,10 @@
     "noCustomer": "Chưa có khách",
     "noCard": "Khách chưa có thẻ lần",
     "addClaim": "Ghi bồi thường",
-    "claimConfirm": "Xác nhận ghi bồi thường?"
+    "claimConfirm": "Xác nhận ghi bồi thường?",
+    "shopTagline": "Giặt ủi · Giặt sấy · Giặt giày",
+    "lookupTitle": "Tra cứu tiến độ",
+    "tagPlaceholder": "Mã phiếu (vd #001)",
+    "orderNo": "Mã đơn"
   }
 }

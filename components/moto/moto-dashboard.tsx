@@ -84,14 +84,6 @@ export function MotoDashboard({
               </button>
             </>
           )}
-          <button
-            onClick={async () => {
-              if (confirm('退出登录？')) await onLogout()
-            }}
-            className="text-sm text-zinc-500"
-          >
-            {t('cancel')}
-          </button>
         </div>
       </header>
 

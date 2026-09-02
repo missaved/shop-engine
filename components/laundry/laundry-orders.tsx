@@ -211,7 +211,7 @@ export function LaundryOrders({ currency, shop }: { currency: string; shop: Laun
                   <button
                     onClick={() => run(() => advanceLaundryStatus(o.id, 'qc'), o.id)}
                     disabled={busyId === o.id}
-                    className="flex-1 rounded-lg bg-blue-500 px-2 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+                    className="w-full rounded-lg bg-blue-500 px-2 py-1.5 text-sm font-medium text-white disabled:opacity-50"
                   >
                     {t('sendQc')}
                   </button>
@@ -220,7 +220,7 @@ export function LaundryOrders({ currency, shop }: { currency: string; shop: Laun
                   <button
                     onClick={() => run(() => advanceLaundryStatus(o.id, 'ready'), o.id)}
                     disabled={busyId === o.id}
-                    className="flex-1 rounded-lg bg-amber-500 px-2 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+                    className="w-full rounded-lg bg-amber-500 px-2 py-1.5 text-sm font-medium text-white disabled:opacity-50"
                   >
                     {t('qcPass')}
                   </button>
@@ -229,7 +229,7 @@ export function LaundryOrders({ currency, shop }: { currency: string; shop: Laun
                   <button
                     onClick={() => run(() => advanceLaundryStatus(o.id, 'collected'), o.id)}
                     disabled={busyId === o.id}
-                    className="flex-1 rounded-lg bg-green-600 px-2 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+                    className="w-full rounded-lg bg-green-600 px-2 py-1.5 text-sm font-medium text-white disabled:opacity-50"
                   >
                     {t('collect')}
                   </button>
@@ -238,7 +238,7 @@ export function LaundryOrders({ currency, shop }: { currency: string; shop: Laun
                   <button
                     onClick={() => run(() => advanceLaundryStatus(o.id, 'washing'), o.id)}
                     disabled={busyId === o.id}
-                    className="flex-1 rounded-lg bg-blue-500 px-2 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+                    className="w-full rounded-lg bg-blue-500 px-2 py-1.5 text-sm font-medium text-white disabled:opacity-50"
                   >
                     {t('startWashing')}
                   </button>
@@ -248,7 +248,7 @@ export function LaundryOrders({ currency, shop }: { currency: string; shop: Laun
                   <button
                     onClick={() => run(() => confirmLaundryHandover(o.id), o.id)}
                     disabled={busyId === o.id}
-                    className="flex-1 rounded-lg bg-emerald-600 px-2 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+                    className="w-full rounded-lg bg-emerald-600 px-2 py-1.5 text-sm font-medium text-white disabled:opacity-50"
                   >
                     {t('confirmHandover')}
                   </button>

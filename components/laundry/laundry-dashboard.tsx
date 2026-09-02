@@ -10,6 +10,7 @@ import { LaundryReminderList } from './laundry-reminder-list'
 import { QuickLaundry } from './quick-laundry'
 import { LaundrySettings } from './laundry-settings'
 import { LaundryCustomers } from './laundry-customers'
+import { LocaleSwitcher } from '@/components/locale-switcher'
 
 export function LaundryDashboard({
   shop,
@@ -45,6 +46,7 @@ export function LaundryDashboard({
           <span className="text-lg font-semibold">{shop.name}</span>
         </div>
         <div className="flex items-center gap-2">
+          <LocaleSwitcher />
           {view === 'home' && (
             <>
               <button

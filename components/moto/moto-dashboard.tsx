@@ -13,6 +13,7 @@ import { MotoReminderList } from './moto-reminder-list'
 import { MotoStats } from './moto-stats'
 import { MotoLedger } from './moto-ledger'
 import { MotoSettings } from './moto-settings'
+import { LocaleSwitcher } from '@/components/locale-switcher'
 import type { MotoShop, VehiclePlain } from './types'
 
 export function MotoDashboard({
@@ -64,6 +65,7 @@ export function MotoDashboard({
           <span className="text-lg font-semibold">{shop.name}</span>
         </div>
         <div className="flex items-center gap-2">
+          <LocaleSwitcher />
           {view === 'home' && (
             <>
               <button

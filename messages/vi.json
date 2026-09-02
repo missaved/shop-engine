@@ -1038,6 +1038,8 @@
     "tagCode": "Mã phiếu",
     "trackOrder": "Theo dõi đơn của tôi",
     "viewMyOrder": "Xem đơn của tôi",
-    "trackHint": "Dùng mã phiếu + số điện thoại tra cứu tiến độ"
+    "trackHint": "Dùng mã phiếu + số điện thoại tra cứu tiến độ",
+    "todayOnly": "Chỉ hôm nay",
+    "viewAll": "Xem tất cả"
   }
 }

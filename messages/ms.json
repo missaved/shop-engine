@@ -1038,6 +1038,8 @@
     "tagCode": "Kod ambil",
     "trackOrder": "Jejak pesanan saya",
     "viewMyOrder": "Lihat pesanan saya",
-    "trackHint": "Guna kod ambil + nombor telefon untuk semak"
+    "trackHint": "Guna kod ambil + nombor telefon untuk semak",
+    "todayOnly": "Hari ini sahaja",
+    "viewAll": "Lihat semua"
   }
 }

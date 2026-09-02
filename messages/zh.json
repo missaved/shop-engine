@@ -1038,6 +1038,8 @@
     "tagCode": "取件码",
     "trackOrder": "追踪我的订单",
     "viewMyOrder": "查看我的订单",
-    "trackHint": "用取件码+手机号可查询进度"
+    "trackHint": "用取件码+手机号可查询进度",
+    "todayOnly": "仅今天",
+    "viewAll": "查看全部"
   }
 }

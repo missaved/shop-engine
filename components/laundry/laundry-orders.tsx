@@ -40,6 +40,7 @@ export function LaundryOrders({ currency, shop }: { currency: string; shop: Laun
   const [tab, setTab] = useState<LaundryProgress | 'all'>('washing')
   const [pays, setPays] = useState<Record<string, string>>({})
   const [busyId, setBusyId] = useState('')
+  const [showAllCollected, setShowAllCollected] = useState(false)
 
   const load = useCallback(async () => {
     try {
@@ -69,7 +70,19 @@ export function LaundryOrders({ currency, shop }: { currency: string; shop: Laun
     }
   }
 
-  const filtered = orders.filter((o) => (tab === 'all' ? true : o.laundryStatus === tab))
+  // 终态(已结单)只显示当天（UTC+7 业务日，vs food 一致）；有开关可查看全部历史
+  const isTodayVN = (iso: string) => {
+    const off = 7 * 60 * 60 * 1000
+    const day = (ms: number) => new Date(ms + off).toISOString().slice(0, 10)
+    return day(new Date(iso).getTime()) === day(Date.now())
+  }
+  const filtered = orders.filter((o) => {
+    if (tab === 'all') return true
+    if (o.laundryStatus !== tab) return false
+    // 「已结单」默认只显示当天
+    if (tab === 'collected' && !showAllCollected) return isTodayVN(o.createdAt)
+    return true
+  })
   const submittedCount = orders.filter((o) => o.laundryStatus === 'submitted').length
 
   const tabLabel = (k: LaundryProgress | 'all') =>
@@ -93,6 +106,14 @@ export function LaundryOrders({ currency, shop }: { currency: string; shop: Laun
           </button>
         ))}
       </div>
+      {tab === 'collected' && (
+        <button
+          onClick={() => setShowAllCollected((v) => !v)}
+          className="self-start rounded-lg border border-zinc-200 px-3 py-1 text-xs font-medium text-zinc-500 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
+        >
+          {showAllCollected ? t('todayOnly') : t('viewAll')}
+        </button>
+      )}
 
       {filtered.length === 0 && <p className="py-6 text-center text-sm text-zinc-400">{t('empty')}</p>}
 

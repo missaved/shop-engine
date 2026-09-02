@@ -25,6 +25,8 @@ export default async function LaundryStorefrontPage({ params }: { params: Promis
       shopName={shop.name}
       address={shop.address}
       city={city}
+      googleEnabled={!!process.env.GOOGLE_CLIENT_ID && !!process.env.GOOGLE_CLIENT_SECRET}
+      facebookEnabled={!!process.env.FACEBOOK_CLIENT_ID && !!process.env.FACEBOOK_CLIENT_SECRET}
     />
   )
 }

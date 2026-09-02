@@ -11,7 +11,7 @@ const STATUS_KEY: Record<string, string> = {
   washing_pending: 'progressWashingPending', washing: 'progressWashing', qc: 'progressQc', ready: 'progressReady', collected: 'progressCollected',
 }
 
-export function LaundryStorefront({ slug, currency, shopName, address, city }: { slug: string; currency: string; shopName: string; address: string | null; city: string }) {
+export function LaundryStorefront({ slug, currency, shopName, address, city, googleEnabled, facebookEnabled }: { slug: string; currency: string; shopName: string; address: string | null; city: string; googleEnabled?: boolean; facebookEnabled?: boolean }) {
   const t = useTranslations('laundry')
   const locale = useLocale()
   const cb = `/${locale}/${city}/laundry/${slug}/my`
@@ -55,8 +55,12 @@ export function LaundryStorefront({ slug, currency, shopName, address, city }: {
       <section className="rounded-2xl border border-zinc-200 p-4 dark:border-zinc-800">
         <h2 className="mb-2 text-sm font-semibold text-zinc-700 dark:text-zinc-200">{t('loginToView')}</h2>
         <div className="flex flex-col gap-2">
-          <button onClick={() => signIn('google', { callbackUrl: cb })} className="rounded-xl bg-zinc-900 py-2.5 text-sm font-semibold text-white">{t('continueGoogle')}</button>
-          <button onClick={() => signIn('facebook', { callbackUrl: cb })} className="rounded-xl bg-[#1877F2] py-2.5 text-sm font-semibold text-white">{t('continueFacebook')}</button>
+          {googleEnabled !== false && (
+            <button onClick={() => signIn('google', { callbackUrl: cb })} className="rounded-xl bg-zinc-900 py-2.5 text-sm font-semibold text-white">{t('continueGoogle')}</button>
+          )}
+          {facebookEnabled && (
+            <button onClick={() => signIn('facebook', { callbackUrl: cb })} className="rounded-xl bg-[#1877F2] py-2.5 text-sm font-semibold text-white">{t('continueFacebook')}</button>
+          )}
         </div>
         <Link href={`/${city}/laundry/${slug}/my`}>
           <span className="mt-2 block rounded-xl border border-zinc-200 py-2.5 text-center text-sm text-zinc-600 dark:border-zinc-700">{t('myOrders')}</span>

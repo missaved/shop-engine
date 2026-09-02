@@ -321,6 +321,109 @@ async function main() {
   })
   console.log(`moto 店老板账号就绪：${motoOwner.phone} / demo1234`)
 
+  // ================= LAUNDRY 垂直（垂直2 · plans/work/laundry.md）=================
+  // laundry Demo 店：显式 vertical=LAUNDRY + 默认配价（kg/件/洗鞋）+ 标签码自增 + 2 测试订单
+  const laundShop = await prisma.shop.upsert({
+    where: { slug: 'demolaud' },
+    update: { approved: true },
+    create: {
+      slug: 'demolaud',
+      name: 'Giặt ủi Demo 88',
+      vertical: 'LAUNDRY',
+      city: 'hcm',
+      approved: true,
+      phone: '0901122335',
+      address: '88 Lý Thường Kiệt, Q10, TP.HCM',
+      config: {
+        openHours: '07:00-20:30',
+        image: '/vertical/laundry.jpg',
+        laundryTagSeq: 2,
+        laundryRates: {
+          kgRate: 20000,
+          itemRates: [
+            { name: 'Áo sơ mi', price: 30000 },
+            { name: 'Quần jeans', price: 30000 },
+          ],
+          shoeBase: { sport: 40000, leather: 60000, suede: 70000 },
+          shoeAddons: [
+            { name: 'Khử mùi', price: 20000 },
+            { name: 'Tẩy vết ố', price: 30000 },
+          ],
+        },
+      },
+    },
+  })
+
+  // laundry 店老板账号（手机号登录；密码同 food/moto demo）
+  await prisma.user.upsert({
+    where: { phone: '0901122335' },
+    update: {},
+    create: {
+      shopId: laundShop.id,
+      phone: '0901122335',
+      passwordHash: await hash('demo1234', 10),
+      name: 'Chủ tiệm giặt',
+      role: 'OWNER',
+    },
+  })
+
+  // 2 台测试订单（演示待取催取 + 待洗）：displayNo/orderNo 按店唯一，幂等 upsert
+  const dayPrefix = '260901'
+  const testOrders = [
+    {
+      displayNo: `LD-${dayPrefix}-001`,
+      orderNo: 1,
+      status: 'READY',
+      total: 220000,
+      paidAmount: 220000,
+      customerPhone: '0987654321',
+      customerName: 'Chị Lan',
+      config: { laundryMode: 'kg', laundryStatus: 'ready', tagCode: '#001', kg: 8, discount: 0 },
+    },
+    {
+      displayNo: `LD-${dayPrefix}-002`,
+      orderNo: 2,
+      status: 'PENDING',
+      total: 60000,
+      paidAmount: 0,
+      customerPhone: '0901111222',
+      customerName: 'Anh Minh',
+      config: { laundryMode: 'shoe', laundryStatus: 'washing_pending', tagCode: '#002', shoeStyle: 'sport', shoeAddonNames: ['Khử mùi'], discount: 0 },
+    },
+  ]
+  for (const o of testOrders) {
+    const created = await prisma.order.upsert({
+      where: { shopId_displayNo: { shopId: laundShop.id, displayNo: o.displayNo } },
+      update: {},
+      create: {
+        shopId: laundShop.id,
+        orderNo: o.orderNo,
+        displayNo: o.displayNo,
+        status: o.status as never,
+        total: o.total,
+        paidAmount: o.paidAmount,
+        customerPhone: o.customerPhone,
+        customerName: o.customerName,
+        items: [],
+        config: o.config,
+      },
+    })
+    // 待取单已生成「催取」提醒（老板端到点冒泡 + 一键复制发 Zalo）
+    if (o.status === 'READY') {
+      await prisma.reminder.create({
+        data: {
+          shopId: laundShop.id,
+          orderId: created.id,
+          templateKey: 'LAUNDRY_READY',
+          dueAt: new Date(),
+          status: 'PENDING',
+          payload: { displayNo: o.displayNo, tagCode: '#001', customerPhone: o.customerPhone, customerName: o.customerName, total: o.total },
+        },
+      })
+    }
+  }
+  console.log(`laundry Demo 店就绪：${laundShop.slug}（老板 0901122335 / demo1234，2 测试订单）`)
+
   // ================= 多城市演示店扩展（让城市/垂直切换都有内容）=================
   // 现状：只有 hcm 的 demo-pho/demo-moto。为让聚合/门户切到河内(hn)、岘港(dn)也「跟走」，
   // 给每个城市 × 每个垂直补 1 家演示店（幂等 upsert by slug；仅建店骨架，商品/预设沿用各垂直 demo）。

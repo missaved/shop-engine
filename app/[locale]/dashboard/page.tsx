@@ -20,6 +20,9 @@ import type { DraftItem } from '@/lib/preset-actions'
 // M2.5 MOTO 垂直分流：moto 老板端独立组件（food 分支零改动）
 import { MotoDashboard } from '@/components/moto/moto-dashboard'
 import type { MotoShop } from '@/components/moto/types'
+// LAUNDRY 垂直分流：laundry 老板端独立组件（food/moto 分支零改动）
+import { LaundryDashboard } from '@/components/laundry/laundry-dashboard'
+import type { LaundryShop } from '@/components/laundry/types'
 
 // FoodPreset.items 单道菜（生成结构；第 20 批含酒水规格 optionGroups；多语言整改加三语字段）
 type PresetDishItem = {
@@ -69,6 +72,25 @@ function serializeMotoShop(shop: NonNullable<Awaited<ReturnType<typeof prisma.sh
   }
 }
 
+// LAUNDRY 老板端 shop 序列化：只传 laundry 用到的字段（laundryRates 配价 / 收款配置）
+function serializeLaundryShop(shop: NonNullable<Awaited<ReturnType<typeof prisma.shop.findUnique>>>): LaundryShop {
+  const cfg = (shop.config as NonNullable<LaundryShop['config']> | null) ?? {}
+  return {
+    id: shop.id,
+    slug: shop.slug,
+    vertical: shop.vertical,
+    name: shop.name,
+    phone: shop.phone,
+    currency: shop.currency,
+    city: shop.city,
+    config: {
+      laundryRates: cfg?.laundryRates,
+      laundryTagSeq: cfg?.laundryTagSeq,
+      payment: cfg?.payment,
+    },
+  }
+}
+
 // 老板侧一页后台：今日概览 + 桌台简表 + 待办提醒 + 订单列表 + 设置
 // 订单实时性（2026-08-30）：订单列表首屏由本页渲染传入，之后 order-list 轮询 server action
 // getDashboardOrders() setState 更新（server action 直查库，绕开 router.refresh 的客户端 Router Cache 旧快照）
@@ -87,6 +109,19 @@ export default async function DashboardPage() {
     return (
       <MotoDashboard
         shop={serializeMotoShop(shop)}
+        subscriptionExpired={subscriptionExpired}
+        onLogout={async () => {
+          'use server'
+          await signOut({ redirectTo: '/login' })
+        }}
+      />
+    )
+  }
+  // LAUNDRY 垂直分流（2026-09-01）：与 MOTO 同模式，复用 request/顶栏骨架
+  if (shop.vertical === 'LAUNDRY') {
+    return (
+      <LaundryDashboard
+        shop={serializeLaundryShop(shop)}
         subscriptionExpired={subscriptionExpired}
         onLogout={async () => {
           'use server'

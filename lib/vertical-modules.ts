@@ -195,12 +195,29 @@ function motoAggregation(): VerticalAggregation<'MOTO'> {
   }
 }
 
+// LAUNDRY 聚合卡：subtitle = 计价模式（kg/件/洗鞋），仅当老板已配置 rates 显示
+function laundryAggregation(): VerticalAggregation<'LAUNDRY'> {
+  return {
+    vertical: 'LAUNDRY',
+    card(shop, ctx) {
+      const cfg = (shop.config ?? {}) as Record<string, unknown>
+      const rates = cfg.laundryRates as { kgRate?: number; itemRates?: unknown[] } | undefined
+      if (!rates) return aggBase(shop, ctx.billing)
+      const parts: string[] = []
+      if ((rates.kgRate ?? 0) > 0) parts.push('kg')
+      if ((rates.itemRates ?? []).length > 0) parts.push('pcs')
+      if (parts.length) parts.push('👟')
+      return { ...aggBase(shop, ctx.billing), subtitle: parts.length ? parts.join(' · ') : undefined }
+    },
+  }
+}
+
 const MODULES: Record<Vertical, VerticalModule> = {
   FOOD: { vertical: 'FOOD', customerEntry: 'menu', onOrderCreated: foodOnOrderCreated, aggregation: foodAggregation() },
   MOTO: { vertical: 'MOTO', customerEntry: 'lookup', aggregation: motoAggregation() },
   SALON: noopModule('SALON'),
   PET: noopModule('PET'),
-  LAUNDRY: noopModule('LAUNDRY'),
+  LAUNDRY: { vertical: 'LAUNDRY', onOrderCreated: genericOnOrderCreated, aggregation: laundryAggregation() },
 }
 
 /** 取某垂直的域模块（无注入时返回纯 no-op 默认） */

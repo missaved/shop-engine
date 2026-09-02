@@ -44,18 +44,30 @@ export function LaundryCustomer({ slug, currency, shopName }: { slug: string; cu
       <section className="flex flex-col gap-2">
         <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">{t('myOrders')}</h2>
         {data && data.orders.length === 0 && <p className="text-sm text-zinc-400">{t('empty')}</p>}
-        {data?.orders.map((o) => (
-          <div key={o.id} className="rounded-xl border border-zinc-200 p-3 dark:border-zinc-800">
-            <div className="flex items-center justify-between text-sm">
-              <span className="font-semibold">{o.displayNo}</span>
-              <span className="text-xs text-zinc-500">{o.tagCode}</span>
+        {data?.orders.map((o) => {
+          const ready = o.laundryStatus === 'ready'
+          return (
+            <div key={o.id} className={`rounded-xl border p-3 ${ready ? 'border-amber-300 bg-amber-50 dark:border-amber-800 dark:bg-amber-950' : 'border-zinc-200 dark:border-zinc-800'}`}>
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-semibold">{o.displayNo}</span>
+                <span className="flex items-center gap-2">
+                  {ready && <span className="rounded-full bg-amber-500 px-2 py-0.5 text-xs font-semibold text-white">{t('readyBadge')}</span>}
+                  <span className="text-xs text-zinc-500">{o.tagCode}</span>
+                </span>
+              </div>
+              <div className="mt-1 flex justify-between text-sm">
+                <span className="text-zinc-500">{t(STATUS_KEY[o.laundryStatus] ?? 'progressReady')}</span>
+                <span className="font-medium">{formatPrice(Number(o.total), currency)}</span>
+              </div>
+              {/* 进度步骤 */}
+              <div className="mt-2 flex gap-1">
+                {['washing_pending', 'washing', 'qc', 'ready', 'collected'].map((s, i) => (
+                  <div key={s} className={`h-1 flex-1 rounded ${['washing_pending', 'washing', 'qc', 'ready', 'collected'].indexOf(o.laundryStatus) >= i ? 'bg-amber-500' : 'bg-zinc-200 dark:bg-zinc-700'}`} />
+                ))}
+              </div>
             </div>
-            <div className="mt-1 flex justify-between text-sm">
-              <span className="text-zinc-500">{t(STATUS_KEY[o.laundryStatus] ?? 'progressReady')}</span>
-              <span className="font-medium">{formatPrice(Number(o.total), currency)}</span>
-            </div>
-          </div>
-        ))}
+          )
+        })}
       </section>
     </main>
   )

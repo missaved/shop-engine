@@ -1014,6 +1014,7 @@
     "customers": "ลูกค้า",
     "searchCustomer": "ค้นหาลูกค้า",
     "orderCount": "คำสั่ง",
-    "spend": "การใช้จ่าย"
+    "spend": "การใช้จ่าย",
+    "readyBadge": "พร้อมรับ"
   }
 }

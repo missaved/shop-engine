@@ -1014,6 +1014,7 @@
     "customers": "客户",
     "searchCustomer": "搜客户(手机号/姓名)",
     "orderCount": "订单",
-    "spend": "消费"
+    "spend": "消费",
+    "readyBadge": "可取"
   }
 }

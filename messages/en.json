@@ -1014,6 +1014,7 @@
     "customers": "Customers",
     "searchCustomer": "Search customer",
     "orderCount": "Orders",
-    "spend": "Spend"
+    "spend": "Spend",
+    "readyBadge": "Ready"
   }
 }

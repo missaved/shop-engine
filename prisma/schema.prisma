@@ -68,6 +68,7 @@ model Shop {
   users     User[]
   billings  Billing[]
   shopDrafts ShopDraft[]
+  cards     CustomerCard[]
   vehicles  Vehicle[]
 
   @@index([city, vertical]) // 城市×垂直聚合列表查询键（listVerifiedShops where vertical+city）
@@ -353,14 +354,33 @@ model Customer {
   image        String?          // OAuth 头像（本期首字母色块兜底，不渲染外部头像）
   provider     String    @default("password") // 登录来源留痕："password"|"google"|"facebook"
   providerId   String?          // google sub / fb id；password/uname 客户为 null
+  balance      Decimal   @default(0) @db.Decimal(12, 2) // 储值余额（洗衣会员；跨垂直可复用）
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
   vehicles Vehicle[]
   orders   Order[]
+  cards    CustomerCard[]
 
   @@unique([provider, providerId]) // 仅 OAuth 幂等锚（password 客户 providerId=null，Postgres 唯一索引视 NULL 互异不生效）
   @@index([phone])
+}
+
+// 会员卡（洗衣储值/次卡；跨垂直可复用）：一客户多卡，店主按 phone 找客户开卡/扣减
+model CustomerCard {
+  id             String     @id @default(cuid())
+  customerId     String
+  customer       Customer   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  shopId         String
+  shop           Shop       @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  type           String     @default("credit") // credit=储值 / count=次卡
+  name           String? // 卡名（如「洗衣10次卡」）
+  remainingCount Int?      // 次卡剩余次数（type=count）
+  balance        Decimal    @default(0) @db.Decimal(12, 2) // 储值卡余额（type=credit）
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([customerId, shopId])
 }
 
 // moto 服务预设库（中台维护/下发，仿 FoodPreset 但独立表）：一服务一行

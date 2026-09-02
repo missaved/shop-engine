@@ -83,8 +83,8 @@ export function LaundryDashboard({
       {view === 'home' && (
         <>
           <LaundryStats currency={shop.currency} />
-          <LaundryReminderList shopName={shop.name} />
           <LaundryOrders currency={shop.currency} shop={shop} />
+          <LaundryReminderList shopName={shop.name} />
         </>
       )}
 

@@ -12,6 +12,7 @@ export function LaundryReminderList({ shopName }: { shopName: string }) {
   const t = useTranslations('laundry')
   const { msg, show } = useToast()
   const [items, setItems] = useState<Item[]>([])
+  const [collapsed, setCollapsed] = useState(true)
 
   const load = useCallback(async () => {
     try {
@@ -65,13 +66,14 @@ export function LaundryReminderList({ shopName }: { shopName: string }) {
 
   return (
     <section className="flex flex-col gap-2">
-      <div className="flex items-center justify-between">
+      <button onClick={() => setCollapsed((c) => !c)} className="flex w-full items-center justify-between">
         <h2 className="text-base font-semibold text-zinc-700 dark:text-zinc-200">{t('reminders')}</h2>
-        <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">
-          {items.length}
+        <span className="flex items-center gap-2 text-sm text-zinc-500">
+          <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-900/40 dark:text-amber-200">{items.length}</span>
+          <span className="text-xs">{collapsed ? '▸' : '▾'}</span>
         </span>
-      </div>
-      {items.map((r) => (
+      </button>
+      {!collapsed && items.map((r) => (
         <div
           key={r.id}
           className={`rounded-xl border p-4 shadow-sm dark:border-amber-800 dark:bg-amber-950 ${

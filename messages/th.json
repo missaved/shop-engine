@@ -1017,6 +1017,9 @@
     "spend": "การใช้จ่าย",
     "readyBadge": "พร้อมรับ",
     "reorder": "สั่งใหม่",
-    "rechargeHint": "เติมเงินที่ร้าน/ติดต่อพนักงาน"
+    "rechargeHint": "เติมเงินที่ร้าน/ติดต่อพนักงาน",
+    "loginToView": "เข้าสู่ระบบดูข้อเสนอ",
+    "continueGoogle": "ดำเนินการต่อกับ Google",
+    "continueFacebook": "ดำเนินการต่อกับ Facebook"
   }
 }

@@ -1017,6 +1017,9 @@
     "spend": "Perbelanjaan",
     "readyBadge": "Sedia",
     "reorder": "Pesan semula",
-    "rechargeHint": "Tambah nilai di kedai / hubungi staff"
+    "rechargeHint": "Tambah nilai di kedai / hubungi staff",
+    "loginToView": "Log masuk lihat tawaran",
+    "continueGoogle": "Teruskan dengan Google",
+    "continueFacebook": "Teruskan dengan Facebook"
   }
 }

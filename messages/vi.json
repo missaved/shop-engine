@@ -1017,6 +1017,9 @@
     "spend": "Chi tiêu",
     "readyBadge": "Sẵn sàng lấy",
     "reorder": "Đặt lại",
-    "rechargeHint": "Nạp tiền vui lòng liên hệ cửa hàng"
+    "rechargeHint": "Nạp tiền vui lòng liên hệ cửa hàng",
+    "loginToView": "Đăng nhập xem ưu đãi & đơn",
+    "continueGoogle": "Tiếp tục với Google",
+    "continueFacebook": "Tiếp tục với Facebook"
   }
 }

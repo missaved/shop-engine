@@ -1017,6 +1017,9 @@
     "spend": "Spend",
     "readyBadge": "Ready",
     "reorder": "Reorder",
-    "rechargeHint": "Top up at the shop / contact staff"
+    "rechargeHint": "Top up at the shop / contact staff",
+    "loginToView": "Log in to see offers & orders",
+    "continueGoogle": "Continue with Google",
+    "continueFacebook": "Continue with Facebook"
   }
 }

@@ -1,8 +1,9 @@
 'use client'
 // 洗衣客户落地页：店名/地址/营业时间 + 匿名查单(手机号+取件码) + 登录看会员/订单
 import { useState } from 'react'
-import { useTranslations } from 'next-intl'
+import { useTranslations, useLocale } from 'next-intl'
 import { Link } from '@/i18n/navigation'
+import { signIn } from 'next-auth/react'
 import { lookupLaundryOrder } from '@/lib/laundry-actions'
 import { formatPrice } from '@/lib/format'
 
@@ -12,6 +13,8 @@ const STATUS_KEY: Record<string, string> = {
 
 export function LaundryStorefront({ slug, currency, shopName, address, city }: { slug: string; currency: string; shopName: string; address: string | null; city: string }) {
   const t = useTranslations('laundry')
+  const locale = useLocale()
+  const cb = `/${locale}/${city}/laundry/${slug}/my`
   const [phone, setPhone] = useState('')
   const [tag, setTag] = useState('')
   const [result, setResult] = useState<{ displayNo: string; tagCode: string; laundryStatus: string; total: string; paidAmount: string } | null>(null)
@@ -49,9 +52,16 @@ export function LaundryStorefront({ slug, currency, shopName, address, city }: {
       </section>
 
       {/* 登录看会员/订单 */}
-      <Link href={`/${city}/laundry/${slug}/my`}>
-        <span className="block rounded-xl bg-zinc-900 py-3 text-center text-sm font-semibold text-white">{t('myOrders')}</span>
-      </Link>
+      <section className="rounded-2xl border border-zinc-200 p-4 dark:border-zinc-800">
+        <h2 className="mb-2 text-sm font-semibold text-zinc-700 dark:text-zinc-200">{t('loginToView')}</h2>
+        <div className="flex flex-col gap-2">
+          <button onClick={() => signIn('google', { callbackUrl: cb })} className="rounded-xl bg-zinc-900 py-2.5 text-sm font-semibold text-white">{t('continueGoogle')}</button>
+          <button onClick={() => signIn('facebook', { callbackUrl: cb })} className="rounded-xl bg-[#1877F2] py-2.5 text-sm font-semibold text-white">{t('continueFacebook')}</button>
+        </div>
+        <Link href={`/${city}/laundry/${slug}/my`}>
+          <span className="mt-2 block rounded-xl border border-zinc-200 py-2.5 text-center text-sm text-zinc-600 dark:border-zinc-700">{t('myOrders')}</span>
+        </Link>
+      </section>
     </main>
   )
 }

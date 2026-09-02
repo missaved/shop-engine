@@ -10,6 +10,13 @@ import type { LaundryMode, LaundryShop, ShoeStyle } from './types'
 const QUICK_KG = [5, 8, 10]
 const SHOE_STYLES: ShoeStyle[] = ['sport', 'leather', 'suede']
 
+// 幂等键（防双击）：需唯一即可；crypto.randomUUID 在 HTTP 局域网非 secure context 下不可用，故加 fallback（同 food）
+function genIdempotencyKey(): string {
+  return typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
+}
+
 export function QuickLaundry({ shop, onDone, onBack }: { shop: LaundryShop; onDone: () => void; onBack: () => void }) {
   const t = useTranslations('laundry')
   const rates = shop.config?.laundryRates
@@ -54,7 +61,7 @@ export function QuickLaundry({ shop, onDone, onBack }: { shop: LaundryShop; onDo
   const submit = async () => {
     setBusy(true)
     setErr('')
-    const idempotencyKey = crypto.randomUUID()
+    const idempotencyKey = genIdempotencyKey()
     try {
       await createLaundryOrder({
         mode,

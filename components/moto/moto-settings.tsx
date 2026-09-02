@@ -17,6 +17,8 @@ import { LocaleSwitcher } from '@/components/locale-switcher'
 import { ShopQrCard } from '@/components/dashboard/shop-qr-card'
 import { MotoRevenueCard } from './moto-revenue-card'
 import { ShopOpenToggle } from '@/components/dashboard/shop-open-toggle'
+import { ShopAccountCard } from '@/components/dashboard/shop-account-card'
+import { HistoryOrderSearch } from '@/components/dashboard/history-order-search'
 import { useToast, ToastView } from '../dashboard/use-toast'
 
 type CatalogItem = {
@@ -368,6 +370,8 @@ export function MotoSettings({ shop, onSaved, onLogout }: { shop: MotoShop; onSa
       >
         {t('saveAll')}
       </button>
+      <HistoryOrderSearch currency={shop.currency} />
+      <ShopAccountCard name={shop.name} slug={shop.slug} id={shop.id} />
       {onLogout && (
         <button
           type="button"

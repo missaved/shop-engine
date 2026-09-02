@@ -7,6 +7,8 @@ import { LocaleSwitcher } from '@/components/locale-switcher'
 import { ShopQrCard } from '@/components/dashboard/shop-qr-card'
 import { LaundryRevenueCard } from './laundry-revenue-card'
 import { ShopOpenToggle } from '@/components/dashboard/shop-open-toggle'
+import { ShopAccountCard } from '@/components/dashboard/shop-account-card'
+import { HistoryOrderSearch } from '@/components/dashboard/history-order-search'
 import type { LaundryRates, LaundryShop, ShoeStyle } from './types'
 import { LaundryMembership } from './laundry-membership'
 
@@ -293,6 +295,12 @@ export function LaundrySettings({ shop, onLogout }: { shop: LaundryShop; onLogou
       >
         {saved ? t('saved') : t('save')}
       </button>
+
+      {/* 历史订单查询（最近 90 天，只读；参照 food） */}
+      <HistoryOrderSearch currency={shop.currency} />
+
+      {/* 账户与授权信息（参照 food） */}
+      <ShopAccountCard name={shop.name} slug={shop.slug} id={shop.id} />
 
       {/* 退出登录（参照 food：放设置里，点击弹确认防误触） */}
       {onLogout && (

@@ -188,7 +188,11 @@
     "shopQr": "Shop QR",
     "qrGenerating": "Generating...",
     "qrFailed": "Failed",
-    "shopQrHint": "Scan to order / register"
+    "shopQrHint": "Scan to order / register",
+    "orderHistory": "Order history",
+    "histQuery": "Order no or phone",
+    "search": "Search",
+    "histEmpty": "No orders found"
   },
   "orderSummary": {
     "header": "{shopName}",

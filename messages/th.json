@@ -188,7 +188,11 @@
     "shopQr": "QR ร้านค้า",
     "qrGenerating": "กำลังสร้าง...",
     "qrFailed": "ล้มเหลว",
-    "shopQrHint": "สแกนเพื่อสั่งซื้อ"
+    "shopQrHint": "สแกนเพื่อสั่งซื้อ",
+    "orderHistory": "ประวัติคำสั่งซื้อ",
+    "histQuery": "เลขที่คำสั่งหรือเบอร์โทร",
+    "search": "ค้นหา",
+    "histEmpty": "ไม่พบคำสั่งซื้อ"
   },
   "orderSummary": {
     "header": "{shopName}",

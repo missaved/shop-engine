@@ -188,7 +188,11 @@
     "shopQr": "门店二维码",
     "qrGenerating": "生成中...",
     "qrFailed": "生成失败",
-    "shopQrHint": "顾客扫码下单/登记"
+    "shopQrHint": "顾客扫码下单/登记",
+    "orderHistory": "历史订单",
+    "histQuery": "单号或手机号",
+    "search": "搜索",
+    "histEmpty": "未找到订单"
   },
   "orderSummary": {
     "header": "{shopName}",

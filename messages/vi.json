@@ -188,7 +188,11 @@
     "shopQr": "Mã QR cửa hàng",
     "qrGenerating": "Đang tạo...",
     "qrFailed": "Tạo thất bại",
-    "shopQrHint": "Khách quét để đặt/đăng ký"
+    "shopQrHint": "Khách quét để đặt/đăng ký",
+    "orderHistory": "Lịch sử đơn hàng",
+    "histQuery": "Số đơn hoặc SĐT",
+    "search": "Tìm",
+    "histEmpty": "Không tìm thấy đơn"
   },
   "orderSummary": {
     "header": "{shopName}",

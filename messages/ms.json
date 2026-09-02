@@ -188,7 +188,11 @@
     "shopQr": "QR kedai",
     "qrGenerating": "Membuat...",
     "qrFailed": "Gagal",
-    "shopQrHint": "Imbas untuk pesan"
+    "shopQrHint": "Imbas untuk pesan",
+    "orderHistory": "Sejarah pesanan",
+    "histQuery": "No. pesanan atau telefon",
+    "search": "Cari",
+    "histEmpty": "Tiada pesanan"
   },
   "orderSummary": {
     "header": "{shopName}",

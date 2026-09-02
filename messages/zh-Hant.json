@@ -188,7 +188,11 @@
     "shopQr": "門店二維碼",
     "qrGenerating": "生成中...",
     "qrFailed": "生成失敗",
-    "shopQrHint": "顧客掃碼下單/登記"
+    "shopQrHint": "顧客掃碼下單/登記",
+    "orderHistory": "歷史訂單",
+    "histQuery": "單號或手機號",
+    "search": "搜尋",
+    "histEmpty": "未找到訂單"
   },
   "orderSummary": {
     "header": "{shopName}",

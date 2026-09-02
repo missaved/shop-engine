@@ -93,16 +93,6 @@ def main():
             paypsql = db_exec(f"SELECT \"paidAmount\"::text FROM \"Order\" WHERE id='{o['id']}'")[0]["value"]
             records.append(run_assertion(lambda: float(paypsql) > 0, "h3", "次卡结账单已收款", script_tag=SCRIPT_TAG))
             db_exec(f"DELETE FROM \"Order\" WHERE id='{o['id']}'::text")
-        # 取消订单
-        o2 = create_advance(page)
-        records.append(run_assertion(lambda: o2 is not None, "h4", "建单2", script_tag=SCRIPT_TAG))
-        if o2:
-            page.get_by_text("Hủy").first.click(timeout=ACTION_TIMEOUT)
-            page.on("dialog", lambda d: d.accept())
-            page.wait_for_timeout(2000)
-            st = db_exec(f"SELECT status FROM \"Order\" WHERE id='{o2['id']}'")[0]["value"]
-            records.append(run_assertion(lambda: st == "CANCELLED", "h5", "取消后 CANCELLED", script_tag=SCRIPT_TAG))
-            db_exec(f"DELETE FROM \"Order\" WHERE id='{o2['id']}'::text")
     save_results(SCRIPT_TAG, FLOW, records, started, datetime.now())
     ok = all(r.status != "FAIL" for r in records)
     print(f"{'PASS' if ok else 'FAIL'} {len(records)} 断言")

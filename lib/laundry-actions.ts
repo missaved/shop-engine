@@ -473,3 +473,81 @@ export async function dismissLaundryReminder(reminderId: string) {
   await prisma.reminder.update({ where: { id: reminderId }, data: { status: 'DISMISSED' } })
   revalidatePath('/[locale]/dashboard', 'page')
 }
+
+// —— P3 会员：储值/次卡（Customer.balance + CustomerCard，跨垂直可复用）——
+// 店主按手机号找/建顾客 → 充值/开卡 → 结账可扣储值或扣次卡。
+export async function getLaundryCustomer(phone: string) {
+  const user = await requireOwner()
+  const p = normalizePhone(phone)
+  if (!p) throw new Error('手机号不能为空')
+  return prisma.customer.findUnique({
+    where: { phone: p },
+    include: { cards: { where: { shopId: user.shopId }, orderBy: { createdAt: 'desc' } } },
+  })
+}
+
+export async function findOrCreateLaundryCustomer(phone: string, name?: string) {
+  const user = await requireOwner()
+  const p = normalizePhone(phone)
+  if (!p) throw new Error('手机号不能为空')
+  const found = await prisma.customer.findUnique({ where: { phone: p } })
+  if (found) return found
+  return prisma.customer.create({ data: { phone: p, name: name?.trim() || null, provider: 'password' } })
+}
+
+export async function topUpLaundryBalance(customerId: string, amount: number) {
+  const user = await requireOwner()
+  const c = await prisma.customer.findFirst({ where: { id: customerId }, select: { id: true, balance: true } })
+  if (!c) throw new Error('顾客不存在')
+  const amt = Math.max(Number(amount ?? 0), 0)
+  await prisma.customer.update({ where: { id: c.id }, data: { balance: Number(c.balance) + amt } })
+  revalidatePath('/[locale]/dashboard', 'page')
+}
+
+export async function createLaundryCard(input: { customerId: string; type: 'credit' | 'count'; name?: string; count?: number; amount?: number }) {
+  const user = await requireOwner()
+  const c = await prisma.customer.findFirst({ where: { id: input.customerId } })
+  if (!c) throw new Error('顾客不存在')
+  const card = await prisma.customerCard.create({
+    data: {
+      customerId: c.id,
+      shopId: user.shopId,
+      type: input.type,
+      name: input.name?.trim() || null,
+      remainingCount: input.type === 'count' ? Math.max(Number(input.count ?? 0), 0) : null,
+      balance: input.type === 'credit' ? Math.max(Number(input.amount ?? 0), 0) : 0,
+    },
+  })
+  revalidatePath('/[locale]/dashboard', 'page')
+  return card
+}
+
+// 结账：从储值余额扣（充值余额扣到不足则拒）
+export async function payLaundryByBalance(orderId: string, customerId: string, amount: number) {
+  const user = await requireOwner()
+  const order = assertShopOwned(user.shopId, await prisma.order.findUnique({ where: { id: orderId } }))
+  const c = await prisma.customer.findFirst({ where: { id: customerId }, select: { id: true, balance: true } })
+  if (!c) throw new Error('顾客不存在')
+  const amt = Math.min(Math.max(Number(amount ?? 0), 0), Number(order.total))
+  if (Number(c.balance) < amt) throw new Error('余额不足')
+  await prisma.$transaction([
+    prisma.customer.update({ where: { id: c.id }, data: { balance: Number(c.balance) - amt } }),
+    prisma.order.update({ where: { id: order.id }, data: { paidAmount: amt } }),
+  ])
+  revalidatePath('/[locale]/dashboard', 'page')
+}
+
+// 结账：扣次卡（卡剩余次数减 1，结清整单）
+export async function payLaundryByCard(orderId: string, cardId: string) {
+  const user = await requireOwner()
+  const order = assertShopOwned(user.shopId, await prisma.order.findUnique({ where: { id: orderId } }))
+  const card = await prisma.customerCard.findFirst({ where: { id: cardId, shopId: user.shopId } })
+  if (!card || card.type !== 'count') throw new Error('次卡不存在')
+  const rem = card.remainingCount ?? 0
+  if (rem <= 0) throw new Error('次卡次数不足')
+  await prisma.$transaction([
+    prisma.customerCard.update({ where: { id: card.id }, data: { remainingCount: rem - 1 } }),
+    prisma.order.update({ where: { id: order.id }, data: { paidAmount: order.total } }),
+  ])
+  revalidatePath('/[locale]/dashboard', 'page')
+}

@@ -51,6 +51,7 @@ function computeLaundryTotal(
     mode: LaundryMode
     kg?: number
     itemSelections?: { name: string; qty: number }[]
+    itemDetail?: { name: string; count: number; mark?: string }[]
     shoeStyle?: ShoeStyle | null
     shoeAddons?: string[]
   },
@@ -62,7 +63,11 @@ function computeLaundryTotal(
     return { total, details: [{ name: 'kg', qty: kg, price }] }
   }
   if (input.mode === 'item') {
-    const details = (input.itemSelections ?? [])
+    // 自助下单传 itemDetail（按件点选），老板开单传 itemSelections；两者都计价，取并集
+    const sel = (input.itemSelections ?? []).map((s) => ({ name: s.name, qty: s.qty }))
+    const detail = (input.itemDetail ?? []).map((s) => ({ name: s.name, qty: s.count }))
+    const merged = [...sel, ...detail]
+    const details = merged
       .map((s) => {
         const rate = rates.itemRates.find((r) => r.name === s.name)
         const qty = Math.max(Math.trunc(Number(s.qty ?? 0)), 0)

@@ -863,3 +863,14 @@ export async function removeMotoItem(orderId: string, index: number): Promise<vo
   })
   revalidatePath('/[locale]/dashboard', 'page')
 }
+
+// —— M2 摩托「进行中 N」：未结单（queued/diagnosing/quoted/repairing/waiting_pickup，不含已提/取消）——
+export async function countMotoActive() {
+  const user = await requireOwner()
+  const orders = await prisma.order.findMany({
+    where: { shopId: user.shopId, status: { not: 'CANCELLED' } },
+    select: { config: true },
+  })
+  const ACTIVE = ['queued', 'diagnosing', 'quoted', 'repairing', 'waiting_pickup']
+  return orders.filter((o) => ACTIVE.includes((o.config as Record<string, unknown> | null)?.motoProgress as string)).length
+}

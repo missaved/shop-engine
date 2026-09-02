@@ -15,6 +15,7 @@ import { MotoLedger } from './moto-ledger'
 import { MotoSettings } from './moto-settings'
 import { BackToTop } from '@/components/dashboard/back-to-top'
 import { LocaleSwitcher } from '@/components/locale-switcher'
+import { MotoActiveCount } from './moto-active-count'
 import type { MotoShop, VehiclePlain } from './types'
 
 export function MotoDashboard({
@@ -66,6 +67,7 @@ export function MotoDashboard({
           <span className="text-lg font-semibold">{shop.name}</span>
         </div>
         <div className="flex items-center gap-2">
+          <MotoActiveCount />
           <LocaleSwitcher />
           {view === 'home' && (
             <>

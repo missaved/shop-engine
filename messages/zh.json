@@ -823,7 +823,8 @@
     "openHours": "营业时间",
     "description": "店铺简介",
     "shopDescZh": "中文简介",
-    "shopDescEn": "英文简介"
+    "shopDescEn": "英文简介",
+    "activeCount": "进行中 {n}"
   },
   "customer": {
     "title": "车辆查询",

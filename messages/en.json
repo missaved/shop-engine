@@ -823,7 +823,8 @@
     "openHours": "Open hours",
     "description": "Description",
     "shopDescZh": "Intro (CN)",
-    "shopDescEn": "Intro (EN)"
+    "shopDescEn": "Intro (EN)",
+    "activeCount": "Active {n}"
   },
   "customer": {
     "title": "Vehicle lookup",

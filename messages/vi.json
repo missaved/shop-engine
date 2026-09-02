@@ -823,7 +823,8 @@
     "openHours": "Giờ mở cửa",
     "description": "Giới thiệu",
     "shopDescZh": "Giới thiệu (Trung)",
-    "shopDescEn": "Giới thiệu (Anh)"
+    "shopDescEn": "Giới thiệu (Anh)",
+    "activeCount": "Đang xử lý {n}"
   },
   "customer": {
     "title": "Tra cứu xe",

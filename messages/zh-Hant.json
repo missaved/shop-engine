@@ -823,7 +823,8 @@
     "openHours": "營業時間",
     "description": "店鋪簡介",
     "shopDescZh": "中文簡介",
-    "shopDescEn": "英文簡介"
+    "shopDescEn": "英文簡介",
+    "activeCount": "進行中 {n}"
   },
   "customer": {
     "title": "車輛查詢",

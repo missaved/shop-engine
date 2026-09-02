@@ -823,7 +823,8 @@
     "openHours": "เวลาทำการ",
     "description": "รายละเอียด",
     "shopDescZh": "รายละเอียด (CN)",
-    "shopDescEn": "รายละเอียด (EN)"
+    "shopDescEn": "รายละเอียด (EN)",
+    "activeCount": "กำลังดำเนินการ {n}"
   },
   "customer": {
     "title": "ตรวจสอบรถ",

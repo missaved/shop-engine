@@ -823,7 +823,8 @@
     "openHours": "Waktu buka",
     "description": "Penerangan",
     "shopDescZh": "Penerangan (CN)",
-    "shopDescEn": "Penerangan (EN)"
+    "shopDescEn": "Penerangan (EN)",
+    "activeCount": "Aktif {n}"
   },
   "customer": {
     "title": "Semak kenderaan",

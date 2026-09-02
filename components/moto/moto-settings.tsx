@@ -13,6 +13,9 @@ import {
 } from '@/lib/moto-actions'
 import type { MotoShop } from './types'
 import { absoluteUrl, shopSubUrl } from '@/lib/urls'
+import { LocaleSwitcher } from '@/components/locale-switcher'
+import { ShopQrCard } from '@/components/dashboard/shop-qr-card'
+import { MotoRevenueCard } from './moto-revenue-card'
 import { useToast, ToastView } from '../dashboard/use-toast'
 
 type CatalogItem = {
@@ -33,7 +36,7 @@ type PaymentForm = {
   wallet?: { momoQrUrl?: string; zalopayQrUrl?: string }
 }
 
-export function MotoSettings({ shop, onSaved }: { shop: MotoShop; onSaved: () => void }) {
+export function MotoSettings({ shop, onSaved, onLogout }: { shop: MotoShop; onSaved?: () => void; onLogout?: () => Promise<void> }) {
   const t = useTranslations('moto')
   const locale = useLocale()
   const { msg, show } = useToast()
@@ -115,7 +118,7 @@ export function MotoSettings({ shop, onSaved }: { shop: MotoShop; onSaved: () =>
       })
       await saveMotoShopInfo({ name, phone })
       show(t('toastSaved'))
-      onSaved()
+      onSaved?.()
     } catch {
       show(t('toastError'))
     }
@@ -126,6 +129,13 @@ export function MotoSettings({ shop, onSaved }: { shop: MotoShop; onSaved: () =>
 
   return (
     <div className="flex flex-col gap-4">
+      {/* 语言切换（参照 food：放设置里） */}
+      <div className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <span className="text-base font-semibold text-zinc-700 dark:text-zinc-200">{t('language')}</span>
+        <LocaleSwitcher />
+      </div>
+      {/* 营业收入（今天/3/7/30天，参照 food RevenueCard） */}
+      <MotoRevenueCard currency={shop.currency} />
       {/* 本店服务预设 */}
       <section className="flex flex-col gap-2 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
         <h2 className="text-base font-semibold text-zinc-700 dark:text-zinc-200">
@@ -334,12 +344,8 @@ export function MotoSettings({ shop, onSaved }: { shop: MotoShop; onSaved: () =>
         </div>
         {/* M6a 6.2 店码：客户入口链接（只读文本，发车主扫码查进度；MVP 不引 qrcode 依赖） */}
         <div className="flex flex-col gap-1 border-t border-zinc-100 pt-3 dark:border-zinc-800">
-          <span className="text-xs text-zinc-500">{t('customerLink')}</span>
-          <code className="break-all rounded-lg bg-zinc-100 px-2.5 py-1.5 text-xs dark:bg-zinc-800">
-            {typeof window !== 'undefined'
-              ? absoluteUrl(shopSubUrl({ vertical: shop.vertical, slug: shop.slug, city: shop.city }, 'lookup'))
-              : shopSubUrl({ vertical: shop.vertical, slug: shop.slug, city: shop.city }, 'lookup')}
-          </code>
+          {/* 门店二维码（可下载打印，指向 lookup） */}
+          <ShopQrCard vertical={shop.vertical} slug={shop.slug} shopName={shop.name} city={shop.city} />
         </div>
       </section>
 
@@ -349,6 +355,15 @@ export function MotoSettings({ shop, onSaved }: { shop: MotoShop; onSaved: () =>
       >
         {t('saveAll')}
       </button>
+      {onLogout && (
+        <button
+          type="button"
+          onClick={async () => { if (confirm(t('logoutConfirm'))) await onLogout() }}
+          className="flex items-center justify-center rounded-xl border border-zinc-300 px-4 py-3 text-sm text-zinc-600 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+        >
+          {t('logout')}
+        </button>
+      )}
       <ToastView msg={msg} />
     </div>
   )

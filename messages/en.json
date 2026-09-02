@@ -144,7 +144,7 @@
     "items": "Items",
     "toastUpdated": "Updated",
     "tableQr": "Table QR / Door code",
-    "downloadQr": "Download QR",
+    "downloadQr": "Download",
     "tableNoPh": "Table no. (optional)",
     "themeLabel": "Storefront skin",
     "themeWarm": "Warm · Food",
@@ -184,7 +184,11 @@
     "presetName": "Name",
     "presetPrice": "Price",
     "presetPickItem": "Select at least one dish",
-    "statusReadyDineIn": "Served"
+    "statusReadyDineIn": "Served",
+    "shopQr": "Shop QR",
+    "qrGenerating": "Generating...",
+    "qrFailed": "Failed",
+    "shopQrHint": "Scan to order / register"
   },
   "orderSummary": {
     "header": "{shopName}",
@@ -808,7 +812,10 @@
     "addItem": "Add service",
     "confirmAdd": "Confirm",
     "removeItem": "Remove",
-    "noService": "No services"
+    "noService": "No services",
+    "language": "Language",
+    "logout": "Log out",
+    "logoutConfirm": "Log out?"
   },
   "customer": {
     "title": "Vehicle lookup",
@@ -1041,6 +1048,16 @@
     "trackHint": "Use pickup code + phone number to track progress",
     "todayOnly": "Today only",
     "viewAll": "View all",
-    "customerLink": "Customer link (scan to order laundry)"
+    "customerLink": "Customer link (scan to order laundry)",
+    "settingsPayment": "Payment",
+    "bankName": "Bank",
+    "accountNo": "Account number",
+    "accountName": "Account holder",
+    "momoQr": "MoMo QR link",
+    "zalopayQr": "ZaloPay QR link",
+    "paymentHint": "Shown on the ticket for customers to transfer/scan",
+    "language": "Language",
+    "logout": "Log out",
+    "logoutConfirm": "Log out?"
   }
 }

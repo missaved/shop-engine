@@ -3,13 +3,15 @@
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { saveLaundrySettings } from '@/lib/laundry-actions'
-import { shopSubUrl, absoluteUrl } from '@/lib/urls'
+import { LocaleSwitcher } from '@/components/locale-switcher'
+import { ShopQrCard } from '@/components/dashboard/shop-qr-card'
+import { LaundryRevenueCard } from './laundry-revenue-card'
 import type { LaundryRates, LaundryShop, ShoeStyle } from './types'
 import { LaundryMembership } from './laundry-membership'
 
 const SHOE_STYLES: ShoeStyle[] = ['sport', 'leather', 'suede']
 
-export function LaundrySettings({ shop }: { shop: LaundryShop }) {
+export function LaundrySettings({ shop, onLogout }: { shop: LaundryShop; onLogout?: () => Promise<void> }) {
   const t = useTranslations('laundry')
   const init = shop.config?.laundryRates
   const [rates, setRates] = useState<LaundryRates>({
@@ -24,6 +26,13 @@ export function LaundrySettings({ shop }: { shop: LaundryShop }) {
     shop.config?.extraCategories ?? [],
   )
   const [saved, setSaved] = useState(false)
+  // —— 收款信息（凭证页展示，可配置）——
+  const initPay = (shop.config?.payment ?? {}) as Record<string, unknown>
+  const [bankName, setBankName] = useState((initPay.bank as Record<string, unknown> | undefined)?.bankName as string ?? '')
+  const [accountNo, setAccountNo] = useState((initPay.bank as Record<string, unknown> | undefined)?.accountNo as string ?? '')
+  const [accountName, setAccountName] = useState((initPay.bank as Record<string, unknown> | undefined)?.accountName as string ?? '')
+  const [momoQr, setMomoQr] = useState((initPay.wallet as Record<string, unknown> | undefined)?.momoQrUrl as string ?? '')
+  const [zalopayQr, setZalopayQr] = useState((initPay.wallet as Record<string, unknown> | undefined)?.zalopayQrUrl as string ?? '')
   const [busy, setBusy] = useState(false)
 
   const set = (patch: Partial<LaundryRates>) => setRates((r) => ({ ...r, ...patch }))
@@ -62,6 +71,10 @@ export function LaundrySettings({ shop }: { shop: LaundryShop }) {
         extraCategories: extraCategories
           .filter((c) => c.name.trim())
           .map((c) => ({ key: c.name.trim(), name: c.name.trim(), price: Number(c.price) || 0, unit: c.unit || 'lần' })),
+        payment: {
+          bank: { bankName, accountNo, accountName },
+          wallet: { momoQrUrl: momoQr, zalopayQrUrl: zalopayQr },
+        },
       })
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
@@ -74,6 +87,13 @@ export function LaundrySettings({ shop }: { shop: LaundryShop }) {
 
   return (
     <div className="flex flex-col gap-4">
+      {/* 语言切换（参照 food：放设置里） */}
+      <div className="flex items-center justify-between rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <span className="text-base font-semibold text-zinc-700 dark:text-zinc-200">{t('language')}</span>
+        <LocaleSwitcher />
+      </div>
+      {/* 营业收入（今天/3/7/30天，参照 food RevenueCard） */}
+      <LaundryRevenueCard currency={shop.currency} />
       {/* 公斤单价 */}
       <div className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
         <div className="mb-2 text-sm font-semibold text-zinc-700 dark:text-zinc-200">{t('kgRateTitle')}</div>
@@ -213,15 +233,36 @@ export function LaundrySettings({ shop }: { shop: LaundryShop }) {
 
       <LaundryMembership currency={shop.currency} />
 
-      {/* 店码：顾客入口链接（发客户扫码/下单洗衣，只读文本，MVP 不引 qrcode 依赖） */}
-      <div className="flex flex-col gap-1 border-t border-zinc-100 pt-3 dark:border-zinc-800">
-        <span className="text-xs text-zinc-500">{t('customerLink')}</span>
-        <code className="break-all rounded-lg bg-zinc-100 px-2.5 py-1.5 text-xs dark:bg-zinc-800">
-          {typeof window !== 'undefined'
-            ? absoluteUrl(shopSubUrl({ vertical: shop.vertical, slug: shop.slug, city: shop.city }, 'storefront'))
-            : shopSubUrl({ vertical: shop.vertical, slug: shop.slug, city: shop.city }, 'storefront')}
-        </code>
-      </div>
+      {/* 门店二维码（参照 food：可下载打印，指向本店入口 storefront） */}
+      <ShopQrCard vertical={shop.vertical} slug={shop.slug} shopName={shop.name} city={shop.city} />
+
+      {/* 收款信息：银行账户 + 钱包二维码（凭证页展示；参照 moto/food） */}
+      <section className="flex flex-col gap-2 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <h2 className="text-base font-semibold text-zinc-700 dark:text-zinc-200">{t('settingsPayment')}</h2>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="flex flex-col gap-1 text-xs text-zinc-500">
+            {t('bankName')}
+            <input className="rounded-lg border border-zinc-200 px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-800" value={bankName} onChange={(e) => setBankName(e.target.value)} />
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-zinc-500">
+            {t('accountNo')}
+            <input className="rounded-lg border border-zinc-200 px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-800" value={accountNo} onChange={(e) => setAccountNo(e.target.value)} />
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-zinc-500">
+            {t('accountName')}
+            <input className="rounded-lg border border-zinc-200 px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-800" value={accountName} onChange={(e) => setAccountName(e.target.value)} />
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-zinc-500">
+            {t('momoQr')}
+            <input className="rounded-lg border border-zinc-200 px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-800" value={momoQr} onChange={(e) => setMomoQr(e.target.value)} />
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-zinc-500">
+            {t('zalopayQr')}
+            <input className="rounded-lg border border-zinc-200 px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-800" value={zalopayQr} onChange={(e) => setZalopayQr(e.target.value)} />
+          </label>
+        </div>
+        <p className="text-xs text-zinc-400">{t('paymentHint')}</p>
+      </section>
 
       <button
         onClick={save}
@@ -230,6 +271,17 @@ export function LaundrySettings({ shop }: { shop: LaundryShop }) {
       >
         {saved ? t('saved') : t('save')}
       </button>
+
+      {/* 退出登录（参照 food：放设置里，点击弹确认防误触） */}
+      {onLogout && (
+        <button
+          type="button"
+          onClick={async () => { if (confirm(t('logoutConfirm'))) await onLogout() }}
+          className="flex items-center justify-center rounded-xl border border-zinc-300 px-4 py-3 text-sm text-zinc-600 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
+        >
+          {t('logout')}
+        </button>
+      )}
     </div>
   )
 }

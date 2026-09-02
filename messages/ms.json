@@ -144,7 +144,7 @@
     "items": "Item",
     "toastUpdated": "Dikemas kini",
     "tableQr": "QR meja / kod pintu",
-    "downloadQr": "Muat turun QR",
+    "downloadQr": "Muat turun",
     "tableNoPh": "No. meja (pilihan)",
     "themeLabel": "Tema kedai",
     "themeWarm": "Hangat · Makanan",
@@ -184,7 +184,11 @@
     "presetName": "Nama",
     "presetPrice": "Harga",
     "presetPickItem": "Sila pilih sekurang-kurangnya satu hidangan",
-    "statusReadyDineIn": "Sudah dihidangkan"
+    "statusReadyDineIn": "Sudah dihidangkan",
+    "shopQr": "QR kedai",
+    "qrGenerating": "Membuat...",
+    "qrFailed": "Gagal",
+    "shopQrHint": "Imbas untuk pesan"
   },
   "orderSummary": {
     "header": "{shopName}",
@@ -808,7 +812,10 @@
     "addItem": "Tambah servis",
     "confirmAdd": "Sahkan",
     "removeItem": "Padam",
-    "noService": "Tiada servis"
+    "noService": "Tiada servis",
+    "language": "Bahasa",
+    "logout": "Log keluar",
+    "logoutConfirm": "Log keluar?"
   },
   "customer": {
     "title": "Semak kenderaan",
@@ -1041,6 +1048,16 @@
     "trackHint": "Guna kod ambil + nombor telefon untuk semak",
     "todayOnly": "Hari ini sahaja",
     "viewAll": "Lihat semua",
-    "customerLink": "Pautan pelanggan (imbas untuk pesan)"
+    "customerLink": "Pautan pelanggan (imbas untuk pesan)",
+    "settingsPayment": "Pembayaran",
+    "bankName": "Bank",
+    "accountNo": "No. akaun",
+    "accountName": "Pemegang akaun",
+    "momoQr": "Pautan QR MoMo",
+    "zalopayQr": "Pautan QR ZaloPay",
+    "paymentHint": "Dipaparkan pada tiket untuk pelanggan bayar",
+    "language": "Bahasa",
+    "logout": "Log keluar",
+    "logoutConfirm": "Log keluar?"
   }
 }

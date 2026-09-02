@@ -144,7 +144,7 @@
     "items": "รายการ",
     "toastUpdated": "อัปเดตแล้ว",
     "tableQr": "QR โต๊ะ / โค้ดหน้าร้าน",
-    "downloadQr": "ดาวน์โหลด QR",
+    "downloadQr": "ดาวน์โหลด",
     "tableNoPh": "เลขโต๊ะ (ไม่บังคับ)",
     "themeLabel": "ธีมร้าน",
     "themeWarm": "อบอุ่น · อาหาร",
@@ -184,7 +184,11 @@
     "presetName": "ชื่อ",
     "presetPrice": "ราคา",
     "presetPickItem": "กรุณาเลือกอย่างน้อยหนึ่งเมนู",
-    "statusReadyDineIn": "เสิร์ฟแล้ว"
+    "statusReadyDineIn": "เสิร์ฟแล้ว",
+    "shopQr": "QR ร้านค้า",
+    "qrGenerating": "กำลังสร้าง...",
+    "qrFailed": "ล้มเหลว",
+    "shopQrHint": "สแกนเพื่อสั่งซื้อ"
   },
   "orderSummary": {
     "header": "{shopName}",
@@ -808,7 +812,10 @@
     "addItem": "เพิ่มบริการ",
     "confirmAdd": "ยืนยัน",
     "removeItem": "ลบ",
-    "noService": "ไม่มีบริการ"
+    "noService": "ไม่มีบริการ",
+    "language": "ภาษา",
+    "logout": "ออกจากระบบ",
+    "logoutConfirm": "ออกจากระบบ?"
   },
   "customer": {
     "title": "ตรวจสอบรถ",
@@ -1041,6 +1048,16 @@
     "trackHint": "ใช้รหัสรับของ + เบอร์โทรติดตามสถานะ",
     "todayOnly": "วันนี้เท่านั้น",
     "viewAll": "ดูทั้งหมด",
-    "customerLink": "ลิงก์ลูกค้า (สแกนเพื่อสั่งซัก)"
+    "customerLink": "ลิงก์ลูกค้า (สแกนเพื่อสั่งซัก)",
+    "settingsPayment": "การชำระเงิน",
+    "bankName": "ธนาคาร",
+    "accountNo": "เลขบัญชี",
+    "accountName": "ชื่อบัญชี",
+    "momoQr": "ลิงก์ QR MoMo",
+    "zalopayQr": "ลิงก์ QR ZaloPay",
+    "paymentHint": "แสดงบนใบเสร็จให้ลูกค้าโอน/สแกนจ่าย",
+    "language": "ภาษา",
+    "logout": "ออกจากระบบ",
+    "logoutConfirm": "ออกจากระบบ?"
   }
 }

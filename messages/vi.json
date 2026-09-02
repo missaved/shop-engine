@@ -144,7 +144,7 @@
     "items": "Món",
     "toastUpdated": "Đã cập nhật",
     "tableQr": "QR bàn / mã cửa",
-    "downloadQr": "Tải mã QR",
+    "downloadQr": "Tải xuống",
     "tableNoPh": "Số bàn (tùy chọn)",
     "themeLabel": "Da diện cửa hàng",
     "themeWarm": "Ấm · Món ăn",
@@ -184,7 +184,11 @@
     "presetName": "Tên món",
     "presetPrice": "Giá",
     "presetPickItem": "Vui lòng chọn ít nhất một món",
-    "statusReadyDineIn": "Đã lên bàn"
+    "statusReadyDineIn": "Đã lên bàn",
+    "shopQr": "Mã QR cửa hàng",
+    "qrGenerating": "Đang tạo...",
+    "qrFailed": "Tạo thất bại",
+    "shopQrHint": "Khách quét để đặt/đăng ký"
   },
   "orderSummary": {
     "header": "{shopName}",
@@ -808,7 +812,10 @@
     "addItem": "Thêm dịch vụ",
     "confirmAdd": "Xác nhận",
     "removeItem": "Xóa",
-    "noService": "Chưa có dịch vụ"
+    "noService": "Chưa có dịch vụ",
+    "language": "Ngôn ngữ",
+    "logout": "Đăng xuất",
+    "logoutConfirm": "Đăng xuất?"
   },
   "customer": {
     "title": "Tra cứu xe",
@@ -1041,6 +1048,16 @@
     "trackHint": "Dùng mã phiếu + số điện thoại tra cứu tiến độ",
     "todayOnly": "Chỉ hôm nay",
     "viewAll": "Xem tất cả",
-    "customerLink": "Liên kết khách hàng (gửi để quét/đặt giặt)"
+    "customerLink": "Liên kết khách hàng (gửi để quét/đặt giặt)",
+    "settingsPayment": "Thanh toán",
+    "bankName": "Ngân hàng",
+    "accountNo": "Số tài khoản",
+    "accountName": "Chủ tài khoản",
+    "momoQr": "MoMo QR link",
+    "zalopayQr": "ZaloPay QR link",
+    "paymentHint": "Hiển thị trên phiếu để khách thanh toán chuyển khoản/quét QR",
+    "language": "Ngôn ngữ",
+    "logout": "Đăng xuất",
+    "logoutConfirm": "Đăng xuất?"
   }
 }

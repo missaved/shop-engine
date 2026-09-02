@@ -122,6 +122,7 @@ export function MotoDashboard({
       {view === 'settings' && (
         <MotoSettings
           shop={shop}
+          onLogout={onLogout}
           onSaved={() => {
             /* 数据均走 server action + client 轮询，保存后无需额外刷新 */
           }}

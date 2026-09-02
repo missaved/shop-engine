@@ -10,7 +10,6 @@ import { LaundryReminderList } from './laundry-reminder-list'
 import { QuickLaundry } from './quick-laundry'
 import { LaundrySettings } from './laundry-settings'
 import { LaundryCustomers } from './laundry-customers'
-import { LocaleSwitcher } from '@/components/locale-switcher'
 
 export function LaundryDashboard({
   shop,
@@ -46,15 +45,8 @@ export function LaundryDashboard({
           <span className="text-lg font-semibold">{shop.name}</span>
         </div>
         <div className="flex items-center gap-2">
-          <LocaleSwitcher />
           {view === 'home' && (
             <>
-              <button
-                onClick={() => setView('order')}
-                className="rounded-full bg-amber-500 px-3 py-1.5 text-sm font-medium text-white shadow-sm"
-              >
-                + {t('createOrder')}
-              </button>
               <button
                 onClick={() => setView('settings')}
                 aria-label={t('settings')}
@@ -71,19 +63,17 @@ export function LaundryDashboard({
               </button>
             </>
           )}
-          <button
-            onClick={async () => {
-              if (confirm('退出登录？')) await onLogout()
-            }}
-            className="text-sm text-zinc-500"
-          >
-            {t('cancel')}
-          </button>
         </div>
       </header>
 
       {view === 'home' && (
         <>
+          <button
+            onClick={() => setView('order')}
+            className="w-full rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 py-3 text-sm font-semibold text-white shadow-md shadow-amber-500/20"
+          >
+            + {t('createOrder')}
+          </button>
           <LaundryStats currency={shop.currency} />
           <LaundryOrders currency={shop.currency} shop={shop} />
           <LaundryReminderList shopName={shop.name} />
@@ -94,7 +84,7 @@ export function LaundryDashboard({
         <QuickLaundry shop={shop} onDone={() => setView('home')} onBack={() => setView('home')} />
       )}
 
-      {view === 'settings' && <LaundrySettings shop={shop} />}
+      {view === 'settings' && <LaundrySettings shop={shop} onLogout={onLogout} />}
       {view === 'customers' && <LaundryCustomers currency={shop.currency} />}
     </main>
   )

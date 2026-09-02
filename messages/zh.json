@@ -144,7 +144,7 @@
     "items": "商品",
     "toastUpdated": "已更新",
     "tableQr": "桌号引导图 / 门头二维码",
-    "downloadQr": "下载二维码",
+    "downloadQr": "下载",
     "tableNoPh": "桌号（可选）",
     "themeLabel": "门面皮肤",
     "themeWarm": "暖咖 · 食品暖色",
@@ -184,7 +184,11 @@
     "presetName": "名称",
     "presetPrice": "价格",
     "presetPickItem": "请至少勾选一个菜品",
-    "statusReadyDineIn": "已上桌"
+    "statusReadyDineIn": "已上桌",
+    "shopQr": "门店二维码",
+    "qrGenerating": "生成中...",
+    "qrFailed": "生成失败",
+    "shopQrHint": "顾客扫码下单/登记"
   },
   "orderSummary": {
     "header": "{shopName}",
@@ -808,7 +812,10 @@
     "addItem": "加服务项",
     "confirmAdd": "确认加项",
     "removeItem": "删除",
-    "noService": "暂无服务项"
+    "noService": "暂无服务项",
+    "language": "语言",
+    "logout": "退出登录",
+    "logoutConfirm": "确认退出登录?"
   },
   "customer": {
     "title": "车辆查询",
@@ -1041,6 +1048,16 @@
     "trackHint": "用取件码+手机号可查询进度",
     "todayOnly": "仅今天",
     "viewAll": "查看全部",
-    "customerLink": "客户入口链接(扫码下单洗衣)"
+    "customerLink": "客户入口链接(扫码下单洗衣)",
+    "settingsPayment": "收款",
+    "bankName": "银行",
+    "accountNo": "账号",
+    "accountName": "户名",
+    "momoQr": "MoMo 二维码",
+    "zalopayQr": "ZaloPay 二维码",
+    "paymentHint": "显示在凭证页供顾客转账/扫码付款",
+    "language": "语言",
+    "logout": "退出登录",
+    "logoutConfirm": "确认退出登录?"
   }
 }

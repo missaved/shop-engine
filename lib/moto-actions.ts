@@ -587,6 +587,25 @@ export async function getMotoOverview() {
   }
 }
 
+// —— 营业收入多档（今天/3天/7天/30天，营收同口径：排除取消 + paidAmount，业务日滚动）——
+export async function getMotoRevenue() {
+  const user = await requireOwner()
+  const todayStart = vietnamTodayStartUtc()
+  const dayMs = 24 * 60 * 60 * 1000
+  const orders = await prisma.order.findMany({
+    where: { shopId: user.shopId, status: { not: 'CANCELLED' } },
+    select: { paidAmount: true, createdAt: true },
+  })
+  const inRange = (d: number) => orders.filter((o) => o.createdAt >= new Date(todayStart.getTime() - (d - 1) * dayMs))
+  const rev = (arr: typeof orders) => arr.reduce((s, o) => s + Number(o.paidAmount), 0)
+  return {
+    todayRevenue: String(rev(inRange(1))), count1: inRange(1).length,
+    revenue3d: String(rev(inRange(3))), count3: inRange(3).length,
+    revenue7d: String(rev(inRange(7))), count7: inRange(7).length,
+    revenue30d: String(rev(inRange(30))), count30: inRange(30).length,
+  }
+}
+
 // 指定越南日期的 UTC 区间（dateStr='YYYY-MM-DD' 越南本地日；与 vietnamTodayStartUtc 同口径 UTC+7）
 function vietnamDayRangeUtc(dateStr: string): { start: Date; end: Date } {
   const [y, m, d] = dateStr.split('-').map(Number)

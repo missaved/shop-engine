@@ -27,6 +27,17 @@ const STATUS_KEY: Record<string, string> = {
   collected: 'progressCollected',
 }
 
+// 状态配色（对齐 food order-list：左色条 + 状态徽标）
+const STATUS_STYLE: Record<string, { badge: string; bar: string }> = {
+  submitted: { badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300', bar: 'border-l-amber-400' },
+  washing_pending: { badge: 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300', bar: 'border-l-zinc-300' },
+  washing: { badge: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300', bar: 'border-l-blue-400' },
+  qc: { badge: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300', bar: 'border-l-indigo-400' },
+  ready: { badge: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300', bar: 'border-l-green-400' },
+  collected: { badge: 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300', bar: 'border-l-zinc-300' },
+  cancelled: { badge: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300', bar: 'border-l-red-400' },
+}
+
 // 推进序列 + 下一态（含质检 QC / 再洗）
 const SEQ: LaundryProgress[] = ['washing_pending', 'washing', 'qc', 'ready', 'collected']
 const nextOf = (s: string | null): LaundryProgress | null => {
@@ -128,15 +139,17 @@ export function LaundryOrders({ currency, shop }: { currency: string; shop: Laun
               : isReady && o.overdueClass === 1
                 ? 'bg-amber-500'
                 : 'bg-green-500'
+          const st = STATUS_STYLE[o.laundryStatus ?? ''] ?? STATUS_STYLE.cancelled
           return (
             <div
               key={o.id}
-              className="rounded-xl border border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+              className={`rounded-xl border border-l-4 border-zinc-200 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 ${st.bar}`}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold">{o.displayNo}</span>
                   {o.tagCode && <span className="text-xs text-zinc-400">{o.tagCode}</span>}
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${st.badge}`}>{t(STATUS_KEY[o.laundryStatus] ?? 'progressWashingPending')}</span>
                   <span className="flex items-center gap-1 text-xs text-zinc-500">
                     <span className={`h-2 w-2 rounded-full ${overdueDot}`} />
                     {t(STATUS_KEY[o.laundryStatus] ?? 'progressWashingPending')}

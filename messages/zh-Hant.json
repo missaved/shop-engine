@@ -144,7 +144,7 @@
     "items": "商品",
     "toastUpdated": "已更新",
     "tableQr": "桌號引導圖 / 門頭二維碼",
-    "downloadQr": "下載二維碼",
+    "downloadQr": "下載",
     "tableNoPh": "桌號（可選）",
     "themeLabel": "門面皮膚",
     "themeWarm": "暖咖 · 食品暖色",
@@ -184,7 +184,11 @@
     "presetName": "名稱",
     "presetPrice": "價格",
     "presetPickItem": "請至少勾選一個菜品",
-    "statusReadyDineIn": "已上桌"
+    "statusReadyDineIn": "已上桌",
+    "shopQr": "門店二維碼",
+    "qrGenerating": "生成中...",
+    "qrFailed": "生成失敗",
+    "shopQrHint": "顧客掃碼下單/登記"
   },
   "orderSummary": {
     "header": "{shopName}",
@@ -808,7 +812,10 @@
     "addItem": "加服務項",
     "confirmAdd": "確認加項",
     "removeItem": "刪除",
-    "noService": "暫無服務項"
+    "noService": "暫無服務項",
+    "language": "語言",
+    "logout": "登出",
+    "logoutConfirm": "確認登出?"
   },
   "customer": {
     "title": "車輛查詢",
@@ -1041,6 +1048,16 @@
     "trackHint": "用取件碼+手機號可查詢進度",
     "todayOnly": "僅今天",
     "viewAll": "查看全部",
-    "customerLink": "客戶入口連結(掃碼下單洗衣)"
+    "customerLink": "客戶入口連結(掃碼下單洗衣)",
+    "settingsPayment": "收款",
+    "bankName": "銀行",
+    "accountNo": "帳號",
+    "accountName": "戶名",
+    "momoQr": "MoMo 二維碼",
+    "zalopayQr": "ZaloPay 二維碼",
+    "paymentHint": "顯示在憑證頁供顧客轉帳/掃碼付款",
+    "language": "語言",
+    "logout": "登出",
+    "logoutConfirm": "確認登出?"
   }
 }

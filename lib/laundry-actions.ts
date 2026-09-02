@@ -19,9 +19,11 @@ import {
 import type { LaundryMode, LaundryRates, ShoeStyle } from '@/components/laundry/types'
 
 // —— 常量 ——
-// 细分状态流（唯一权威，含质检 QC/配送）：待洗 → 洗涤中 → 质检 → 待取（Chờ lấy）→ 结单
-const PROGRESS_SEQ = ['washing_pending', 'washing', 'qc', 'ready', 'collected'] as const
+// 细分状态流（唯一权威，含质检 QC/配送）：
+//   submitted(顾客已提交待确认) → washing_pending(老板交接确认出具凭证) → washing → qc → ready → collected
+const PROGRESS_SEQ = ['submitted', 'washing_pending', 'washing', 'qc', 'ready', 'collected'] as const
 const PROGRESS_STATUS: Record<string, string> = {
+  submitted: 'PENDING',
   washing_pending: 'PENDING',
   washing: 'IN_PROGRESS',
   qc: 'IN_PROGRESS',
@@ -692,4 +694,84 @@ export async function reorderLaundry(orderId: string) {
   })
   revalidatePath('/[locale]/dashboard', 'page')
   return { displayNo: order.displayNo, tagCode: (order.config as { tagCode?: string } | null)?.tagCode ?? null }
+}
+
+// —— 顾客自助下单（公开，不需登录；登录则绑定 customerId）——
+// 提交生成「待确认 submitted」单，金额=预估（按当前 rates）；正式金额交接确认时定。
+export async function submitCustomerLaundryOrder(slug: string, input: {
+  mode: LaundryMode; kg?: number; itemSelections?: { name: string; qty: number }[]
+  shoeStyle?: ShoeStyle | null; shoeAddons?: string[]
+  itemDetail?: { name: string; count: number; mark?: string }[]
+  careType?: string; dispatchType?: 'in_store' | 'pickup' | 'deliver'; address?: string; timeWindow?: string
+  customerPhone?: string; customerName?: string; note?: string; idempotencyKey?: string
+}) {
+  const shop = await prisma.shop.findUnique({ where: { slug }, select: { id: true, config: true, open: true } })
+  if (!shop) throw new Error('店铺不存在')
+  if (!shop.open) throw new Error('店铺已打烊')
+  const rates = readRates(shop)
+  if (!rates) throw new Error('店铺未配置计价')
+  if (!input.mode) throw new Error('请选择计价模式')
+  const { total } = computeLaundryTotal(rates, input)
+  if (total <= 0) throw new Error('订单内容为空')
+  // 登录则绑定 customerId，游客用手机号
+  let customerId: string | null = null
+  try {
+    const session = (await auth()) as { user?: { customerId?: string } } | null
+    if (session?.user?.customerId) customerId = session.user.customerId
+  } catch { /* ignore */ }
+  const customerPhone = input.customerPhone ? normalizePhone(input.customerPhone) : null
+  const idem = input.idempotencyKey?.trim() || null
+  const order = await prisma.$transaction(async (tx) => {
+    await lockShopForUpdate(tx, shop.id)
+    const { orderNo, displayNo } = await nextOrderNumbers(tx, shop.id, 'LD')
+    const shopInTx = await tx.shop.findUnique({ where: { id: shop.id }, select: { config: true } })
+    const scfg = (shopInTx?.config ?? {}) as Record<string, unknown>
+    const code = `#${String(Math.min(Number(scfg.laundryTagSeq ?? 0) + 1, TAG_CODE_MAX)).padStart(3, '0')}`
+    await tx.shop.update({ where: { id: shop.id }, data: { config: { ...scfg, laundryTagSeq: Math.min(Number(scfg.laundryTagSeq ?? 0) + 1, TAG_CODE_MAX) } as Prisma.InputJsonValue } })
+    return tx.order.create({
+      data: {
+        orderNo, displayNo, shopId: shop.id, status: 'PENDING', items: [{ name: input.mode, qty: 1, price: total }] as Prisma.InputJsonValue,
+        total, paidAmount: 0, customerId, customerPhone, customerName: input.customerName?.trim() || null,
+        note: input.note?.trim() || null, idempotencyKey: idem,
+        config: {
+          laundryMode: input.mode, laundryStatus: 'submitted', tagCode: code, // 待老板交接确认
+          ...(input.mode === 'kg' ? { kg: Math.max(Number(input.kg ?? 0), 0) } : {}),
+          ...(input.mode === 'item' ? { itemNames: (input.itemSelections ?? []).map((s) => s.name) } : {}),
+          ...(input.mode === 'shoe' ? { shoeStyle: input.shoeStyle ?? null, shoeAddonNames: (input.shoeAddons ?? []) } : {}),
+          ...(input.itemDetail ? { itemDetail: input.itemDetail } : {}),
+          ...(input.careType ? { careType: input.careType } : {}),
+          ...(input.dispatchType ? { dispatchType: input.dispatchType, address: input.address ?? null, timeWindow: input.timeWindow ?? null } : {}),
+          estimated: true, // 金额为预估，正式金额交接时定
+        } as Prisma.InputJsonValue,
+      },
+    })
+  })
+  revalidatePath('/[locale]/dashboard', 'page')
+  return { displayNo: order.displayNo, tagCode: (order.config as { tagCode?: string } | null)?.tagCode ?? null }
+}
+
+// —— 老板交接确认：现场核对(可改清单) → 出具正式凭证(ticketId) → 转「待洗」——
+// itemsOverride 允许老板改清单后按新价重算正式金额；不传则按顾客提交的 items/customerItems
+export async function confirmLaundryHandover(orderId: string, override?: { items?: { name: string; qty: number; price: number }[]; itemDetail?: { name: string; count: number; mark?: string }[] }) {
+  const user = await requireOwner()
+  const order = assertShopOwned(user.shopId, await prisma.order.findUnique({ where: { id: orderId } }))
+  const cfg = (order.config as Record<string, unknown> | null) ?? {}
+  if (cfg.laundryStatus !== 'submitted') throw new Error('仅待确认单可交接')
+  const shop = await prisma.shop.findUnique({ where: { id: user.shopId }, select: { config: true } })
+  const rates = readRates(shop)
+  const curItems = (order.items as { name: string; qty: number; price: number }[]) ?? []
+  const officialItems = override?.items?.length ? override.items : curItems
+  const officialTotal = officialItems.reduce((s, it) => s + (Number(it.price) || 0) * (Number(it.qty) || 0), 0)
+  const newCfg = {
+    ...cfg,
+    laundryStatus: 'washing_pending',
+    ticketId: crypto.randomUUID(),   // 交接时出具正式凭证
+    estimated: false,
+    ...(override?.itemDetail ? { itemDetail: override.itemDetail } : {}),
+  }
+  await prisma.order.update({
+    where: { id: order.id },
+    data: { status: 'PENDING', total: officialTotal > 0 ? officialTotal : order.total, items: officialItems as Prisma.InputJsonValue, config: newCfg as Prisma.InputJsonValue },
+  })
+  revalidatePath('/[locale]/dashboard', 'page')
 }

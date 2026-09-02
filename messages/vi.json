@@ -1020,6 +1020,13 @@
     "rechargeHint": "Nạp tiền vui lòng liên hệ cửa hàng",
     "loginToView": "Đăng nhập xem ưu đãi & đơn",
     "continueGoogle": "Tiếp tục với Google",
-    "continueFacebook": "Tiếp tục với Facebook"
+    "continueFacebook": "Tiếp tục với Facebook",
+    "progressSubmitted": "Chờ xác nhận",
+    "confirmHandover": "Xác nhận & giao",
+    "selfOrder": "Đặt giặt online",
+    "submitOrder": "Gửi yêu cầu",
+    "submitOk": "Đã gửi — chờ chủ tiệm xác nhận",
+    "estimateNote": "Giá ước tính, chốt khi nhận đồ",
+    "itemHint": "Điền từng món (áo/quần) — sau đó vào cửa hàng mang đồ đến"
   }
 }

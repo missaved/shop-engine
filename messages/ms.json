@@ -1020,6 +1020,13 @@
     "rechargeHint": "Tambah nilai di kedai / hubungi staff",
     "loginToView": "Log masuk lihat tawaran",
     "continueGoogle": "Teruskan dengan Google",
-    "continueFacebook": "Teruskan dengan Facebook"
+    "continueFacebook": "Teruskan dengan Facebook",
+    "progressSubmitted": "Menunggu",
+    "confirmHandover": "Sahkan & serah",
+    "selfOrder": "Pesan online",
+    "submitOrder": "Hantar",
+    "submitOk": "Dihantar — tunggu sah",
+    "estimateNote": "Anggaran, bayar semasa ambil",
+    "itemHint": "Senarai setiap item"
   }
 }

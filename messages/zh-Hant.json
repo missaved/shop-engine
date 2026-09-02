@@ -1020,6 +1020,13 @@
     "rechargeHint": "儲值請到店/聯絡老闆",
     "loginToView": "登入看優惠與訂單",
     "continueGoogle": "用 Google 登入",
-    "continueFacebook": "用 Facebook 登入"
+    "continueFacebook": "用 Facebook 登入",
+    "progressSubmitted": "待確認",
+    "confirmHandover": "確認交接出憑證",
+    "selfOrder": "在線下單",
+    "submitOrder": "提交訂單",
+    "submitOk": "已提交——等老闆確認",
+    "estimateNote": "預估金額，收衣時結算",
+    "itemHint": "逐件填寫(襯衫/褲)，之後到店送洗"
   }
 }

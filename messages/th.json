@@ -1020,6 +1020,13 @@
     "rechargeHint": "เติมเงินที่ร้าน/ติดต่อพนักงาน",
     "loginToView": "เข้าสู่ระบบดูข้อเสนอ",
     "continueGoogle": "ดำเนินการต่อกับ Google",
-    "continueFacebook": "ดำเนินการต่อกับ Facebook"
+    "continueFacebook": "ดำเนินการต่อกับ Facebook",
+    "progressSubmitted": "รอยืนยัน",
+    "confirmHandover": "ยืนยัน & ส่งมอบ",
+    "selfOrder": "สั่งออนไลน์",
+    "submitOrder": "ส่งคำขอ",
+    "submitOk": "ส่งแล้ว — รอเจ้าของร้านยืนยัน",
+    "estimateNote": "ประมาณการ ชำระเมื่อรับ",
+    "itemHint": "ระบุแต่ละรายการ"
   }
 }

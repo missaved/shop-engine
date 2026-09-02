@@ -33,6 +33,11 @@ export function LaundryStorefront({ slug, currency, shopName, address, city, goo
       {address && <p className="text-sm text-zinc-500">{address}</p>}
       <p className="text-sm text-zinc-500">🧺 {t('shopTagline')}</p>
 
+      {/* 顾客自助下单 */}
+      <Link href={`/${city}/laundry/${slug}/order`}>
+        <span className="block rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 py-3 text-center text-sm font-bold text-white shadow-md">{t('selfOrder')} →</span>
+      </Link>
+
       {/* 匿名查单 */}
       <section className="rounded-2xl border border-zinc-200 p-4 dark:border-zinc-800">
         <h2 className="mb-2 text-sm font-semibold text-zinc-700 dark:text-zinc-200">{t('lookupTitle')}</h2>

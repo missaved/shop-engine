@@ -12,6 +12,7 @@ import {
   payLaundryByBalance,
   payLaundryByCard,
   addLaundryClaim,
+  confirmLaundryHandover,
   type LaundryProgress,
 } from '@/lib/laundry-actions'
 import { formatPrice } from '@/lib/format'
@@ -19,6 +20,7 @@ import type { LaundryOrderPlain, LaundryShop } from './types'
 
 const STATUS_KEY: Record<string, string> = {
   washing_pending: 'progressWashingPending',
+  submitted: 'progressSubmitted',
   washing: 'progressWashing',
   qc: 'progressQc',
   ready: 'progressReady',
@@ -201,6 +203,16 @@ export function LaundryOrders({ currency, shop }: { currency: string; shop: Laun
                     className="flex-1 rounded-lg bg-blue-500 px-2 py-1.5 text-sm font-medium text-white disabled:opacity-50"
                   >
                     {t('startWashing')}
+                  </button>
+                )}
+                {/* 顾客已提交 → 交接确认（出具正式凭证） */}
+                {o.laundryStatus === 'submitted' && (
+                  <button
+                    onClick={() => run(() => confirmLaundryHandover(o.id), o.id)}
+                    disabled={busyId === o.id}
+                    className="flex-1 rounded-lg bg-emerald-600 px-2 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+                  >
+                    {t('confirmHandover')}
                   </button>
                 )}
                 {/* 质检未过 → 再洗 */}

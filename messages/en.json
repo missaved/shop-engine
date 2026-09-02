@@ -1020,6 +1020,13 @@
     "rechargeHint": "Top up at the shop / contact staff",
     "loginToView": "Log in to see offers & orders",
     "continueGoogle": "Continue with Google",
-    "continueFacebook": "Continue with Facebook"
+    "continueFacebook": "Continue with Facebook",
+    "progressSubmitted": "Submitted",
+    "confirmHandover": "Confirm & issue",
+    "selfOrder": "Order online",
+    "submitOrder": "Submit order",
+    "submitOk": "Submitted — awaiting shop confirm",
+    "estimateNote": "Estimate, settled at pickup",
+    "itemHint": "List each item (shirt/pants)"
   }
 }

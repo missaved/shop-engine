@@ -53,4 +53,12 @@ export type LaundryOrderPlain = {
   note: string | null
   createdAt: string
   overdueClass: 0 | 1 | 2
+  // P2 取送/护理/计件明细
+  dispatchType: string | null
+  address: string | null
+  timeWindow: string | null
+  careType: string | null
+  itemDetail: { name: string; count: number; mark?: string }[]
+  qcNote: string | null
+  ticketId: string | null
 }

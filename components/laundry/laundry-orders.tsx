@@ -131,6 +131,24 @@ export function LaundryOrders({ currency, shop }: { currency: string; shop: Laun
                     : t('shoeSummary', { style: o.shoeStyle ?? '' })}
               </p>
 
+              {/* P2 取送/护理/计件明细 */}
+              {(o.dispatchType && o.dispatchType !== 'in_store') && (
+                <p className="mt-1 text-xs text-zinc-500">
+                  {o.dispatchType === 'pickup' ? t('dispatchPickup') : t('dispatchDeliver')}
+                  {o.address ? ` · ${o.address}` : ''}
+                  {o.timeWindow ? ` · ${o.timeWindow}` : ''}
+                </p>
+              )}
+              {o.careType && o.careType !== 'normal' && (
+                <p className="mt-1 text-xs text-zinc-500">{t('careTypeLabel')}: {o.careType}</p>
+              )}
+              {o.itemDetail.length > 0 && (
+                <p className="mt-1 text-xs text-zinc-500">
+                  {o.itemDetail.map((i) => `${i.name}×${i.count}${i.mark ? `(${i.mark})` : ''}`).join(' · ')}
+                </p>
+              )}
+              {o.qcNote && <p className="mt-1 text-xs text-zinc-500">{t('qcNoteLabel')}: {o.qcNote}</p>}
+
               {/* 逾期分级提示 */}
               {isReady && o.overdueClass > 0 && (
                 <p className="mt-1 text-xs font-medium text-red-600">

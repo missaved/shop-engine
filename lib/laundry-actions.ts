@@ -390,6 +390,14 @@ function serializeLaundryOrder(o: {
     note: o.note,
     createdAt: o.createdAt.toISOString(),
     overdueClass,
+    // P2 取送/护理/计件明细
+    dispatchType: (cfg.dispatchType as string) ?? null,
+    address: (cfg.address as string) ?? null,
+    timeWindow: (cfg.timeWindow as string) ?? null,
+    careType: (cfg.careType as string) ?? null,
+    itemDetail: Array.isArray(cfg.itemDetail) ? (cfg.itemDetail as { name: string; count: number; mark?: string }[]) : [],
+    qcNote: (cfg.qcNote as string) ?? null,
+    ticketId: (cfg.ticketId as string) ?? null,
   }
 }
 

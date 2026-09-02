@@ -33,7 +33,7 @@ export default async function CustomerMyPage({
   }
   // LAUNDRY 顾客侧：登录顾客看本店储值/卡/洗衣订单（与 MOTO CustomerVehicles 分流）
   if (vertical === 'LAUNDRY') {
-    return <LaundryCustomer slug={slug} currency={shop.currency} shopName={shop.name} />
+    return <LaundryCustomer slug={slug} currency={shop.currency} shopName={shop.name} city={city} />
   }
   return (
     <CustomerVehicles

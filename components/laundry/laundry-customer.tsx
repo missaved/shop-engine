@@ -2,6 +2,7 @@
 // 顾客侧洗衣视图：登录顾客看本店储值/卡/订单进度（requireCustomer 已守卫）
 import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
+import { Link } from '@/i18n/navigation'
 import { getMyLaundry, reorderLaundry } from '@/lib/laundry-actions'
 import { formatPrice } from '@/lib/format'
 
@@ -11,7 +12,7 @@ const STATUS_KEY: Record<string, string> = {
   washing_pending: 'progressWashingPending', washing: 'progressWashing', qc: 'progressQc', ready: 'progressReady', collected: 'progressCollected',
 }
 
-export function LaundryCustomer({ slug, currency, shopName }: { slug: string; currency: string; shopName: string }) {
+export function LaundryCustomer({ slug, currency, shopName, city }: { slug: string; currency: string; shopName: string; city: string }) {
   const t = useTranslations('laundry')
   const [data, setData] = useState<{ customer: { balance: string; phone: string | null; name: string | null; cards: { id: string; type: string; name: string | null; remainingCount: number | null; balance: string }[] } | null; orders: Order[] } | null>(null)
   const reload = async () => {
@@ -27,6 +28,9 @@ export function LaundryCustomer({ slug, currency, shopName }: { slug: string; cu
   return (
     <main className="mx-auto flex w-full max-w-lg flex-col gap-4 px-5 py-6">
       <h1 className="text-lg font-bold">{shopName}</h1>
+      <Link href={`/${city}/laundry/${slug}/order`}>
+        <span className="block rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 py-3 text-center text-sm font-bold text-white shadow-md">{t('wantWash')} →</span>
+      </Link>
       {data?.customer && (
         <section className="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950">
           <div className="flex items-center justify-between">

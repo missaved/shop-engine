@@ -214,18 +214,18 @@ export function MotoOrders({
                 </div>
                 {!done && (
                   <>
-                    <div className="mt-2 flex gap-2">
+                    <div className="mt-2 flex flex-col gap-2">
                       <button
                         onClick={() => advance(o)}
                         disabled={busyId === o.id || !next}
-                        className="flex-1 rounded-lg bg-zinc-900 py-2 text-sm font-medium text-white disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-900"
+                        className="w-full rounded-lg bg-zinc-900 py-2.5 text-sm font-semibold text-white disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-900"
                       >
                         {next ? `→ ${t(next as never)}` : '…'}
                       </button>
                       <button
                         onClick={() => cancel(o)}
                         disabled={busyId === o.id}
-                        className="rounded-lg border border-zinc-200 px-3 py-2 text-sm text-red-600 dark:border-zinc-700"
+                        className="w-full rounded-md border border-red-300 px-3 py-2 text-sm text-red-600 disabled:opacity-40 dark:border-red-800"
                       >
                         {t('cancel')}
                       </button>

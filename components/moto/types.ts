@@ -57,6 +57,7 @@ export type MotoShop = {
   currency: string
   /** 城市段（boss 树拼客户 URL 用；一串字符串，工厂兜底 DEFAULT_CITY） */
   city: string
+  open: boolean
   config: {
     presets?: MotoPresetItem[]
     commonModels?: string[]

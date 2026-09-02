@@ -64,6 +64,7 @@ function serializeMotoShop(shop: NonNullable<Awaited<ReturnType<typeof prisma.sh
     phone: shop.phone,
     currency: shop.currency,
     city: shop.city,
+    open: shop.open,
     config: {
       presets: cfg?.presets ?? [],
       commonModels: cfg?.commonModels ?? [],
@@ -83,6 +84,7 @@ function serializeLaundryShop(shop: NonNullable<Awaited<ReturnType<typeof prisma
     phone: shop.phone,
     currency: shop.currency,
     city: shop.city,
+    open: shop.open,
     config: {
       laundryRates: cfg?.laundryRates,
       laundryTagSeq: cfg?.laundryTagSeq,

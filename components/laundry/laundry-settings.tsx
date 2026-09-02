@@ -6,6 +6,7 @@ import { saveLaundrySettings } from '@/lib/laundry-actions'
 import { LocaleSwitcher } from '@/components/locale-switcher'
 import { ShopQrCard } from '@/components/dashboard/shop-qr-card'
 import { LaundryRevenueCard } from './laundry-revenue-card'
+import { ShopOpenToggle } from '@/components/dashboard/shop-open-toggle'
 import type { LaundryRates, LaundryShop, ShoeStyle } from './types'
 import { LaundryMembership } from './laundry-membership'
 
@@ -94,6 +95,8 @@ export function LaundrySettings({ shop, onLogout }: { shop: LaundryShop; onLogou
       </div>
       {/* 营业收入（今天/3/7/30天，参照 food RevenueCard） */}
       <LaundryRevenueCard currency={shop.currency} />
+      {/* 营业开关（打烊/营业） */}
+      <ShopOpenToggle open={shop.open} />
       {/* 公斤单价 */}
       <div className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
         <div className="mb-2 text-sm font-semibold text-zinc-700 dark:text-zinc-200">{t('kgRateTitle')}</div>

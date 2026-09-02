@@ -24,6 +24,7 @@ export type LaundryShop = {
   phone: string | null
   currency: string
   city: string
+  open: boolean
   config: {
     laundryRates?: LaundryRates
     laundryTagSeq?: number

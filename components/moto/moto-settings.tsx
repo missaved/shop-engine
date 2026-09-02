@@ -16,6 +16,7 @@ import { absoluteUrl, shopSubUrl } from '@/lib/urls'
 import { LocaleSwitcher } from '@/components/locale-switcher'
 import { ShopQrCard } from '@/components/dashboard/shop-qr-card'
 import { MotoRevenueCard } from './moto-revenue-card'
+import { ShopOpenToggle } from '@/components/dashboard/shop-open-toggle'
 import { useToast, ToastView } from '../dashboard/use-toast'
 
 type CatalogItem = {
@@ -136,6 +137,8 @@ export function MotoSettings({ shop, onSaved, onLogout }: { shop: MotoShop; onSa
       </div>
       {/* 营业收入（今天/3/7/30天，参照 food RevenueCard） */}
       <MotoRevenueCard currency={shop.currency} />
+      {/* 营业开关（打烊/营业） */}
+      <ShopOpenToggle open={shop.open} />
       {/* 本店服务预设 */}
       <section className="flex flex-col gap-2 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
         <h2 className="text-base font-semibold text-zinc-700 dark:text-zinc-200">

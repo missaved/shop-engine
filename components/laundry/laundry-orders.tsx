@@ -51,6 +51,7 @@ export function LaundryOrders({ currency, shop }: { currency: string; shop: Laun
   const [tab, setTab] = useState<LaundryProgress | 'all'>('washing')
   const [pays, setPays] = useState<Record<string, string>>({})
   const [busyId, setBusyId] = useState('')
+  const [settleOpenId, setSettleOpenId] = useState<string | null>(null)
   const [showAllCollected, setShowAllCollected] = useState(false)
 
   const load = useCallback(async () => {
@@ -266,69 +267,60 @@ export function LaundryOrders({ currency, shop }: { currency: string; shop: Laun
                   </button>
                 )}
 
-                {/* 收款：欠款结算 */}
+                {/* 收款：收进「收款」展开面板（方式+实收+收全款/抹零+会员+理赔） */}
                 {debt > 0 && (
-                  <div className="flex flex-1 items-center gap-1">
-                    <input
-                      value={pays[o.id] ?? defaultPay(o)}
-                      onChange={(e) => setPays((s) => ({ ...s, [o.id]: e.target.value }))}
-                      inputMode="decimal"
-                      className="w-20 rounded-lg border border-zinc-200 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800"
-                    />
+                  <>
                     <button
-                      onClick={() => run(() => settleLaundry(o.id, Number(pays[o.id] ?? defaultPay(o))), o.id)}
+                      onClick={() => setSettleOpenId(settleOpenId === o.id ? null : o.id)}
                       disabled={busyId === o.id}
-                      className="rounded-lg bg-zinc-800 px-2 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+                      className="w-full rounded-lg border border-zinc-300 px-2 py-1.5 text-sm font-medium text-zinc-700 disabled:opacity-50 dark:border-zinc-700 dark:text-zinc-300"
                     >
-                      {t('collectPay')}
+                      {settleOpenId === o.id ? '× ' : ''}{t('collectPay')}
                     </button>
-                  </div>
+                    {settleOpenId === o.id && (
+                      <div className="flex w-full flex-col gap-2 rounded-lg border border-dashed border-amber-300 bg-amber-50/40 p-3 dark:border-amber-700 dark:bg-amber-950/20">
+                        <div className="flex items-center gap-2">
+                          <input
+                            value={pays[o.id] ?? defaultPay(o)}
+                            onChange={(e) => setPays((s) => ({ ...s, [o.id]: e.target.value }))}
+                            inputMode="decimal"
+                            className="flex-1 rounded-lg border border-zinc-200 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800"
+                          />
+                          <button
+                            onClick={() => run(() => settleLaundry(o.id, Number(pays[o.id] ?? defaultPay(o))), o.id)}
+                            disabled={busyId === o.id}
+                            className="rounded-lg bg-zinc-800 px-2 py-1 text-sm font-medium text-white disabled:opacity-50"
+                          >
+                            {t('collectPay')}
+                          </button>
+                        </div>
+                        <div className="flex gap-2">
+                          <button onClick={() => setPays((s) => ({ ...s, [o.id]: String(debt) }))} className="flex-1 rounded-md border border-zinc-300 px-2 py-1 text-xs text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">{t('collectAll')}</button>
+                          <button onClick={() => setPays((s) => ({ ...s, [o.id]: String(Math.floor(debt / 1000) * 1000) }))} className="flex-1 rounded-md border border-zinc-300 px-2 py-1 text-xs text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">{t('roundToK')}</button>
+                        </div>
+                        {o.customerPhone && (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => run(async () => { const c = await getLaundryCustomer(o.customerPhone!); if (!c) throw new Error(t('noCustomer')); await payLaundryByBalance(o.id, c.id, Number(o.total) - Number(o.paidAmount)) }, o.id)}
+                              disabled={busyId === o.id}
+                              className="flex-1 rounded-lg bg-violet-600 px-2 py-1 text-sm font-medium text-white disabled:opacity-50"
+                            >{t('payByBalance')}</button>
+                            <button
+                              onClick={() => run(async () => { const c = await getLaundryCustomer(o.customerPhone!); const card = c?.cards?.find((x) => x.type === 'count' && (x.remainingCount ?? 0) > 0); if (!card) throw new Error(t('noCard')); await payLaundryByCard(o.id, card.id) }, o.id)}
+                              disabled={busyId === o.id}
+                              className="flex-1 rounded-lg bg-violet-600 px-2 py-1 text-sm font-medium text-white disabled:opacity-50"
+                            >{t('payByCard')}</button>
+                          </div>
+                        )}
+                        <button
+                          onClick={() => { if (confirm(t('claimConfirm'))) run(async () => { await addLaundryClaim(o.id, { type: 'damage', resolution: 'refund', amount: debt }) }, o.id) }}
+                          disabled={busyId === o.id}
+                          className="w-full rounded-lg border border-red-300 px-2 py-1 text-sm font-medium text-red-600 disabled:opacity-50 dark:border-red-800"
+                        >{t('addClaim')}</button>
+                      </div>
+                    )}
+                  </>
                 )}
-
-                {/* P3 会员结账（扣储值 / 扣次卡）+ 记理赔 */}
-                {o.customerPhone && debt > 0 && (
-                  <button
-                    onClick={() =>
-                      run(async () => {
-                        const c = await getLaundryCustomer(o.customerPhone!)
-                        if (!c) throw new Error(t('noCustomer'))
-                        await payLaundryByBalance(o.id, c.id, Number(o.total) - Number(o.paidAmount))
-                      }, o.id)
-                    }
-                    disabled={busyId === o.id}
-                    className="rounded-lg bg-violet-600 px-2 py-1.5 text-sm font-medium text-white disabled:opacity-50"
-                  >
-                    {t('payByBalance')}
-                  </button>
-                )}
-                {o.customerPhone && debt > 0 && (
-                  <button
-                    onClick={() =>
-                      run(async () => {
-                        const c = await getLaundryCustomer(o.customerPhone!)
-                        const card = c?.cards?.find((x) => x.type === 'count' && (x.remainingCount ?? 0) > 0)
-                        if (!card) throw new Error(t('noCard'))
-                        await payLaundryByCard(o.id, card.id)
-                      }, o.id)
-                    }
-                    disabled={busyId === o.id}
-                    className="rounded-lg bg-violet-600 px-2 py-1.5 text-sm font-medium text-white disabled:opacity-50"
-                  >
-                    {t('payByCard')}
-                  </button>
-                )}
-                <button
-                  onClick={() => {
-                    if (confirm(t('claimConfirm')))
-                      run(async () => {
-                        await addLaundryClaim(o.id, { type: 'damage', resolution: 'refund', amount: debt })
-                      }, o.id)
-                  }}
-                  disabled={busyId === o.id}
-                  className="rounded-lg border border-red-300 px-2 py-1.5 text-sm font-medium text-red-600 disabled:opacity-50 dark:border-red-800"
-                >
-                  {t('addClaim')}
-                </button>
               </div>
             </div>
           )

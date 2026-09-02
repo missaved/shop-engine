@@ -70,6 +70,7 @@ def main():
         page.get_by_text("Qua kiểm tra").first.click(timeout=ACTION_TIMEOUT); page.wait_for_timeout(1200)
         # 扣储值结账
         before = cust_bal()
+        page.get_by_text("Thu tiền").first.click(timeout=ACTION_TIMEOUT); page.wait_for_timeout(800)
         page.get_by_text("Trừ số dư").first.click(timeout=ACTION_TIMEOUT); page.wait_for_timeout(1800)
         after = cust_bal()
         records.append(run_assertion(lambda: after is not None and before is not None and after < before, "e2", "扣储值后余额减少", script_tag=SCRIPT_TAG))

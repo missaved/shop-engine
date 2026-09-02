@@ -1067,6 +1067,8 @@
     "logoutConfirm": "確認登出?",
     "settingsShop": "店面資訊",
     "openHours": "營業時間",
-    "description": "店鋪簡介"
+    "description": "店鋪簡介",
+    "collectAll": "收全款",
+    "roundToK": "抹零(到千)"
   }
 }

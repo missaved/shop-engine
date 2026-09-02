@@ -1067,6 +1067,8 @@
     "logoutConfirm": "Log out?",
     "settingsShop": "Shop info",
     "openHours": "Open hours",
-    "description": "Description"
+    "description": "Description",
+    "collectAll": "Collect full",
+    "roundToK": "Round to 1000đ"
   }
 }

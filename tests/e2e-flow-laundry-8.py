@@ -86,6 +86,7 @@ def main():
         o = create_advance(page, CPHONE)
         records.append(run_assertion(lambda: o is not None, "h1", "建单(顾客)", script_tag=SCRIPT_TAG))
         if o:
+            page.get_by_text("Thu tiền").first.click(timeout=ACTION_TIMEOUT); page.wait_for_timeout(800)
             page.get_by_text("Trừ thẻ lần").first.click(timeout=ACTION_TIMEOUT); page.wait_for_timeout(2000)
             after = cust_card()
             records.append(run_assertion(lambda: before is not None and after is not None and after < before, "h2", "扣次卡后次数减少", script_tag=SCRIPT_TAG))

@@ -1067,6 +1067,8 @@
     "logoutConfirm": "ออกจากระบบ?",
     "settingsShop": "ข้อมูลร้าน",
     "openHours": "เวลาทำการ",
-    "description": "รายละเอียด"
+    "description": "รายละเอียด",
+    "collectAll": "เก็บเต็ม",
+    "roundToK": "ปัดเป็น 1000đ"
   }
 }

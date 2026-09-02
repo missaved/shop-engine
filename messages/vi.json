@@ -1067,6 +1067,8 @@
     "logoutConfirm": "Đăng xuất?",
     "settingsShop": "Thông tin tiệm",
     "openHours": "Giờ mở cửa",
-    "description": "Giới thiệu"
+    "description": "Giới thiệu",
+    "collectAll": "Thu đủ",
+    "roundToK": "Bỏ lẻ (làm tròn 1000đ)"
   }
 }

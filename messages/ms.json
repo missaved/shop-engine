@@ -1067,6 +1067,8 @@
     "logoutConfirm": "Log keluar?",
     "settingsShop": "Maklumat kedai",
     "openHours": "Waktu buka",
-    "description": "Penerangan"
+    "description": "Penerangan",
+    "collectAll": "Terima penuh",
+    "roundToK": "Bulat ke 1000đ"
   }
 }

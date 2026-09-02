@@ -955,6 +955,22 @@
     "toastZaloSent": "已复制并打开 Zalo",
     "toastCopied": "已复制",
     "readyRemindText": "哥/姐，您的衣物（单号 {tag}）已经洗好，欢迎来店里取哦！",
-    "overdueRemindText": "哥/姐，您的衣物（{tag}）在店里放得有点久了，方便的话早点来取哦！"
+    "overdueRemindText": "哥/姐，您的衣物（{tag}）在店里放得有点久了，方便的话早点来取哦！",
+    "progressQc": "质检中",
+    "sendQc": "送质检",
+    "qcPass": "质检通过",
+    "rewash": "需再洗",
+    "rewashConfirm": "还有污渍——再洗一次？",
+    "rewashDefault": "仍有污渍",
+    "tagLabel": "取件码",
+    "orderDetail": "衣物明细",
+    "status": "状态",
+    "dispatchPickup": "上门取",
+    "dispatchDeliver": "送到家",
+    "dispatchInStore": "到店取",
+    "careTypeLabel": "护理类型",
+    "qcNoteLabel": "质检备注",
+    "total": "合计",
+    "debt": "欠款"
   }
 }

@@ -18,11 +18,12 @@ import {
 import type { LaundryMode, LaundryRates, ShoeStyle } from '@/components/laundry/types'
 
 // —— 常量 ——
-// 细分状态流（唯一权威）：待洗 → 洗涤中 → 待取（Chờ lấy）→ 已结单
-const PROGRESS_SEQ = ['washing_pending', 'washing', 'ready', 'collected'] as const
+// 细分状态流（唯一权威，含质检 QC/配送）：待洗 → 洗涤中 → 质检 → 待取（Chờ lấy）→ 结单
+const PROGRESS_SEQ = ['washing_pending', 'washing', 'qc', 'ready', 'collected'] as const
 const PROGRESS_STATUS: Record<string, string> = {
   washing_pending: 'PENDING',
   washing: 'IN_PROGRESS',
+  qc: 'IN_PROGRESS',
   ready: 'READY',
   collected: 'COMPLETED',
 }
@@ -92,6 +93,12 @@ export async function createLaundryOrder(input: {
   discount?: number
   paidAmount?: number
   idempotencyKey?: string
+  photos?: string[]
+  careType?: string
+  dispatchType?: 'in_store' | 'pickup' | 'deliver'
+  address?: string
+  deliveryFee?: number
+  timeWindow?: string
 }) {
   const user = await requireOwner()
   const shop = await prisma.shop.findUnique({ where: { id: user.shopId } })
@@ -151,6 +158,7 @@ export async function createLaundryOrder(input: {
             laundryMode: input.mode,
             laundryStatus: PROGRESS_SEQ[0],
             tagCode: code,
+            ticketId: crypto.randomUUID(),
             ...(input.mode === 'kg' ? { kg: Math.max(Number(input.kg ?? 0), 0) } : {}),
             ...(input.mode === 'item' ? { itemNames: details.map((d) => d.name) } : {}),
             ...(input.mode === 'shoe'
@@ -159,6 +167,13 @@ export async function createLaundryOrder(input: {
                   shoeAddonNames: (input.shoeAddons ?? []).map((n) => n),
                 }
               : {}),
+            // 收货照 / 护理类型 / 取送
+            ...(input.photos?.length ? { photo: input.photos } : {}),
+            ...(input.careType ? { careType: input.careType } : {}),
+            ...(input.dispatchType ? { dispatchType: input.dispatchType } : {}),
+            ...(input.address ? { address: input.address } : {}),
+            ...(input.deliveryFee != null ? { deliveryFee: input.deliveryFee } : {}),
+            ...(input.timeWindow ? { timeWindow: input.timeWindow } : {}),
             discount,
           },
         },
@@ -177,8 +192,8 @@ export async function createLaundryOrder(input: {
   }
 }
 
-// —— 状态推进（待洗→洗涤中→待取→结单）——
-export async function advanceLaundryStatus(orderId: string, progress: LaundryProgress) {
+// —— 状态推进（待洗→洗涤中→质检→待取→结单）——
+export async function advanceLaundryStatus(orderId: string, progress: LaundryProgress, qcNote?: string) {
   const user = await requireOwner()
   const order = assertShopOwned(
     user.shopId,
@@ -195,6 +210,11 @@ export async function advanceLaundryStatus(orderId: string, progress: LaundryPro
   const upd: Prisma.OrderUpdateInput = {
     status: PROGRESS_STATUS[progress] as 'PENDING' | 'IN_PROGRESS' | 'READY' | 'COMPLETED',
     config: { ...cfg, laundryStatus: progress } as Prisma.InputJsonValue,
+  }
+
+  // 质检（qc）时记录备注（残留/损伤；若需再洗由 rewashLaundry 退回）
+  if (progress === 'qc' && qcNote) {
+    upd.config = { ...cfg, laundryStatus: 'qc', qcNote: qcNote.trim() } as Prisma.InputJsonValue
   }
 
   // 到「待取 Chờ lấy」触发催取提醒（LAUNDRY_READY，0 API 一键复制发 Zalo）
@@ -234,7 +254,43 @@ export async function advanceLaundryStatus(orderId: string, progress: LaundryPro
   revalidatePath('/[locale]/dashboard', 'page')
 }
 
-// —— 取消单（公共状态 CANCELLED，laundryStatus 置空；凭证/列表不展示）——
+// —— 质检未过 → 退回洗涤中（再洗）——
+export async function rewashLaundry(orderId: string, reason?: string) {
+  const user = await requireOwner()
+  const order = assertShopOwned(
+    user.shopId,
+    await prisma.order.findUnique({ where: { id: orderId } }),
+  )
+  const cfg = (order.config as Record<string, unknown> | null) ?? {}
+  if (cfg.laundryStatus !== 'qc') throw new Error('仅在质检后可再洗')
+  await prisma.order.update({
+    where: { id: order.id },
+    data: {
+      status: 'IN_PROGRESS',
+      config: { ...cfg, laundryStatus: 'washing', qcNote: reason?.trim() || cfg.qcNote || null } as Prisma.InputJsonValue,
+    },
+  })
+  revalidatePath('/[locale]/dashboard', 'page')
+}
+
+// —— 交接凭证数据（老板端复制 + 生成 ticketId）——
+export async function issueLaundryTicket(orderId: string) {
+  const user = await requireOwner()
+  const order = assertShopOwned(
+    user.shopId,
+    await prisma.order.findUnique({ where: { id: orderId } }),
+  )
+  const cfg = (order.config as Record<string, unknown> | null) ?? {}
+  if (!cfg.ticketId) {
+    await prisma.order.update({
+      where: { id: order.id },
+      data: { config: { ...cfg, ticketId: crypto.randomUUID() } as Prisma.InputJsonValue },
+    })
+  }
+  return { ok: true }
+}
+
+
 export async function cancelLaundryOrder(orderId: string) {
   const user = await requireOwner()
   const order = assertShopOwned(

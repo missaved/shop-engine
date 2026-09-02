@@ -955,6 +955,22 @@
     "toastZaloSent": "Disalin dan buka Zalo",
     "toastCopied": "Disalin",
     "readyRemindText": "Helo, dobi anda (tag {tag}) sudah siap. Sila datang ambil!",
-    "overdueRemindText": "Helo, dobi anda ({tag}) sudah lama di kedai. Sila datang ambil segera!"
+    "overdueRemindText": "Helo, dobi anda ({tag}) sudah lama di kedai. Sila datang ambil segera!",
+    "progressQc": "Kawalan kualiti",
+    "sendQc": "Hantar QC",
+    "qcPass": "QC lulus",
+    "rewash": "Basuh semula",
+    "rewashConfirm": "Masih bernoda — basuh semula?",
+    "rewashDefault": "Masih bernoda",
+    "tagLabel": "Kod tiket",
+    "orderDetail": "Butiran",
+    "status": "Status",
+    "dispatchPickup": "Ambil",
+    "dispatchDeliver": "Hantar",
+    "dispatchInStore": "Di kedai",
+    "careTypeLabel": "Jenis penjagaan",
+    "qcNoteLabel": "Nota QC",
+    "total": "Jumlah",
+    "debt": "Hutang"
   }
 }

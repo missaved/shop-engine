@@ -955,6 +955,22 @@
     "toastZaloSent": "Đã sao chép và mở Zalo",
     "toastCopied": "Đã sao chép",
     "readyRemindText": "Anh/Chị ơi, đồ của mình (mã {tag}) giặt xong rồi ạ. Anh/Chị qua cửa hàng lấy nhé!",
-    "overdueRemindText": "Anh/Chị ơi, đồ (mã {tag}) của mình để cửa hàng hơi lâu rồi ạ. Anh/Chị sớm qua lấy giúp em nhé!"
+    "overdueRemindText": "Anh/Chị ơi, đồ (mã {tag}) của mình để cửa hàng hơi lâu rồi ạ. Anh/Chị sớm qua lấy giúp em nhé!",
+    "progressQc": "Đang kiểm tra",
+    "sendQc": "Gửi kiểm tra",
+    "qcPass": "Qua kiểm tra",
+    "rewash": "Giặt lại",
+    "rewashConfirm": "Đồ còn bẩn — giặt lại?",
+    "rewashDefault": "Còn vết bẩn",
+    "tagLabel": "Mã phiếu",
+    "orderDetail": "Chi tiết đồ",
+    "status": "Trạng thái",
+    "dispatchPickup": "Lấy tận nơi",
+    "dispatchDeliver": "Giao tận nhà",
+    "dispatchInStore": "Tại cửa hàng",
+    "careTypeLabel": "Loại chăm sóc",
+    "qcNoteLabel": "Ghi chú kiểm tra",
+    "total": "Tổng cộng",
+    "debt": "Còn nợ"
   }
 }

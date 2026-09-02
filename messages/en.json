@@ -955,6 +955,22 @@
     "toastZaloSent": "Copied and opened Zalo",
     "toastCopied": "Copied",
     "readyRemindText": "Hi, your laundry (tag {tag}) is ready. Please come pick it up!",
-    "overdueRemindText": "Hi, your laundry ({tag}) has been here a while. Please come pick it up soon!"
+    "overdueRemindText": "Hi, your laundry ({tag}) has been here a while. Please come pick it up soon!",
+    "progressQc": "QC",
+    "sendQc": "Send to QC",
+    "qcPass": "QC passed",
+    "rewash": "Re-wash",
+    "rewashConfirm": "Still stained — re-wash?",
+    "rewashDefault": "Stains remain",
+    "tagLabel": "Ticket code",
+    "orderDetail": "Items",
+    "status": "Status",
+    "dispatchPickup": "Pickup",
+    "dispatchDeliver": "Delivery",
+    "dispatchInStore": "In-store",
+    "careTypeLabel": "Care type",
+    "qcNoteLabel": "QC note",
+    "total": "Total",
+    "debt": "Debt"
   }
 }

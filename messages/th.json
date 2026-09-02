@@ -955,6 +955,22 @@
     "toastZaloSent": "คัดลอกและเปิด Zalo แล้ว",
     "toastCopied": "คัดลอกแล้ว",
     "readyRemindText": "สวัสดีครับ ผ้าของคุณ (tag {tag}) ซักเสร็จแล้ว มารับได้เลยครับ!",
-    "overdueRemindText": "สวัสดีครับ ผ้า ({tag}) อยู่ที่ร้านนานแล้ว มารับเร็ว ๆ นะครับ!"
+    "overdueRemindText": "สวัสดีครับ ผ้า ({tag}) อยู่ที่ร้านนานแล้ว มารับเร็ว ๆ นะครับ!",
+    "progressQc": "ตรวจคุณภาพ",
+    "sendQc": "ส่งตรวจ",
+    "qcPass": "ผ่านตรวจ",
+    "rewash": "ซักใหม่",
+    "rewashConfirm": "ยังมีคราบ — ซักใหม่?",
+    "rewashDefault": "ยังมีคราบ",
+    "tagLabel": "รหัสคูปอง",
+    "orderDetail": "รายละเอียด",
+    "status": "สถานะ",
+    "dispatchPickup": "รับถึงที่",
+    "dispatchDeliver": "ส่งถึงบ้าน",
+    "dispatchInStore": "ที่ร้าน",
+    "careTypeLabel": "ประเภทการดูแล",
+    "qcNoteLabel": "หมายเหตุ QC",
+    "total": "รวม",
+    "debt": "ยอดค้าง"
   }
 }

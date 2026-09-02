@@ -5,9 +5,9 @@ import { useTranslations } from 'next-intl'
 import {
   getLaundryOrders,
   advanceLaundryStatus,
+  rewashLaundry,
   cancelLaundryOrder,
   settleLaundry,
-  markDebtPaid,
   type LaundryProgress,
 } from '@/lib/laundry-actions'
 import { formatPrice } from '@/lib/format'
@@ -16,12 +16,13 @@ import type { LaundryOrderPlain, LaundryShop } from './types'
 const STATUS_KEY: Record<string, string> = {
   washing_pending: 'progressWashingPending',
   washing: 'progressWashing',
+  qc: 'progressQc',
   ready: 'progressReady',
   collected: 'progressCollected',
 }
 
-// 推进序列 + 下一态
-const SEQ: LaundryProgress[] = ['washing_pending', 'washing', 'ready', 'collected']
+// 推进序列 + 下一态（含质检 QC / 再洗）
+const SEQ: LaundryProgress[] = ['washing_pending', 'washing', 'qc', 'ready', 'collected']
 const nextOf = (s: string | null): LaundryProgress | null => {
   const i = s ? SEQ.indexOf(s as LaundryProgress) : 0
   return SEQ[i + 1] ?? null
@@ -70,7 +71,7 @@ export function LaundryOrders({ currency, shop }: { currency: string; shop: Laun
   return (
     <section className="flex flex-col gap-3">
       <div className="flex gap-1 rounded-xl bg-zinc-100 p-1 dark:bg-zinc-800">
-        {(['all', 'washing', 'ready', 'collected'] as const).map((k) => (
+        {(['all', 'washing', 'qc', 'ready', 'collected'] as const).map((k) => (
           <button
             key={k}
             onClick={() => setTab(k)}
@@ -138,14 +139,23 @@ export function LaundryOrders({ currency, shop }: { currency: string; shop: Laun
               )}
 
               <div className="mt-2 flex items-center gap-2">
-                {/* 推进 / 结单 */}
+                {/* 推进 / 结单（含质检） */}
+                {next === 'qc' && (
+                  <button
+                    onClick={() => run(() => advanceLaundryStatus(o.id, 'qc'), o.id)}
+                    disabled={busyId === o.id}
+                    className="flex-1 rounded-lg bg-blue-500 px-2 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+                  >
+                    {t('sendQc')}
+                  </button>
+                )}
                 {next === 'ready' && (
                   <button
                     onClick={() => run(() => advanceLaundryStatus(o.id, 'ready'), o.id)}
                     disabled={busyId === o.id}
                     className="flex-1 rounded-lg bg-amber-500 px-2 py-1.5 text-sm font-medium text-white disabled:opacity-50"
                   >
-                    {t('markReady')}
+                    {t('qcPass')}
                   </button>
                 )}
                 {next === 'collected' && (
@@ -164,6 +174,18 @@ export function LaundryOrders({ currency, shop }: { currency: string; shop: Laun
                     className="flex-1 rounded-lg bg-blue-500 px-2 py-1.5 text-sm font-medium text-white disabled:opacity-50"
                   >
                     {t('startWashing')}
+                  </button>
+                )}
+                {/* 质检未过 → 再洗 */}
+                {o.laundryStatus === 'qc' && (
+                  <button
+                    onClick={() => {
+                      if (confirm(t('rewashConfirm'))) run(() => rewashLaundry(o.id, t('rewashDefault')), o.id)
+                    }}
+                    disabled={busyId === o.id}
+                    className="rounded-lg border border-red-300 px-2 py-1.5 text-sm font-medium text-red-600 disabled:opacity-50 dark:border-red-800"
+                  >
+                    {t('rewash')}
                   </button>
                 )}
 

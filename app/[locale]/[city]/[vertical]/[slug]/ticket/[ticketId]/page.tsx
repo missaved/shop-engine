@@ -7,6 +7,7 @@ import { ShopUnavailableView } from '@/components/shop/shop-unavailable'
 import { parseVerticalSlug } from '@/lib/vertical'
 import { parseCitySlug } from '@/lib/city'
 import { MotoTicket } from '@/components/moto/moto-ticket'
+import { LaundryTicket } from '@/components/laundry/laundry-ticket'
 
 type PaymentConfig = {
   bank?: { bankName?: string; accountNo?: string; accountName?: string }
@@ -19,9 +20,9 @@ export default async function MotoTicketPage({
   params: Promise<{ locale: string; city: string; vertical: string; slug: string; ticketId: string }>
 }) {
   const { slug, city: cityParam, vertical: verticalParam, ticketId } = await params
-  // 凭证路由为 moto 专属：URL 垂直段必须是 moto，否则 404（收敛 assertMotoShop）
+  // 凭证路由：MOTO 与 LAUNDRY 共享此页（按 vertical 分流渲染）；其余垂直 404
   const vertical = parseVerticalSlug(verticalParam)
-  if (vertical !== 'MOTO') notFound()
+  if (vertical !== 'MOTO' && vertical !== 'LAUNDRY') notFound()
   const city = parseCitySlug(cityParam)
   if (!city) notFound()
   let shop: Awaited<ReturnType<typeof getShopBySlug>>
@@ -41,8 +42,44 @@ export default async function MotoTicketPage({
   })
   if (!order) notFound()
   const cfg = (order.config as Record<string, unknown> | null) ?? {}
-  // 凭证页不展示取消单（cancel 时 motoProgress 置空，此处一并拦截）
-  if (order.status === 'CANCELLED' || !cfg.motoProgress) notFound()
+  // 凭证页不展示取消单（cancel 时进度置空）
+  const progressKey = vertical === 'LAUNDRY' ? 'laundryStatus' : 'motoProgress'
+  if (order.status === 'CANCELLED' || !cfg[progressKey]) notFound()
+
+  // P1 LAUNDRY 凭证：垂直共享同一路由，按 vertical 分流渲染
+  if (vertical === 'LAUNDRY') {
+    const payment = (shop.config as { payment?: PaymentConfig | null })?.payment ?? null
+    return (
+      <LaundryTicket
+        vertical={shop.vertical}
+        slug={slug}
+        city={city}
+        ticketId={ticketId}
+        shopName={shop.name}
+        currency={shop.currency}
+        payment={payment}
+        order={{
+          displayNo: order.displayNo,
+          status: order.status,
+          progress: (cfg.laundryStatus as string) ?? null,
+          tagCode: (cfg.tagCode as string) ?? null,
+          mode: (cfg.laundryMode as string) ?? 'kg',
+          kg: cfg.kg != null ? Number(cfg.kg) : null,
+          itemNames: Array.isArray(cfg.itemNames) ? (cfg.itemNames as string[]) : [],
+          itemDetail: Array.isArray(cfg.itemDetail) ? (cfg.itemDetail as { name: string; count: number; mark?: string }[]) : [],
+          careType: (cfg.careType as string) ?? null,
+          qcNote: (cfg.qcNote as string) ?? null,
+          dispatchType: (cfg.dispatchType as string) ?? null,
+          address: (cfg.address as string) ?? null,
+          deliveryFee: cfg.deliveryFee != null ? Number(cfg.deliveryFee) : null,
+          photos: Array.isArray(cfg.photo) ? (cfg.photo as string[]) : [],
+          total: order.total.toString(),
+          paidAmount: order.paidAmount.toString(),
+          createdAt: order.createdAt.toISOString(),
+        }}
+      />
+    )
+  }
 
   // 车辆品牌型号（PII 最小化：只取 brand/model，不取 ownerName/ownerPhone）
   const vehicle =

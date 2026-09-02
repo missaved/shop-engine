@@ -1015,6 +1015,7 @@
     "searchCustomer": "ค้นหาลูกค้า",
     "orderCount": "คำสั่ง",
     "spend": "การใช้จ่าย",
-    "readyBadge": "พร้อมรับ"
+    "readyBadge": "พร้อมรับ",
+    "reorder": "สั่งใหม่"
   }
 }

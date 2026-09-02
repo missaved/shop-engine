@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
 import { requireOwner, requireCustomer } from '@/lib/dal'
+import { auth } from '@/auth'
 import { assertShopOwned } from '@/lib/tenant'
 import { normalizePhone } from '@/lib/phone'
 import { vietnamTodayStartUtc } from '@/lib/dashboard-orders'
@@ -661,4 +662,34 @@ export async function getLaundryCustomers() {
       }
     })
   return rows
+}
+
+// —— 顾客自助复购：同店/同顾客/同项目(快照) → 新建一张"待洗"单 ——
+export async function reorderLaundry(orderId: string) {
+  const session = await auth()
+  const cid = session?.user?.customerId
+  if (!cid) throw new Error('请先登录')
+  const src = await prisma.order.findFirst({ where: { id: orderId, customerId: cid } })
+  if (!src) throw new Error('订单不存在')
+  const srcCfg = (src.config as Record<string, unknown> | null) ?? {}
+  const order = await prisma.$transaction(async (tx) => {
+    await lockShopForUpdate(tx, src.shopId)
+    const { orderNo, displayNo } = await nextOrderNumbers(tx, src.shopId, 'LD')
+    const shopInTx = await tx.shop.findUnique({ where: { id: src.shopId }, select: { config: true } })
+    const cfg = (shopInTx?.config ?? {}) as Record<string, unknown>
+    const curSeq = Number(cfg.laundryTagSeq ?? 0)
+    const nextSeq = Math.min(curSeq + 1, TAG_CODE_MAX)
+    const code = `#${String(nextSeq).padStart(3, '0')}`
+    await tx.shop.update({ where: { id: src.shopId }, data: { config: { ...cfg, laundryTagSeq: nextSeq } as Prisma.InputJsonValue } })
+    return tx.order.create({
+      data: {
+        orderNo, displayNo, shopId: src.shopId, status: 'PENDING',
+        items: src.items as Prisma.InputJsonValue, total: src.total, paidAmount: 0,
+        customerId: cid, customerPhone: src.customerPhone, customerName: src.customerName, note: src.note,
+        config: { ...srcCfg, laundryStatus: 'washing_pending', tagCode: code, ticketId: crypto.randomUUID() } as Prisma.InputJsonValue,
+      },
+    })
+  })
+  revalidatePath('/[locale]/dashboard', 'page')
+  return { displayNo: order.displayNo, tagCode: (order.config as { tagCode?: string } | null)?.tagCode ?? null }
 }

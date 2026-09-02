@@ -1015,6 +1015,7 @@
     "searchCustomer": "Search customer",
     "orderCount": "Orders",
     "spend": "Spend",
-    "readyBadge": "Ready"
+    "readyBadge": "Ready",
+    "reorder": "Reorder"
   }
 }

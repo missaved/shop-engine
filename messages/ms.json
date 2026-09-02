@@ -1015,6 +1015,7 @@
     "searchCustomer": "Cari pelanggan",
     "orderCount": "Pesanan",
     "spend": "Perbelanjaan",
-    "readyBadge": "Sedia"
+    "readyBadge": "Sedia",
+    "reorder": "Pesan semula"
   }
 }

@@ -1015,6 +1015,7 @@
     "searchCustomer": "搜客户(手机号/姓名)",
     "orderCount": "订单",
     "spend": "消费",
-    "readyBadge": "可取"
+    "readyBadge": "可取",
+    "reorder": "再来一次"
   }
 }

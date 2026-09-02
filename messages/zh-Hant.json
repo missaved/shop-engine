@@ -1015,6 +1015,7 @@
     "searchCustomer": "搜客戶(手機號/姓名)",
     "orderCount": "訂單",
     "spend": "消費",
-    "readyBadge": "可取"
+    "readyBadge": "可取",
+    "reorder": "再來一次"
   }
 }

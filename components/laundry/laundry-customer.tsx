@@ -2,7 +2,7 @@
 // 顾客侧洗衣视图：登录顾客看本店储值/卡/订单进度（requireCustomer 已守卫）
 import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { getMyLaundry } from '@/lib/laundry-actions'
+import { getMyLaundry, reorderLaundry } from '@/lib/laundry-actions'
 import { formatPrice } from '@/lib/format'
 
 type Order = { id: string; displayNo: string; status: string; laundryStatus: string; tagCode: string | null; total: string; paidAmount: string; createdAt: string }
@@ -14,11 +14,15 @@ const STATUS_KEY: Record<string, string> = {
 export function LaundryCustomer({ slug, currency, shopName }: { slug: string; currency: string; shopName: string }) {
   const t = useTranslations('laundry')
   const [data, setData] = useState<{ customer: { balance: string; phone: string | null; name: string | null; cards: { id: string; type: string; name: string | null; remainingCount: number | null; balance: string }[] } | null; orders: Order[] } | null>(null)
+  const reload = async () => {
+    try { setData(await getMyLaundry(slug, 'LAUNDRY', 'hcm')) } catch { /* ignore */ }
+  }
 
-  useEffect(() => {
-    getMyLaundry(slug, 'LAUNDRY', 'hcm').then(setData).catch(() => {})
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slug])
+  useEffect(() => { reload() }, [slug])
+
+  const doReorder = async (id: string) => {
+    try { await reorderLaundry(id); await reload() } catch { /* ignore */ }
+  }
 
   return (
     <main className="mx-auto flex w-full max-w-lg flex-col gap-4 px-5 py-6">
@@ -65,6 +69,7 @@ export function LaundryCustomer({ slug, currency, shopName }: { slug: string; cu
                   <div key={s} className={`h-1 flex-1 rounded ${['washing_pending', 'washing', 'qc', 'ready', 'collected'].indexOf(o.laundryStatus) >= i ? 'bg-amber-500' : 'bg-zinc-200 dark:bg-zinc-700'}`} />
                 ))}
               </div>
+              <button onClick={() => doReorder(o.id)} className="mt-2 w-full rounded-lg bg-zinc-900 py-1.5 text-xs font-semibold text-white">{t('reorder')}</button>
             </div>
           )
         })}

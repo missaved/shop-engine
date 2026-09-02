@@ -52,9 +52,8 @@ def main():
         ctx = new_context(p, tag="laund5", locale="vi-VN"); page = login(ctx)
         page.goto(f"{BASE}/vi/dashboard", wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
         page.get_by_text("Tạo đơn").first.click(timeout=ACTION_TIMEOUT); page.wait_for_load_state("domcontentloaded", timeout=NAV_TIMEOUT); page.wait_for_timeout(1000)
-        # 按件模式：加 1 件 Áo sơ mi
-        page.get_by_text("Theo món").first.click(timeout=ASSERT_TIMEOUT); page.wait_for_timeout(500)
-        page.get_by_text("Áo sơ mi").first.click(timeout=ASSERT_TIMEOUT)  # 选中该件(若有) 实际是 qty stepper 区域，用 + 需要精确定位
+        # 公斤模式（默认，无需选件）：点 5kg
+        page.get_by_text("5kg").first.click(timeout=ASSERT_TIMEOUT); page.wait_for_timeout(400)
         # 填顾客号（使扣储值可用）
         page.get_by_placeholder("SĐT khách").first.fill(CUST_PHONE, timeout=ASSERT_TIMEOUT)
         page.get_by_text(re.compile("Gửi đơn")).first.click(timeout=ACTION_TIMEOUT); page.wait_for_timeout(2500)

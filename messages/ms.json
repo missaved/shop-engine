@@ -1000,6 +1000,12 @@
     "claimResolutionRefund": "Bayar balik",
     "claimResolutionPartial": "Sebahagian",
     "claimResolutionCredit": "Ke kredit",
-    "myOrders": "Pesanan saya"
+    "myOrders": "Pesanan saya",
+    "payByBalance": "Guna baki",
+    "payByCard": "Guna kad kiraan",
+    "noCustomer": "Pelanggan tidak dijumpai",
+    "noCard": "Tiada kad kiraan",
+    "addClaim": "Tambah tuntutan",
+    "claimConfirm": "Rekod tuntutan?"
   }
 }

@@ -1000,6 +1000,12 @@
     "claimResolutionRefund": "Hoàn tiền",
     "claimResolutionPartial": "Hoàn một phần",
     "claimResolutionCredit": "Cộng thẻ",
-    "myOrders": "Đơn của tôi"
+    "myOrders": "Đơn của tôi",
+    "payByBalance": "Trừ số dư",
+    "payByCard": "Trừ thẻ lần",
+    "noCustomer": "Chưa có khách",
+    "noCard": "Khách chưa có thẻ lần",
+    "addClaim": "Ghi bồi thường",
+    "claimConfirm": "Xác nhận ghi bồi thường?"
   }
 }

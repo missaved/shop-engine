@@ -8,6 +8,10 @@ import {
   rewashLaundry,
   cancelLaundryOrder,
   settleLaundry,
+  getLaundryCustomer,
+  payLaundryByBalance,
+  payLaundryByCard,
+  addLaundryClaim,
   type LaundryProgress,
 } from '@/lib/laundry-actions'
 import { formatPrice } from '@/lib/format'
@@ -230,6 +234,51 @@ export function LaundryOrders({ currency, shop }: { currency: string; shop: Laun
                     </button>
                   </div>
                 )}
+
+                {/* P3 会员结账（扣储值 / 扣次卡）+ 记理赔 */}
+                {o.customerPhone && debt > 0 && (
+                  <button
+                    onClick={() =>
+                      run(async () => {
+                        const c = await getLaundryCustomer(o.customerPhone!)
+                        if (!c) throw new Error(t('noCustomer'))
+                        await payLaundryByBalance(o.id, c.id, Number(o.total) - Number(o.paidAmount))
+                      }, o.id)
+                    }
+                    disabled={busyId === o.id}
+                    className="rounded-lg bg-violet-600 px-2 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+                  >
+                    {t('payByBalance')}
+                  </button>
+                )}
+                {o.customerPhone && debt > 0 && (
+                  <button
+                    onClick={() =>
+                      run(async () => {
+                        const c = await getLaundryCustomer(o.customerPhone!)
+                        const card = c?.cards?.find((x) => x.type === 'count' && (x.remainingCount ?? 0) > 0)
+                        if (!card) throw new Error(t('noCard'))
+                        await payLaundryByCard(o.id, card.id)
+                      }, o.id)
+                    }
+                    disabled={busyId === o.id}
+                    className="rounded-lg bg-violet-600 px-2 py-1.5 text-sm font-medium text-white disabled:opacity-50"
+                  >
+                    {t('payByCard')}
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    if (confirm(t('claimConfirm')))
+                      run(async () => {
+                        await addLaundryClaim(o.id, { type: 'damage', resolution: 'refund', amount: debt })
+                      }, o.id)
+                  }}
+                  disabled={busyId === o.id}
+                  className="rounded-lg border border-red-300 px-2 py-1.5 text-sm font-medium text-red-600 disabled:opacity-50 dark:border-red-800"
+                >
+                  {t('addClaim')}
+                </button>
 
                 {/* 取消 */}
                 {o.laundryStatus !== 'collected' && (

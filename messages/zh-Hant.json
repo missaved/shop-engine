@@ -1000,6 +1000,12 @@
     "claimResolutionRefund": "退款",
     "claimResolutionPartial": "部分退",
     "claimResolutionCredit": "轉儲值",
-    "myOrders": "我的訂單"
+    "myOrders": "我的訂單",
+    "payByBalance": "扣儲值",
+    "payByCard": "扣次卡",
+    "noCustomer": "未找到顧客",
+    "noCard": "顧客無次數卡",
+    "addClaim": "記理賠",
+    "claimConfirm": "確認記錄理賠?"
   }
 }

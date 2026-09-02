@@ -1000,6 +1000,12 @@
     "claimResolutionRefund": "Refund",
     "claimResolutionPartial": "Partial",
     "claimResolutionCredit": "To credit",
-    "myOrders": "My orders"
+    "myOrders": "My orders",
+    "payByBalance": "Use balance",
+    "payByCard": "Use count card",
+    "noCustomer": "Customer not found",
+    "noCard": "No count card",
+    "addClaim": "Add claim",
+    "claimConfirm": "Record claim?"
   }
 }

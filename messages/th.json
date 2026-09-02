@@ -1000,6 +1000,12 @@
     "claimResolutionRefund": "คืนเงิน",
     "claimResolutionPartial": "คืนบางส่วน",
     "claimResolutionCredit": "เข้าเครดิต",
-    "myOrders": "คำสั่งของฉัน"
+    "myOrders": "คำสั่งของฉัน",
+    "payByBalance": "ใช้ยอดคงเหลือ",
+    "payByCard": "ใช้บัตรครั้ง",
+    "noCustomer": "ไม่พบลูกค้า",
+    "noCard": "ไม่มีบัตรครั้ง",
+    "addClaim": "เพิ่มการเคลม",
+    "claimConfirm": "บันทึกการเคลม?"
   }
 }

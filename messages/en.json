@@ -821,7 +821,9 @@
     "logout": "Log out",
     "logoutConfirm": "Log out?",
     "openHours": "Open hours",
-    "description": "Description"
+    "description": "Description",
+    "shopDescZh": "Intro (CN)",
+    "shopDescEn": "Intro (EN)"
   },
   "customer": {
     "title": "Vehicle lookup",
@@ -1077,6 +1079,8 @@
     "activeCount": "Active {n}",
     "searchPlaceholder": "Search order/code/phone",
     "search": "Search",
-    "histEmpty": "Not found"
+    "histEmpty": "Not found",
+    "shopDescZh": "Intro (CN)",
+    "shopDescEn": "Intro (EN)"
   }
 }

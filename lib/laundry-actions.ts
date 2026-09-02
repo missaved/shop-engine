@@ -344,6 +344,8 @@ export async function saveLaundrySettings(input: {
   careSurcharge?: number
   openHours?: string
   description?: string
+  descriptionZh?: string
+  descriptionEn?: string
 }) {
   const user = await requireOwner()
   const shop = await prisma.shop.findUnique({ where: { id: user.shopId } })
@@ -360,6 +362,8 @@ export async function saveLaundrySettings(input: {
         ...(input.careSurcharge != null ? { careSurcharge: input.careSurcharge } : {}),
         ...(input.openHours != null ? { openHours: input.openHours } : {}),
         ...(input.description != null ? { description: input.description } : {}),
+        ...(input.descriptionZh != null ? { descriptionZh: input.descriptionZh } : {}),
+        ...(input.descriptionEn != null ? { descriptionEn: input.descriptionEn } : {}),
       } as Prisma.InputJsonValue,
     },
   })

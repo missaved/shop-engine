@@ -821,7 +821,9 @@
     "logout": "ออกจากระบบ",
     "logoutConfirm": "ออกจากระบบ?",
     "openHours": "เวลาทำการ",
-    "description": "รายละเอียด"
+    "description": "รายละเอียด",
+    "shopDescZh": "รายละเอียด (CN)",
+    "shopDescEn": "รายละเอียด (EN)"
   },
   "customer": {
     "title": "ตรวจสอบรถ",
@@ -1077,6 +1079,8 @@
     "activeCount": "กำลังดำเนินการ {n}",
     "searchPlaceholder": "ค้นหาคำสั่งซื้อ/รหัส/เบอร์",
     "search": "ค้นหา",
-    "histEmpty": "ไม่พบ"
+    "histEmpty": "ไม่พบ",
+    "shopDescZh": "รายละเอียด (CN)",
+    "shopDescEn": "รายละเอียด (EN)"
   }
 }

@@ -821,7 +821,9 @@
     "logout": "Log keluar",
     "logoutConfirm": "Log keluar?",
     "openHours": "Waktu buka",
-    "description": "Penerangan"
+    "description": "Penerangan",
+    "shopDescZh": "Penerangan (CN)",
+    "shopDescEn": "Penerangan (EN)"
   },
   "customer": {
     "title": "Semak kenderaan",
@@ -1077,6 +1079,8 @@
     "activeCount": "Aktif {n}",
     "searchPlaceholder": "Cari pesanan/kod/telefon",
     "search": "Cari",
-    "histEmpty": "Tiada"
+    "histEmpty": "Tiada",
+    "shopDescZh": "Penerangan (CN)",
+    "shopDescEn": "Penerangan (EN)"
   }
 }

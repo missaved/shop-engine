@@ -68,6 +68,8 @@ export function MotoSettings({ shop, onSaved, onLogout }: { shop: MotoShop; onSa
   const [phone, setPhone] = useState(shop.phone ?? '')
   const [openHours, setOpenHours] = useState((shop.config as { openHours?: string } | null)?.openHours ?? '')
   const [description, setDescription] = useState((shop.config as { description?: string } | null)?.description ?? '')
+  const [descriptionZh, setDescriptionZh] = useState((shop.config as { descriptionZh?: string } | null)?.descriptionZh ?? '')
+  const [descriptionEn, setDescriptionEn] = useState((shop.config as { descriptionEn?: string } | null)?.descriptionEn ?? '')
 
   const loadCatalog = useCallback(async () => {
     try {
@@ -121,7 +123,7 @@ export function MotoSettings({ shop, onSaved, onLogout }: { shop: MotoShop; onSa
           wallet: { momoQrUrl: momoQr, zalopayQrUrl: zalopayQr },
         },
       })
-      await saveMotoShopInfo({ name, phone, openHours, description })
+      await saveMotoShopInfo({ name, phone, openHours, description, descriptionZh, descriptionEn })
       show(t('toastSaved'))
       onSaved?.()
     } catch {
@@ -355,6 +357,14 @@ export function MotoSettings({ shop, onSaved, onLogout }: { shop: MotoShop; onSa
           <label className="col-span-2 flex flex-col gap-1 text-xs text-zinc-500">
             {t('description')}
             <textarea className={`${inputCls} resize-none`} value={description} onChange={(e) => setDescription(e.target.value)} rows={2} />
+          </label>
+          <label className="col-span-2 flex flex-col gap-1 text-xs text-zinc-500">
+            {t('shopDescZh')}
+            <textarea className={`${inputCls} resize-none`} value={descriptionZh} onChange={(e) => setDescriptionZh(e.target.value)} rows={2} />
+          </label>
+          <label className="col-span-2 flex flex-col gap-1 text-xs text-zinc-500">
+            {t('shopDescEn')}
+            <textarea className={`${inputCls} resize-none`} value={descriptionEn} onChange={(e) => setDescriptionEn(e.target.value)} rows={2} />
           </label>
         </div>
         {/* M6a 6.2 店码：客户入口链接（只读文本，发车主扫码查进度；MVP 不引 qrcode 依赖） */}

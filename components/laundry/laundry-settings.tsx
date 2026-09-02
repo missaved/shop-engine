@@ -28,6 +28,8 @@ export function LaundrySettings({ shop, onLogout }: { shop: LaundryShop; onLogou
   // 店面信息（营业时间/简介）
   const [openHours, setOpenHours] = useState((shop.config as { openHours?: string } | null)?.openHours ?? '')
   const [description, setDescription] = useState((shop.config as { description?: string } | null)?.description ?? '')
+  const [descriptionZh, setDescriptionZh] = useState((shop.config as { descriptionZh?: string } | null)?.descriptionZh ?? '')
+  const [descriptionEn, setDescriptionEn] = useState((shop.config as { descriptionEn?: string } | null)?.descriptionEn ?? '')
   const [extraCategories, setExtraCategories] = useState<{ key: string; name: string; price: number; unit: string }[]>(
     shop.config?.extraCategories ?? [],
   )
@@ -83,6 +85,8 @@ export function LaundrySettings({ shop, onLogout }: { shop: LaundryShop; onLogou
         },
         openHours,
         description,
+        descriptionZh,
+        descriptionEn,
       })
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
@@ -115,6 +119,14 @@ export function LaundrySettings({ shop, onLogout }: { shop: LaundryShop; onLogou
           <label className="flex flex-col gap-1 text-xs text-zinc-500">
             {t('description')}
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} className="rounded-lg border border-zinc-200 px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-800" />
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-zinc-500">
+            {t('shopDescZh')}
+            <textarea value={descriptionZh} onChange={(e) => setDescriptionZh(e.target.value)} rows={2} className="rounded-lg border border-zinc-200 px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-800" />
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-zinc-500">
+            {t('shopDescEn')}
+            <textarea value={descriptionEn} onChange={(e) => setDescriptionEn(e.target.value)} rows={2} className="rounded-lg border border-zinc-200 px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-800" />
           </label>
         </div>
       </section>

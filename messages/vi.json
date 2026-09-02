@@ -821,7 +821,9 @@
     "logout": "Đăng xuất",
     "logoutConfirm": "Đăng xuất?",
     "openHours": "Giờ mở cửa",
-    "description": "Giới thiệu"
+    "description": "Giới thiệu",
+    "shopDescZh": "Giới thiệu (Trung)",
+    "shopDescEn": "Giới thiệu (Anh)"
   },
   "customer": {
     "title": "Tra cứu xe",
@@ -1077,6 +1079,8 @@
     "activeCount": "Đang xử lý {n}",
     "searchPlaceholder": "Tìm đơn (mã/SĐT/khách)",
     "search": "Tìm",
-    "histEmpty": "Không tìm thấy"
+    "histEmpty": "Không tìm thấy",
+    "shopDescZh": "Giới thiệu (Trung)",
+    "shopDescEn": "Giới thiệu (Anh)"
   }
 }

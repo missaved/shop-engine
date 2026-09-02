@@ -821,7 +821,9 @@
     "logout": "退出登录",
     "logoutConfirm": "确认退出登录?",
     "openHours": "营业时间",
-    "description": "店铺简介"
+    "description": "店铺简介",
+    "shopDescZh": "中文简介",
+    "shopDescEn": "英文简介"
   },
   "customer": {
     "title": "车辆查询",
@@ -1077,6 +1079,8 @@
     "activeCount": "进行中 {n}",
     "searchPlaceholder": "搜索单号/取件码/手机号",
     "search": "搜索",
-    "histEmpty": "未找到"
+    "histEmpty": "未找到",
+    "shopDescZh": "中文简介",
+    "shopDescEn": "英文简介"
   }
 }

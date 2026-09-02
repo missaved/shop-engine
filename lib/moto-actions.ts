@@ -692,7 +692,7 @@ export async function saveMotoSettings(input: {
 }
 
 // 店铺基础信息：店名 / 联系电话（moto 设置页「店铺信息」）
-export async function saveMotoShopInfo(input: { name?: string; phone?: string | null; openHours?: string; description?: string }) {
+export async function saveMotoShopInfo(input: { name?: string; phone?: string | null; openHours?: string; description?: string; descriptionZh?: string; descriptionEn?: string }) {
   const user = await requireOwner()
   const shop = await prisma.shop.findUnique({ where: { id: user.shopId } })
   if (!shop) throw new Error('shop not found')
@@ -706,6 +706,8 @@ export async function saveMotoShopInfo(input: { name?: string; phone?: string | 
         ...cfg,
         ...(input.openHours != null ? { openHours: input.openHours } : {}),
         ...(input.description != null ? { description: input.description } : {}),
+        ...(input.descriptionZh != null ? { descriptionZh: input.descriptionZh } : {}),
+        ...(input.descriptionEn != null ? { descriptionEn: input.descriptionEn } : {}),
       } as Prisma.InputJsonValue,
     },
   })

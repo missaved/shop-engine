@@ -6,7 +6,6 @@ import {
   getLaundryOrders,
   advanceLaundryStatus,
   rewashLaundry,
-  cancelLaundryOrder,
   settleLaundry,
   getLaundryCustomer,
   payLaundryByBalance,
@@ -329,19 +328,6 @@ export function LaundryOrders({ currency, shop }: { currency: string; shop: Laun
                 >
                   {t('addClaim')}
                 </button>
-
-                {/* 取消 */}
-                {o.laundryStatus !== 'collected' && (
-                  <button
-                    onClick={() => {
-                      if (confirm(t('confirmCancel'))) run(() => cancelLaundryOrder(o.id), o.id)
-                    }}
-                    disabled={busyId === o.id}
-                    className="rounded-lg border border-zinc-200 px-2 py-1.5 text-sm text-zinc-500 disabled:opacity-50 dark:border-zinc-700"
-                  >
-                    {t('cancel')}
-                  </button>
-                )}
               </div>
             </div>
           )

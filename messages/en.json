@@ -985,6 +985,14 @@
     "careDryClean": "Dry clean",
     "careHandWash": "Hand wash",
     "careDelicate": "Delicate",
-    "itemMark": "Stain note"
+    "itemMark": "Stain note",
+    "membershipTitle": "Membership & cards",
+    "lookup": "Look up",
+    "balance": "Balance",
+    "topup": "Top up",
+    "cardCountName": "Count card",
+    "cardCreditName": "Credit card",
+    "times": "times",
+    "openCard": "Open card"
   }
 }

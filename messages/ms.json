@@ -985,6 +985,14 @@
     "careDryClean": "Cuci kering",
     "careHandWash": "Cuci tangan",
     "careDelicate": "Halus",
-    "itemMark": "Nota kotoran"
+    "itemMark": "Nota kotoran",
+    "membershipTitle": "Keahlian & kad",
+    "lookup": "Cari",
+    "balance": "Baki",
+    "topup": "Tambah nilai",
+    "cardCountName": "Kad kiraan",
+    "cardCreditName": "Kad kredit",
+    "times": "kali",
+    "openCard": "Buka kad"
   }
 }

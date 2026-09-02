@@ -985,6 +985,14 @@
     "careDryClean": "干洗",
     "careHandWash": "手洗",
     "careDelicate": "精细洗",
-    "itemMark": "污渍点"
+    "itemMark": "污渍点",
+    "membershipTitle": "会员与卡",
+    "lookup": "查找",
+    "balance": "余额",
+    "topup": "充值",
+    "cardCountName": "次数卡",
+    "cardCreditName": "储值卡",
+    "times": "次",
+    "openCard": "开卡"
   }
 }

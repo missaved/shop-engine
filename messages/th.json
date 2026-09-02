@@ -985,6 +985,14 @@
     "careDryClean": "ซักแห้ง",
     "careHandWash": "ซักมือ",
     "careDelicate": "ซักถนอม",
-    "itemMark": "หมายเหตุคราบ"
+    "itemMark": "หมายเหตุคราบ",
+    "membershipTitle": "สมาชิกและบัตร",
+    "lookup": "ค้นหา",
+    "balance": "ยอดคงเหลือ",
+    "topup": "เติมเงิน",
+    "cardCountName": "บัตรครั้ง",
+    "cardCreditName": "บัตรเครดิต",
+    "times": "ครั้ง",
+    "openCard": "เปิดบัตร"
   }
 }

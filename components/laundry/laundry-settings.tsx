@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { saveLaundrySettings } from '@/lib/laundry-actions'
 import type { LaundryRates, LaundryShop, ShoeStyle } from './types'
+import { LaundryMembership } from './laundry-membership'
 
 const SHOE_STYLES: ShoeStyle[] = ['sport', 'leather', 'suede']
 
@@ -208,6 +209,8 @@ export function LaundrySettings({ shop }: { shop: LaundryShop }) {
           ))}
         </div>
       </div>
+
+      <LaundryMembership currency={shop.currency} />
 
       <button
         onClick={save}

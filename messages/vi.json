@@ -985,6 +985,14 @@
     "careDryClean": "Giặt hấp",
     "careHandWash": "Giặt tay",
     "careDelicate": "Đồ mỏng",
-    "itemMark": "Ghi chú vết bẩn"
+    "itemMark": "Ghi chú vết bẩn",
+    "membershipTitle": "Thành viên & thẻ",
+    "lookup": "Tra cứu",
+    "balance": "Số dư",
+    "topup": "Nạp tiền",
+    "cardCountName": "Thẻ lần",
+    "cardCreditName": "Thẻ nạp",
+    "times": "lần",
+    "openCard": "Mở thẻ"
   }
 }

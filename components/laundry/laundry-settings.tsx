@@ -23,6 +23,9 @@ export function LaundrySettings({ shop, onLogout }: { shop: LaundryShop; onLogou
   })
   const [deliveryFee, setDeliveryFee] = useState(shop.config?.deliveryFee ?? 0)
   const [careSurcharge, setCareSurcharge] = useState(shop.config?.careSurcharge ?? 0)
+  // 店面信息（营业时间/简介）
+  const [openHours, setOpenHours] = useState((shop.config as { openHours?: string } | null)?.openHours ?? '')
+  const [description, setDescription] = useState((shop.config as { description?: string } | null)?.description ?? '')
   const [extraCategories, setExtraCategories] = useState<{ key: string; name: string; price: number; unit: string }[]>(
     shop.config?.extraCategories ?? [],
   )
@@ -76,6 +79,8 @@ export function LaundrySettings({ shop, onLogout }: { shop: LaundryShop; onLogou
           bank: { bankName, accountNo, accountName },
           wallet: { momoQrUrl: momoQr, zalopayQrUrl: zalopayQr },
         },
+        openHours,
+        description,
       })
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
@@ -97,6 +102,20 @@ export function LaundrySettings({ shop, onLogout }: { shop: LaundryShop; onLogou
       <LaundryRevenueCard currency={shop.currency} />
       {/* 营业开关（打烊/营业） */}
       <ShopOpenToggle open={shop.open} />
+      {/* 店面信息（营业时间/简介） */}
+      <section className="flex flex-col gap-2 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <h2 className="text-base font-semibold text-zinc-700 dark:text-zinc-200">{t('settingsShop')}</h2>
+        <div className="grid grid-cols-1 gap-3">
+          <label className="flex flex-col gap-1 text-xs text-zinc-500">
+            {t('openHours')}
+            <input value={openHours} onChange={(e) => setOpenHours(e.target.value)} placeholder="07:00-20:30" className="rounded-lg border border-zinc-200 px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-800" />
+          </label>
+          <label className="flex flex-col gap-1 text-xs text-zinc-500">
+            {t('description')}
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} className="rounded-lg border border-zinc-200 px-2 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-800" />
+          </label>
+        </div>
+      </section>
       {/* 公斤单价 */}
       <div className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
         <div className="mb-2 text-sm font-semibold text-zinc-700 dark:text-zinc-200">{t('kgRateTitle')}</div>

@@ -1058,6 +1058,9 @@
     "paymentHint": "Dipaparkan pada tiket untuk pelanggan bayar",
     "language": "Bahasa",
     "logout": "Log keluar",
-    "logoutConfirm": "Log keluar?"
+    "logoutConfirm": "Log keluar?",
+    "settingsShop": "Maklumat kedai",
+    "openHours": "Waktu buka",
+    "description": "Penerangan"
   }
 }

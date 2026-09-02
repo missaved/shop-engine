@@ -1058,6 +1058,9 @@
     "paymentHint": "Shown on the ticket for customers to transfer/scan",
     "language": "Language",
     "logout": "Log out",
-    "logoutConfirm": "Log out?"
+    "logoutConfirm": "Log out?",
+    "settingsShop": "Shop info",
+    "openHours": "Open hours",
+    "description": "Description"
   }
 }

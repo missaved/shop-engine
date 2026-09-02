@@ -1058,6 +1058,9 @@
     "paymentHint": "显示在凭证页供顾客转账/扫码付款",
     "language": "语言",
     "logout": "退出登录",
-    "logoutConfirm": "确认退出登录?"
+    "logoutConfirm": "确认退出登录?",
+    "settingsShop": "店面信息",
+    "openHours": "营业时间",
+    "description": "店铺简介"
   }
 }

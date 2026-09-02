@@ -1058,6 +1058,9 @@
     "paymentHint": "Hiển thị trên phiếu để khách thanh toán chuyển khoản/quét QR",
     "language": "Ngôn ngữ",
     "logout": "Đăng xuất",
-    "logoutConfirm": "Đăng xuất?"
+    "logoutConfirm": "Đăng xuất?",
+    "settingsShop": "Thông tin tiệm",
+    "openHours": "Giờ mở cửa",
+    "description": "Giới thiệu"
   }
 }

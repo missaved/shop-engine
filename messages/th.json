@@ -1058,6 +1058,9 @@
     "paymentHint": "แสดงบนใบเสร็จให้ลูกค้าโอน/สแกนจ่าย",
     "language": "ภาษา",
     "logout": "ออกจากระบบ",
-    "logoutConfirm": "ออกจากระบบ?"
+    "logoutConfirm": "ออกจากระบบ?",
+    "settingsShop": "ข้อมูลร้าน",
+    "openHours": "เวลาทำการ",
+    "description": "รายละเอียด"
   }
 }

@@ -154,7 +154,9 @@ export async function createLaundryOrder(input: {
           orderNo,
           displayNo,
           shopId: user.shopId,
-          status: PROGRESS_STATUS[PROGRESS_SEQ[0]] as 'PENDING',
+          // 老板开单（Tạo đơn）跳过顾客「submitted → 交接确认」：直接进入 washing_pending「待开始洗」，
+          // 老板下一步即「Bắt đầu giặt」；交接确认仅保留给顾客自助下单。
+          status: PROGRESS_STATUS['washing_pending'] as 'PENDING',
           items: details as Prisma.InputJsonValue,
           total,
           paidAmount,
@@ -164,7 +166,7 @@ export async function createLaundryOrder(input: {
           idempotencyKey,
           config: {
             laundryMode: input.mode,
-            laundryStatus: PROGRESS_SEQ[0],
+            laundryStatus: 'washing_pending',
             tagCode: code,
             ticketId: crypto.randomUUID(),
             ...(input.mode === 'kg' ? { kg: Math.max(Number(input.kg ?? 0), 0) } : {}),

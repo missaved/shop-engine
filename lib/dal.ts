@@ -8,6 +8,7 @@ import { redirect as intlRedirect } from '@/i18n/navigation'
 import { redirect } from 'next/navigation'
 import { type Vertical, verticalSlug } from './vertical'
 import { type CitySlug, DEFAULT_CITY } from './city'
+import { getVerticalModule } from './vertical-modules'
 
 // 当前登录用户（未登录返回 null），React cache 保证单次渲染只查一次
 export const getCurrentUser = cache(async () => {
@@ -62,7 +63,10 @@ export const requireCustomer = cache(
     const cid = session?.user?.customerId
     if (!cid) {
       const locale = await getLocale()
-      intlRedirect({ href: `/${city}/${verticalSlug(vertical)}/${slug}/lookup`, locale })
+      // 顾客单店入口按垂直模块声明（customerEntry）：LAUNDRY='storefront'、MOTO='lookup'。
+      // 修正：未登录不能硬编码跳 /lookup（会把洗衣店踢进摩托「Tra cứu xe」模板）。
+      const entry = getVerticalModule(vertical).customerEntry ?? 'lookup'
+      intlRedirect({ href: `/${city}/${verticalSlug(vertical)}/${slug}/${entry}`, locale })
       throw new Error('unreachable: redirect did not throw')
     }
     return session.user

@@ -1010,6 +1010,10 @@
     "shopTagline": "Dobi · Cuci kering · Kasut",
     "lookupTitle": "Semak pesanan",
     "tagPlaceholder": "Kod tiket (cth #001)",
-    "orderNo": "No. Pesanan"
+    "orderNo": "No. Pesanan",
+    "customers": "Pelanggan",
+    "searchCustomer": "Cari pelanggan",
+    "orderCount": "Pesanan",
+    "spend": "Perbelanjaan"
   }
 }

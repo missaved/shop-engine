@@ -627,3 +627,38 @@ export async function lookupLaundryOrder(slug: string, phone: string, tagCode: s
     createdAt: order.createdAt.toISOString(),
   }
 }
+
+// —— 老板侧客户台账（客户管理）：本店顾客列表 + 余额 + 卡 + 消费聚合 ——
+export async function getLaundryCustomers() {
+  const user = await requireOwner()
+  const sid = user.shopId
+  // 本店有订单/卡/余额的顾客（按 customerPhone 或 customerId）；工厂无 Customer 行的也归并到 phone
+  const orders = await prisma.order.groupBy({
+    by: ['customerPhone'],
+    where: { shopId: sid, customerPhone: { not: null } },
+    _count: { id: true },
+    _sum: { total: true, paidAmount: true },
+    orderBy: { customerPhone: 'asc' },
+  })
+  const customers = await prisma.customer.findMany({
+    where: { orders: { some: { shopId: sid } } },
+    include: { cards: { where: { shopId: sid } } },
+  })
+  // phone → customer 行
+  const byPhone = new Map(customers.map((c) => [c.phone, c]))
+  const rows = orders
+    .filter((o) => o.customerPhone)
+    .map((o) => {
+      const c = byPhone.get(o.customerPhone!) as (typeof customers)[number] | undefined
+      return {
+        phone: o.customerPhone!,
+        name: c?.name ?? null,
+        balance: String(Number(c?.balance ?? 0)),
+        orderCount: o._count.id,
+        spend: String(Number(o._sum.total ?? 0)),
+        paid: String(Number(o._sum.paidAmount ?? 0)),
+        cards: (c?.cards ?? []).map((k) => ({ id: k.id, type: k.type, name: k.name, remainingCount: k.remainingCount, balance: String(Number(k.balance)) })),
+      }
+    })
+  return rows
+}

@@ -1010,6 +1010,10 @@
     "shopTagline": "洗衣·干洗·洗鞋",
     "lookupTitle": "查单进度",
     "tagPlaceholder": "取件码(如 #001)",
-    "orderNo": "单号"
+    "orderNo": "单号",
+    "customers": "客户",
+    "searchCustomer": "搜客户(手机号/姓名)",
+    "orderCount": "订单",
+    "spend": "消费"
   }
 }

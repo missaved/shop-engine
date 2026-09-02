@@ -1010,6 +1010,10 @@
     "shopTagline": "ซักรีด·ซักแห้ง·รองเท้า",
     "lookupTitle": "ตรวจสอบคำสั่ง",
     "tagPlaceholder": "รหัสคูปอง (เช่น #001)",
-    "orderNo": "เลขที่คำสั่ง"
+    "orderNo": "เลขที่คำสั่ง",
+    "customers": "ลูกค้า",
+    "searchCustomer": "ค้นหาลูกค้า",
+    "orderCount": "คำสั่ง",
+    "spend": "การใช้จ่าย"
   }
 }

@@ -1010,6 +1010,10 @@
     "shopTagline": "Giặt ủi · Giặt sấy · Giặt giày",
     "lookupTitle": "Tra cứu tiến độ",
     "tagPlaceholder": "Mã phiếu (vd #001)",
-    "orderNo": "Mã đơn"
+    "orderNo": "Mã đơn",
+    "customers": "Khách hàng",
+    "searchCustomer": "Tìm khách (SĐT/tên)",
+    "orderCount": "Đơn",
+    "spend": "Chi tiêu"
   }
 }

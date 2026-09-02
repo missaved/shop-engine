@@ -1010,6 +1010,10 @@
     "shopTagline": "Laundry · Dry clean · Shoes",
     "lookupTitle": "Track order",
     "tagPlaceholder": "Ticket code (e.g. #001)",
-    "orderNo": "Order No."
+    "orderNo": "Order No.",
+    "customers": "Customers",
+    "searchCustomer": "Search customer",
+    "orderCount": "Orders",
+    "spend": "Spend"
   }
 }

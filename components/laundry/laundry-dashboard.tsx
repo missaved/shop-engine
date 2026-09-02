@@ -9,6 +9,7 @@ import { LaundryOrders } from './laundry-orders'
 import { LaundryReminderList } from './laundry-reminder-list'
 import { QuickLaundry } from './quick-laundry'
 import { LaundrySettings } from './laundry-settings'
+import { LaundryCustomers } from './laundry-customers'
 
 export function LaundryDashboard({
   shop,
@@ -21,7 +22,7 @@ export function LaundryDashboard({
 }) {
   const t = useTranslations('laundry')
   const td = useTranslations('dashboard')
-  const [view, setView] = useState<'home' | 'order' | 'settings'>('home')
+  const [view, setView] = useState<'home' | 'order' | 'settings' | 'customers'>('home')
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-col gap-4 px-6 py-4">
@@ -59,6 +60,13 @@ export function LaundryDashboard({
               >
                 ⚙️
               </button>
+              <button
+                onClick={() => setView('customers')}
+                aria-label={t('customers')}
+                className="rounded-full border border-zinc-200 px-2.5 py-1.5 text-sm dark:border-zinc-700"
+              >
+                👥
+              </button>
             </>
           )}
           <button
@@ -85,6 +93,7 @@ export function LaundryDashboard({
       )}
 
       {view === 'settings' && <LaundrySettings shop={shop} />}
+      {view === 'customers' && <LaundryCustomers currency={shop.currency} />}
     </main>
   )
 }

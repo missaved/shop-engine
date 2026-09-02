@@ -1069,6 +1069,7 @@
     "openHours": "营业时间",
     "description": "店铺简介",
     "collectAll": "收全款",
-    "roundToK": "抹零(到千)"
+    "roundToK": "抹零(到千)",
+    "copySummary": "复制摘要"
   }
 }

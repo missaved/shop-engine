@@ -82,6 +82,25 @@ export function LaundryOrders({ currency, shop }: { currency: string; shop: Laun
     }
   }
 
+  // A3 次要行：复制摘要 / 发Zalo（复用 laundry-ticket 文案结构）
+  const [copiedId, setCopiedId] = useState<string | null>(null)
+  const buildText = (o: LaundryOrderPlain) => {
+    const tag = o.tagCode ? `(${o.tagCode})` : ''
+    return [shop.name, o.displayNo, o.customerName || o.customerPhone, formatPrice(Number(o.total), currency)].filter(Boolean).join(' · ')
+  }
+  const copySummary = (o: LaundryOrderPlain) => {
+    const text = buildText(o)
+    ;(navigator.clipboard?.writeText?.(text) ?? Promise.reject()).catch(() => {
+      const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta)
+    }).finally(() => setCopiedId(o.id))
+    setTimeout(() => setCopiedId(null), 1500)
+  }
+  const sendZalo = (o: LaundryOrderPlain) => {
+    copySummary(o)
+    const phone = (o.customerPhone ?? '').replace(/[^0-9+]/g, '')
+    if (phone) window.open(`https://zalo.me/${phone}`, '_blank')
+  }
+
   // 终态(已结单)只显示当天（UTC+7 业务日，vs food 一致）；有开关可查看全部历史
   const isTodayVN = (iso: string) => {
     const off = 7 * 60 * 60 * 1000
@@ -321,6 +340,11 @@ export function LaundryOrders({ currency, shop }: { currency: string; shop: Laun
                     )}
                   </>
                 )}
+                {/* A3 次要行：复制摘要 / 发Zalo */}
+                <div className="flex w-full gap-2">
+                  <button onClick={() => copySummary(o)} className="flex-1 rounded-md border border-zinc-300 px-2 py-1.5 text-xs min-h-[44px] text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">{copiedId === o.id ? '✓' : t('copySummary')}</button>
+                  <button onClick={() => sendZalo(o)} className="flex-1 rounded-md border border-zinc-300 px-2 py-1.5 text-xs min-h-[44px] text-zinc-600 dark:border-zinc-700 dark:text-zinc-300">{t('sendZalo')}</button>
+                </div>
               </div>
             </div>
           )

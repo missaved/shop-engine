@@ -1069,6 +1069,7 @@
     "openHours": "Open hours",
     "description": "Description",
     "collectAll": "Collect full",
-    "roundToK": "Round to 1000đ"
+    "roundToK": "Round to 1000đ",
+    "copySummary": "Copy summary"
   }
 }

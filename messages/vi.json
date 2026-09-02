@@ -1069,6 +1069,7 @@
     "openHours": "Giờ mở cửa",
     "description": "Giới thiệu",
     "collectAll": "Thu đủ",
-    "roundToK": "Bỏ lẻ (làm tròn 1000đ)"
+    "roundToK": "Bỏ lẻ (làm tròn 1000đ)",
+    "copySummary": "Sao chép tóm tắt"
   }
 }

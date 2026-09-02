@@ -1069,6 +1069,7 @@
     "openHours": "เวลาทำการ",
     "description": "รายละเอียด",
     "collectAll": "เก็บเต็ม",
-    "roundToK": "ปัดเป็น 1000đ"
+    "roundToK": "ปัดเป็น 1000đ",
+    "copySummary": "คัดลอกสรุป"
   }
 }

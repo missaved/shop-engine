@@ -971,6 +971,20 @@
     "careTypeLabel": "ประเภทการดูแล",
     "qcNoteLabel": "หมายเหตุ QC",
     "total": "รวม",
-    "debt": "ยอดค้าง"
+    "debt": "ยอดค้าง",
+    "dispatchFeeTitle": "รับ-ส่ง & ค่าเสริม",
+    "deliveryFee": "ค่าส่ง",
+    "careSurcharge": "ค่าดูแล(%)",
+    "extraCategories": "หมวดเสริม",
+    "catNamePlaceholder": "ชื่อ(รีด,ผ้าห่ม…)",
+    "dispatchType": "วิธีรับ",
+    "address": "ที่อยู่",
+    "timeWindow": "ช่วงเวลา",
+    "careType": "ประเภทการดูแล",
+    "careNormal": "ซักปกติ",
+    "careDryClean": "ซักแห้ง",
+    "careHandWash": "ซักมือ",
+    "careDelicate": "ซักถนอม",
+    "itemMark": "หมายเหตุคราบ"
   }
 }

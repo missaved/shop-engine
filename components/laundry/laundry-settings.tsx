@@ -16,6 +16,11 @@ export function LaundrySettings({ shop }: { shop: LaundryShop }) {
     shoeBase: init?.shoeBase ?? { sport: 0, leather: 0, suede: 0 },
     shoeAddons: init?.shoeAddons ?? [],
   })
+  const [deliveryFee, setDeliveryFee] = useState(shop.config?.deliveryFee ?? 0)
+  const [careSurcharge, setCareSurcharge] = useState(shop.config?.careSurcharge ?? 0)
+  const [extraCategories, setExtraCategories] = useState<{ key: string; name: string; price: number; unit: string }[]>(
+    shop.config?.extraCategories ?? [],
+  )
   const [saved, setSaved] = useState(false)
   const [busy, setBusy] = useState(false)
 
@@ -48,7 +53,14 @@ export function LaundrySettings({ shop }: { shop: LaundryShop }) {
         },
         shoeAddons: rates.shoeAddons.filter((a) => a.name.trim()).map((a) => ({ name: a.name.trim(), price: Number(a.price) || 0 })),
       }
-      await saveLaundrySettings({ laundryRates: clean })
+      await saveLaundrySettings({
+        laundryRates: clean,
+        deliveryFee: Number(deliveryFee) || 0,
+        careSurcharge: Number(careSurcharge) || 0,
+        extraCategories: extraCategories
+          .filter((c) => c.name.trim())
+          .map((c) => ({ key: c.name.trim(), name: c.name.trim(), price: Number(c.price) || 0, unit: c.unit || 'lần' })),
+      })
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
     } catch {
@@ -161,6 +173,40 @@ export function LaundrySettings({ shop }: { shop: LaundryShop }) {
             </button>
           </div>
         ))}
+      </div>
+
+      {/* P2 取送/增值/护理加价 */}
+      <div className="rounded-xl border border-zinc-200 p-4 dark:border-zinc-800">
+        <div className="mb-2 text-sm font-semibold text-zinc-700 dark:text-zinc-200">{t('dispatchFeeTitle')}</div>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex items-center justify-between gap-2 text-sm">
+            <span className="text-zinc-500">{t('deliveryFee')}</span>
+            <input value={deliveryFee} onChange={(e) => setDeliveryFee(Number(e.target.value) || 0)} inputMode="decimal" className="w-20 rounded-lg border border-zinc-200 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800" />
+          </div>
+          <div className="flex items-center justify-between gap-2 text-sm">
+            <span className="text-zinc-500">{t('careSurcharge')}</span>
+            <input value={careSurcharge} onChange={(e) => setCareSurcharge(Number(e.target.value) || 0)} inputMode="decimal" className="w-20 rounded-lg border border-zinc-200 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800" />
+          </div>
+        </div>
+        {/* 额外服务类目（熨烫/被褥/真皮/窗帘…） */}
+        <div className="mt-3">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-sm text-zinc-600 dark:text-zinc-300">{t('extraCategories')}</span>
+            <button
+              onClick={() => setExtraCategories((a) => [...a, { key: '', name: '', price: 0, unit: 'lần' }])}
+              className="text-xs font-semibold text-amber-600"
+            >
+              + {t('addRow')}
+            </button>
+          </div>
+          {extraCategories.map((c, i) => (
+            <div key={i} className="mb-2 flex items-center gap-2">
+              <input value={c.name} onChange={(e) => setExtraCategories((a) => a.map((x, idx) => (idx === i ? { ...x, name: e.target.value, key: e.target.value } : x)))} placeholder={t('catNamePlaceholder')} className="flex-1 rounded-lg border border-zinc-200 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800" />
+              <input value={c.price} onChange={(e) => setExtraCategories((a) => a.map((x, idx) => (idx === i ? { ...x, price: Number(e.target.value) || 0 } : x)))} inputMode="decimal" placeholder="0" className="w-24 rounded-lg border border-zinc-200 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800" />
+              <button onClick={() => setExtraCategories((a) => a.filter((_, idx) => idx !== i))} className="text-zinc-400">✕</button>
+            </div>
+          ))}
+        </div>
       </div>
 
       <button

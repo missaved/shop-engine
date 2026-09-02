@@ -971,6 +971,20 @@
     "careTypeLabel": "Loại chăm sóc",
     "qcNoteLabel": "Ghi chú kiểm tra",
     "total": "Tổng cộng",
-    "debt": "Còn nợ"
+    "debt": "Còn nợ",
+    "dispatchFeeTitle": "Giao nhận & phụ phí",
+    "deliveryFee": "Phí giao",
+    "careSurcharge": "Phụ phí chăm sóc (%)",
+    "extraCategories": "Danh mục thêm",
+    "catNamePlaceholder": "Tên (ủi, chăn...)",
+    "dispatchType": "Cách nhận",
+    "address": "Địa chỉ",
+    "timeWindow": "Khung giờ",
+    "careType": "Loại chăm sóc",
+    "careNormal": "Giặt thường",
+    "careDryClean": "Giặt hấp",
+    "careHandWash": "Giặt tay",
+    "careDelicate": "Đồ mỏng",
+    "itemMark": "Ghi chú vết bẩn"
   }
 }

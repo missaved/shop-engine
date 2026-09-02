@@ -28,6 +28,9 @@ export type LaundryShop = {
     laundryRates?: LaundryRates
     laundryTagSeq?: number
     payment?: Record<string, unknown>
+    deliveryFee?: number
+    extraCategories?: { key: string; name: string; price: number; unit: string }[]
+    careSurcharge?: number
   } | null
 }
 

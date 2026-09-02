@@ -971,6 +971,20 @@
     "careTypeLabel": "护理类型",
     "qcNoteLabel": "质检备注",
     "total": "合计",
-    "debt": "欠款"
+    "debt": "欠款",
+    "dispatchFeeTitle": "取送与增值",
+    "deliveryFee": "配送费",
+    "careSurcharge": "护理加价(%)",
+    "extraCategories": "额外类目",
+    "catNamePlaceholder": "类目名(熨烫/被褥…)",
+    "dispatchType": "取送方式",
+    "address": "地址",
+    "timeWindow": "时间窗",
+    "careType": "护理类型",
+    "careNormal": "普通洗",
+    "careDryClean": "干洗",
+    "careHandWash": "手洗",
+    "careDelicate": "精细洗",
+    "itemMark": "污渍点"
   }
 }

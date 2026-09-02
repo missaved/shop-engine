@@ -329,13 +329,25 @@ export async function markDebtPaid(orderId: string) {
 export async function saveLaundrySettings(input: {
   laundryRates: LaundryRates
   payment?: Record<string, unknown>
+  deliveryFee?: number
+  extraCategories?: { key: string; name: string; price: number; unit: string }[]
+  careSurcharge?: number
 }) {
   const user = await requireOwner()
   const shop = await prisma.shop.findUnique({ where: { id: user.shopId } })
   const cfg = (shop?.config ?? {}) as Record<string, unknown>
   await prisma.shop.update({
     where: { id: user.shopId },
-    data: { config: { ...cfg, laundryRates: input.laundryRates, ...(input.payment ? { payment: input.payment } : {}) } as Prisma.InputJsonValue },
+    data: {
+      config: {
+        ...cfg,
+        laundryRates: input.laundryRates,
+        ...(input.payment ? { payment: input.payment } : {}),
+        ...(input.deliveryFee != null ? { deliveryFee: input.deliveryFee } : {}),
+        ...(input.extraCategories ? { extraCategories: input.extraCategories } : {}),
+        ...(input.careSurcharge != null ? { careSurcharge: input.careSurcharge } : {}),
+      } as Prisma.InputJsonValue,
+    },
   })
   revalidatePath('/[locale]/dashboard', 'page')
 }

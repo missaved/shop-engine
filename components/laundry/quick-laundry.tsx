@@ -23,6 +23,10 @@ export function QuickLaundry({ shop, onDone, onBack }: { shop: LaundryShop; onDo
   const [note, setNote] = useState('')
   const [discount, setDiscount] = useState(0)
   const [paid, setPaid] = useState(0)
+  const [dispatchType, setDispatchType] = useState<'in_store' | 'pickup' | 'deliver'>('in_store')
+  const [dispatchAddress, setDispatchAddress] = useState('')
+  const [timeWindow, setTimeWindow] = useState('')
+  const [careType, setCareType] = useState('')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
 
@@ -68,6 +72,10 @@ export function QuickLaundry({ shop, onDone, onBack }: { shop: LaundryShop; onDo
         note: note || undefined,
         discount,
         paidAmount: paid,
+        careType: careType || undefined,
+        dispatchType: dispatchType !== 'in_store' ? dispatchType : undefined,
+        address: dispatchType !== 'in_store' ? dispatchAddress || undefined : undefined,
+        timeWindow: timeWindow || undefined,
         idempotencyKey,
       })
       onDone()
@@ -183,6 +191,44 @@ export function QuickLaundry({ shop, onDone, onBack }: { shop: LaundryShop; onDo
           )}
         </div>
       )}
+
+      {/* P2 取送 + 护理类型 */}
+      <div className="flex flex-col gap-3 rounded-xl border border-zinc-200 p-3 dark:border-zinc-800">
+        <div className="flex gap-2">
+          {(['in_store', 'pickup', 'deliver'] as const).map((d) => (
+            <button
+              key={d}
+              onClick={() => setDispatchType(d)}
+              className={`flex-1 rounded-lg py-1.5 text-xs font-semibold ${
+                dispatchType === d ? 'bg-amber-500 text-white' : 'bg-zinc-100 dark:bg-zinc-800'
+              }`}
+            >
+              {d === 'in_store' ? t('dispatchInStore') : d === 'pickup' ? t('dispatchPickup') : t('dispatchDeliver')}
+            </button>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-zinc-500">{t('careType')}</span>
+            <select value={careType} onChange={(e) => setCareType(e.target.value)} className="flex-1 rounded-lg border border-zinc-200 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800">
+              <option value="">{t('careNormal')}</option>
+              <option value="dryclean">{t('careDryClean')}</option>
+              <option value="handwash">{t('careHandWash')}</option>
+              <option value="delicate">{t('careDelicate')}</option>
+            </select>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-zinc-500">{t('timeWindow')}</span>
+            <input value={timeWindow} onChange={(e) => setTimeWindow(e.target.value)} placeholder="08-12h" className="flex-1 rounded-lg border border-zinc-200 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800" />
+          </div>
+        </div>
+        {dispatchType !== 'in_store' && (
+          <input value={dispatchAddress} onChange={(e) => setDispatchAddress(e.target.value)} placeholder={t('address')} className="rounded-lg border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800" />
+        )}
+        {dispatchType !== 'in_store' && (shop.config?.deliveryFee ?? 0) > 0 && (
+          <p className="text-xs text-zinc-500">{t('deliveryFee')}: +{formatPrice(shop.config?.deliveryFee ?? 0, shop.currency)}</p>
+        )}
+      </div>
 
       {/* 顾客 + 备注 */}
       <div className="grid grid-cols-1 gap-2">

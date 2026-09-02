@@ -971,6 +971,20 @@
     "careTypeLabel": "Care type",
     "qcNoteLabel": "QC note",
     "total": "Total",
-    "debt": "Debt"
+    "debt": "Debt",
+    "dispatchFeeTitle": "Pickup & surcharges",
+    "deliveryFee": "Delivery fee",
+    "careSurcharge": "Care surcharge (%)",
+    "extraCategories": "Extra categories",
+    "catNamePlaceholder": "Name (ironing, blanket...)",
+    "dispatchType": "Pickup type",
+    "address": "Address",
+    "timeWindow": "Time window",
+    "careType": "Care type",
+    "careNormal": "Regular",
+    "careDryClean": "Dry clean",
+    "careHandWash": "Hand wash",
+    "careDelicate": "Delicate",
+    "itemMark": "Stain note"
   }
 }

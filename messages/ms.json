@@ -971,6 +971,20 @@
     "careTypeLabel": "Jenis penjagaan",
     "qcNoteLabel": "Nota QC",
     "total": "Jumlah",
-    "debt": "Hutang"
+    "debt": "Hutang",
+    "dispatchFeeTitle": "Ambil & caj",
+    "deliveryFee": "Yuran penghantaran",
+    "careSurcharge": "Caj penjagaan (%)",
+    "extraCategories": "Kategori tambahan",
+    "catNamePlaceholder": "Nama (seterika, selimut...)",
+    "dispatchType": "Jenis ambil",
+    "address": "Alamat",
+    "timeWindow": "Jadual masa",
+    "careType": "Jenis penjagaan",
+    "careNormal": "Biasa",
+    "careDryClean": "Cuci kering",
+    "careHandWash": "Cuci tangan",
+    "careDelicate": "Halus",
+    "itemMark": "Nota kotoran"
   }
 }

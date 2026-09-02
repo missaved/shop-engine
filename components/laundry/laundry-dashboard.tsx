@@ -72,7 +72,7 @@ export function LaundryDashboard({
         <>
           <button
             onClick={() => setView('order')}
-            className="w-full rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 py-3 text-sm font-semibold text-white shadow-md shadow-amber-500/20"
+            className="self-start rounded-full bg-amber-500 px-4 py-2 text-sm font-medium text-white shadow-sm"
           >
             + {t('createOrder')}
           </button>

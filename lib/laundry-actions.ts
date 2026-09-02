@@ -5,7 +5,7 @@
 import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
-import { requireOwner } from '@/lib/dal'
+import { requireOwner, requireCustomer } from '@/lib/dal'
 import { assertShopOwned } from '@/lib/tenant'
 import { normalizePhone } from '@/lib/phone'
 import { vietnamTodayStartUtc } from '@/lib/dashboard-orders'
@@ -569,4 +569,35 @@ export async function addLaundryClaim(orderId: string, input: { type: 'damage' |
     },
   })
   revalidatePath('/[locale]/dashboard', 'page')
+}
+
+// —— P3 顾客侧：登录顾客看本店洗衣订单 + 储值 + 卡（requireCustomer 已守卫）——
+export async function getMyLaundry(slug: string, vertical: 'LAUNDRY', city: string) {
+  const user = await requireCustomer(slug, vertical, city as never)
+  const cid = user.customerId
+  const customer = await prisma.customer.findUnique({
+    where: { id: cid },
+    select: { id: true, phone: true, name: true, balance: true, cards: { where: { shopId: (await prisma.shop.findUnique({ where: { slug }, select: { id: true } }))?.id ?? '' } } },
+  })
+  const shop = await prisma.shop.findUnique({ where: { slug }, select: { id: true } })
+  const orders = await prisma.order.findMany({
+    where: { shopId: shop?.id, customerId: cid },
+    orderBy: { createdAt: 'desc' },
+    take: 50,
+  })
+  return {
+    customer: customer
+      ? {
+          id: customer.id, phone: customer.phone, name: customer.name,
+          balance: String(Number(customer.balance)),
+          cards: customer.cards.map((c) => ({ id: c.id, type: c.type, name: c.name, remainingCount: c.remainingCount, balance: String(Number(c.balance)) })),
+        }
+      : null,
+    orders: orders.map((o) => {
+      const cfg = (o.config as Record<string, unknown> | null) ?? {}
+      return {
+        id: o.id, displayNo: o.displayNo, status: o.status, laundryStatus: (cfg.laundryStatus as string) ?? '', tagCode: (cfg.tagCode as string) ?? null, total: String(Number(o.total)), paidAmount: String(Number(o.paidAmount)), createdAt: o.createdAt.toISOString(),
+      }
+    }),
+  }
 }

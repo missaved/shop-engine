@@ -999,6 +999,7 @@
     "claimTypeLost": "遺失",
     "claimResolutionRefund": "退款",
     "claimResolutionPartial": "部分退",
-    "claimResolutionCredit": "轉儲值"
+    "claimResolutionCredit": "轉儲值",
+    "myOrders": "我的訂單"
   }
 }

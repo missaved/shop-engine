@@ -999,6 +999,7 @@
     "claimTypeLost": "Lost",
     "claimResolutionRefund": "Refund",
     "claimResolutionPartial": "Partial",
-    "claimResolutionCredit": "To credit"
+    "claimResolutionCredit": "To credit",
+    "myOrders": "My orders"
   }
 }

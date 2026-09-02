@@ -999,6 +999,7 @@
     "claimTypeLost": "Hilang",
     "claimResolutionRefund": "Bayar balik",
     "claimResolutionPartial": "Sebahagian",
-    "claimResolutionCredit": "Ke kredit"
+    "claimResolutionCredit": "Ke kredit",
+    "myOrders": "Pesanan saya"
   }
 }

@@ -6,6 +6,7 @@ import { requireCustomer } from '@/lib/dal'
 import { parseVerticalSlug } from '@/lib/vertical'
 import { parseCitySlug } from '@/lib/city'
 import { CustomerVehicles } from '@/components/moto/customer-vehicles'
+import { LaundryCustomer } from '@/components/laundry/laundry-customer'
 
 export default async function CustomerMyPage({
   params,
@@ -29,6 +30,10 @@ export default async function CustomerMyPage({
       )
     }
     throw e
+  }
+  // LAUNDRY 顾客侧：登录顾客看本店储值/卡/洗衣订单（与 MOTO CustomerVehicles 分流）
+  if (vertical === 'LAUNDRY') {
+    return <LaundryCustomer slug={slug} currency={shop.currency} shopName={shop.name} />
   }
   return (
     <CustomerVehicles

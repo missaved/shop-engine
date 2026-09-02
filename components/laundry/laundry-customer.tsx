@@ -1,0 +1,62 @@
+'use client'
+// 顾客侧洗衣视图：登录顾客看本店储值/卡/订单进度（requireCustomer 已守卫）
+import { useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
+import { getMyLaundry } from '@/lib/laundry-actions'
+import { formatPrice } from '@/lib/format'
+
+type Order = { id: string; displayNo: string; status: string; laundryStatus: string; tagCode: string | null; total: string; paidAmount: string; createdAt: string }
+
+const STATUS_KEY: Record<string, string> = {
+  washing_pending: 'progressWashingPending', washing: 'progressWashing', qc: 'progressQc', ready: 'progressReady', collected: 'progressCollected',
+}
+
+export function LaundryCustomer({ slug, currency, shopName }: { slug: string; currency: string; shopName: string }) {
+  const t = useTranslations('laundry')
+  const [data, setData] = useState<{ customer: { balance: string; phone: string | null; name: string | null; cards: { id: string; type: string; name: string | null; remainingCount: number | null; balance: string }[] } | null; orders: Order[] } | null>(null)
+
+  useEffect(() => {
+    getMyLaundry(slug, 'LAUNDRY', 'hcm').then(setData).catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug])
+
+  return (
+    <main className="mx-auto flex w-full max-w-lg flex-col gap-4 px-5 py-6">
+      <h1 className="text-lg font-bold">{shopName}</h1>
+      {data?.customer && (
+        <section className="rounded-2xl border border-zinc-200 p-4 dark:border-zinc-800">
+          <div className="flex justify-between text-sm">
+            <span className="text-zinc-500">{t('balance')}</span>
+            <span className="font-bold">{formatPrice(Number(data.customer.balance), currency)}</span>
+          </div>
+          {data.customer.cards.length > 0 && (
+            <ul className="mt-2 text-sm text-zinc-600">
+              {data.customer.cards.map((c) => (
+                <li key={c.id} className="flex justify-between">
+                  <span>{c.name ?? (c.type === 'count' ? t('cardCountName') : t('cardCreditName'))}</span>
+                  <span>{c.type === 'count' ? `${c.remainingCount} ${t('times')}` : formatPrice(Number(c.balance), currency)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
+      <section className="flex flex-col gap-2">
+        <h2 className="text-sm font-semibold text-zinc-700 dark:text-zinc-200">{t('myOrders')}</h2>
+        {data && data.orders.length === 0 && <p className="text-sm text-zinc-400">{t('empty')}</p>}
+        {data?.orders.map((o) => (
+          <div key={o.id} className="rounded-xl border border-zinc-200 p-3 dark:border-zinc-800">
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-semibold">{o.displayNo}</span>
+              <span className="text-xs text-zinc-500">{o.tagCode}</span>
+            </div>
+            <div className="mt-1 flex justify-between text-sm">
+              <span className="text-zinc-500">{t(STATUS_KEY[o.laundryStatus] ?? 'progressReady')}</span>
+              <span className="font-medium">{formatPrice(Number(o.total), currency)}</span>
+            </div>
+          </div>
+        ))}
+      </section>
+    </main>
+  )
+}

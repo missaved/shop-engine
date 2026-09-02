@@ -999,6 +999,7 @@
     "claimTypeLost": "หาย",
     "claimResolutionRefund": "คืนเงิน",
     "claimResolutionPartial": "คืนบางส่วน",
-    "claimResolutionCredit": "เข้าเครดิต"
+    "claimResolutionCredit": "เข้าเครดิต",
+    "myOrders": "คำสั่งของฉัน"
   }
 }

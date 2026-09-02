@@ -999,6 +999,7 @@
     "claimTypeLost": "Mất",
     "claimResolutionRefund": "Hoàn tiền",
     "claimResolutionPartial": "Hoàn một phần",
-    "claimResolutionCredit": "Cộng thẻ"
+    "claimResolutionCredit": "Cộng thẻ",
+    "myOrders": "Đơn của tôi"
   }
 }

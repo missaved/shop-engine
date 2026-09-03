@@ -18,9 +18,7 @@ export function LaundryMembership({ currency }: { currency: string }) {
   const [phone, setPhone] = useState('')
   const [cust, setCust] = useState<Customer | null>(null)
   const [topup, setTopup] = useState(0)
-  const [cardType, setCardType] = useState<'credit' | 'count'>('credit')
   const [cardCount, setCardCount] = useState(5)
-  const [cardAmount, setCardAmount] = useState(0)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
 
@@ -50,7 +48,7 @@ export function LaundryMembership({ currency }: { currency: string }) {
     if (!cust) return
     setBusy(true); setErr('')
     try {
-      await createLaundryCard({ customerId: cust.id, type: cardType, name: cardType === 'count' ? `${cardCount} ${t('cardCountName')}` : t('cardCreditName'), count: cardCount, amount: cardAmount })
+      await createLaundryCard({ customerId: cust.id, name: `${cardCount} ${t('cardCountName')}`, count: cardCount })
       await load(cust.phone ?? '')
     } catch (e) { setErr(e instanceof Error ? e.message : 'err') } finally { setBusy(false) }
   }
@@ -87,15 +85,8 @@ export function LaundryMembership({ currency }: { currency: string }) {
             <button onClick={doTopup} disabled={busy} className="rounded-lg bg-amber-500 py-1.5 text-sm font-semibold text-white disabled:opacity-50">{t('topup')}</button>
           </div>
           <div className="mt-2 flex items-center gap-2 rounded-lg bg-zinc-50 p-2 dark:bg-zinc-900">
-            <select value={cardType} onChange={(e) => setCardType(e.target.value as 'credit' | 'count')} className="rounded-lg border border-zinc-200 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800">
-              <option value="credit">{t('cardCreditName')}</option>
-              <option value="count">{t('cardCountName')}</option>
-            </select>
-            {cardType === 'count' ? (
-              <input value={cardCount} onChange={(e) => setCardCount(Number(e.target.value) || 0)} inputMode="numeric" className="w-16 rounded-lg border border-zinc-200 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800" />
-            ) : (
-              <input value={cardAmount} onChange={(e) => setCardAmount(Number(e.target.value) || 0)} inputMode="decimal" className="w-24 rounded-lg border border-zinc-200 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800" />
-            )}
+            <span className="text-sm text-zinc-500">{t('cardCountName')}</span>
+            <input value={cardCount} onChange={(e) => setCardCount(Number(e.target.value) || 0)} inputMode="numeric" className="w-16 rounded-lg border border-zinc-200 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800" />
             <button onClick={doCard} disabled={busy} className="ml-auto rounded-lg bg-zinc-900 px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-50">{t('openCard')}</button>
           </div>
         </div>

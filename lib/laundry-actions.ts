@@ -8,6 +8,7 @@ import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
 import { requireOwner, requireCustomer } from '@/lib/dal'
 import { auth } from '@/auth'
+import { isShopExpired } from '@/lib/billing'
 import { assertShopOwned } from '@/lib/tenant'
 import { normalizePhone, PHONE_RE } from '@/lib/phone'
 import { isHitLimited, recordHit, type HitOpts } from '@/lib/rate-limit'
@@ -658,18 +659,23 @@ export async function topUpLaundryBalance(customerId: string, amount: number) {
   revalidatePath('/[locale]/dashboard', 'page')
 }
 
-export async function createLaundryCard(input: { customerId: string; type: 'credit' | 'count'; name?: string; count?: number; amount?: number }) {
+// 审计六轮 O 定案：砍 credit 储值卡开卡——credit 卡可开不可用（结账 payLaundryByCard 只认 count）、且与 Customer.balance 钱包
+//（topUpLaundryBalance 充值 → payLaundryByBalance 结账扣，已闭环）重复、收的钱锁死。开卡仅支持次卡 count，储值统一走充值余额。
+// 已开的 credit 历史卡仍保留展示（其余组件 type!=='count' 分支不受影响），只是不再能新开。
+export async function createLaundryCard(input: { customerId: string; name?: string; count: number }) {
   const user = await requireOwner()
   const c = await prisma.customer.findFirst({ where: { id: input.customerId } })
   if (!c) throw new Error('顾客不存在')
+  const count = Math.max(Number(input.count ?? 0), 0)
+  if (count <= 0) throw new Error('开卡次数必须大于 0')
   const card = await prisma.customerCard.create({
     data: {
       customerId: c.id,
       shopId: user.shopId,
-      type: input.type,
+      type: 'count',
       name: input.name?.trim() || null,
-      remainingCount: input.type === 'count' ? Math.max(Number(input.count ?? 0), 0) : null,
-      balance: input.type === 'credit' ? Math.max(Number(input.amount ?? 0), 0) : 0,
+      remainingCount: count,
+      balance: 0,
     },
   })
   revalidatePath('/[locale]/dashboard', 'page')
@@ -870,9 +876,12 @@ export async function submitCustomerLaundryOrder(slug: string, input: {
   careType?: string; dispatchType?: 'in_store' | 'pickup' | 'deliver'; address?: string; timeWindow?: string
   customerPhone?: string; customerName?: string; note?: string; idempotencyKey?: string
 }) {
-  const shop = await prisma.shop.findUnique({ where: { slug }, select: { id: true, config: true, open: true } })
+  const shop = await prisma.shop.findUnique({ where: { slug }, select: { id: true, config: true, open: true, platformSuspended: true, subscribedUntil: true } })
   if (!shop) throw new Error('店铺不存在')
   if (!shop.open) throw new Error('店铺已打烊')
+  // 审计六轮 N：对齐通用下单（createOrder/addItems）——平台停用/订阅到期的店拒绝自助接单（此前只拦打烊，停用店仍能收自助单）
+  if (shop.platformSuspended) throw new Error('店铺暂停营业')
+  if (await isShopExpired(shop)) throw new Error('店铺已到期')
   const rates = readRates(shop)
   if (!rates) throw new Error('店铺未配置计价')
   if (!input.mode) throw new Error('请选择计价模式')

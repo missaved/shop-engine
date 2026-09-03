@@ -79,6 +79,37 @@ export function clearFailures(key: string): void {
   store.delete(key)
 }
 
+// —— 通用动作频率计数（审计四轮 L：与上方「登录失败限流」语义分离）——
+// 用途：公开入口（如顾客匿名自助下单）做「窗口内动作次数」上限，正常动作成功/失败都计一次，防脚本连刷。
+// 独立于失败限流：store 只存 count/resetAt 两个字段、不带 history/bannedUntil 累计封禁路径——
+// 语义上这是「频率闸门」而非「失败封禁」，杜绝未来误把正常成功提交挂进封禁逻辑误伤真客。
+export type HitOpts = { max: number; windowMs: number }
+type HitRec = { count: number; resetAt: number }
+const hitStore = new Map<string, HitRec>()
+
+// 是否已达窗口动作上限（窗口到期自动释放）
+export function isHitLimited(key: string, opts: HitOpts): boolean {
+  const rec = hitStore.get(key)
+  if (!rec) return false
+  const now = Date.now()
+  if (now >= rec.resetAt) {
+    hitStore.delete(key)
+    return false
+  }
+  return rec.count >= opts.max
+}
+
+// 记录一次动作：窗口计数 +1（窗口过期自动重建）
+export function recordHit(key: string, opts: HitOpts): void {
+  const now = Date.now()
+  let rec = hitStore.get(key)
+  if (!rec || now >= rec.resetAt) {
+    rec = { count: 0, resetAt: now + opts.windowMs }
+    hitStore.set(key, rec)
+  }
+  rec.count += 1
+}
+
 // 从 Request 提取客户端 IP（兼容反向代理 x-forwarded-for / x-real-ip）
 export function clientIp(request: Request): string {
   const fwd = request.headers.get('x-forwarded-for')

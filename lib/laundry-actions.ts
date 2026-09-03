@@ -3,12 +3,14 @@
 // 全部 requireOwner + assertShopOwned（租户隔离）；LAUNDRY 专属动作再校验 vertical（laundryStatus 只作用于 laundry 店订单）。
 // 计费复用 MOTO 模式：COUNT 走 order-shared 公共取号；计价从 Shop.config.laundryRates 服务端重算（不信任客户端传价）。
 import { revalidatePath } from 'next/cache'
+import { headers } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
 import { requireOwner, requireCustomer } from '@/lib/dal'
 import { auth } from '@/auth'
 import { assertShopOwned } from '@/lib/tenant'
-import { normalizePhone } from '@/lib/phone'
+import { normalizePhone, PHONE_RE } from '@/lib/phone'
+import { isHitLimited, recordHit, type HitOpts } from '@/lib/rate-limit'
 import { vietnamTodayStartUtc } from '@/lib/dashboard-orders'
 import {
   MAX_ORDER_AMOUNT,
@@ -36,6 +38,11 @@ export type LaundryProgress = (typeof PROGRESS_SEQ)[number]
 // 逾期分级（L_OVERDUE）：>3 天 / >7 天（模块内常量，勿导出——'use server' 文件只允许导出 async 函数）
 const OVERDUE_DAYS_1 = 3
 const OVERDUE_DAYS_2 = 7
+
+// 顾客匿名自助下单限流档（审计四轮 I/L）：游客（无登录会话）按 IP 每 60s 最多 10 次提交；宽松档——
+// 正常自助一单一次，10 次/60s 对单 IP 已极宽松、只挡脚本连刷；有登录会话不入此桶（有账号成本，非匿名刷单面）。
+// L（审计四轮）：改用语义中性的动作频率计数原语（isHitLimited/recordHit，非失败限流），成功提交只作普通窗口计数。
+const ANON_SUBMIT_OPTS: HitOpts = { max: 10, windowMs: 60 * 1000 }
 // 待取催取档位：LAUNDRY_READY（ready 当下一档，advanceLaundryStatus 事件创建）/
 //   LAUNDRY_OVERDUE_1（滞留 >3 天）/ LAUNDRY_OVERDUE_2（滞留 >7 天）。逾期档由 escalateLaundryOverdue 惰性生成。
 // index = 档位 level（0/1/2），供收敛低档与 overdueClass 映射共用。
@@ -304,10 +311,7 @@ export async function advanceLaundryStatus(orderId: string, progress: LaundryPro
 // —— 质检未过 → 退回洗涤中（再洗）——
 export async function rewashLaundry(orderId: string, reason?: string) {
   const user = await requireOwner()
-  const order = assertShopOwned(
-    user.shopId,
-    await prisma.order.findUnique({ where: { id: orderId } }),
-  )
+  const order = await assertLaundryOrder(user.shopId, orderId)
   const cfg = (order.config as Record<string, unknown> | null) ?? {}
   if (cfg.laundryStatus !== 'qc') throw new Error('仅在质检后可再洗')
   await prisma.order.update({
@@ -323,10 +327,7 @@ export async function rewashLaundry(orderId: string, reason?: string) {
 // —— 交接凭证数据（老板端复制 + 生成 ticketId）——
 export async function issueLaundryTicket(orderId: string) {
   const user = await requireOwner()
-  const order = assertShopOwned(
-    user.shopId,
-    await prisma.order.findUnique({ where: { id: orderId } }),
-  )
+  const order = await assertLaundryOrder(user.shopId, orderId)
   const cfg = (order.config as Record<string, unknown> | null) ?? {}
   if (!cfg.ticketId) {
     await prisma.order.update({
@@ -340,10 +341,7 @@ export async function issueLaundryTicket(orderId: string) {
 
 export async function cancelLaundryOrder(orderId: string) {
   const user = await requireOwner()
-  const order = assertShopOwned(
-    user.shopId,
-    await prisma.order.findUnique({ where: { id: orderId } }),
-  )
+  const order = await assertLaundryOrder(user.shopId, orderId)
   await prisma.order.update({
     where: { id: order.id },
     data: { status: 'CANCELLED', config: { ...((order.config ?? {}) as Record<string, unknown>), laundryStatus: null } as Prisma.InputJsonValue },
@@ -878,6 +876,19 @@ export async function submitCustomerLaundryOrder(slug: string, input: {
     if (session?.user?.customerId) customerId = session.user.customerId
   } catch { /* ignore */ }
   const customerPhone = input.customerPhone ? normalizePhone(input.customerPhone) : null
+  if (customerPhone && !PHONE_RE.test(customerPhone)) throw new Error('手机号格式不正确') // 审计四轮 I：填了必过格式，防非法号落库（对齐 food createOrder）
+  // 匿名自助下单防刷（审计四轮 I ②）：无登录会话 → 按 IP 频率限流（宽松 10 次/60s），命中即拒。
+  // 有登录会话（customerId 有账号成本）不入此桶。走语义中性的动作频率原语 isHitLimited/recordHit
+  //（审计四轮 L 纯净化：非失败限流——成功提交只作普通窗口计数，不挂失败 history/封禁路径）先查后记，
+  // 窗口内提交次数达上限即拦下一批；窗口到期自动释放。
+  if (!customerId) {
+    const h = await headers()
+    const fwd = h.get('x-forwarded-for')
+    const ip = (fwd ? fwd.split(',')[0].trim() : h.get('x-real-ip')?.trim()) || 'unknown'
+    const keyIp = `laundry-submit:ip:${ip}`
+    if (isHitLimited(keyIp, ANON_SUBMIT_OPTS)) throw new Error('提交过于频繁，请稍后再试')
+    recordHit(keyIp, ANON_SUBMIT_OPTS)
+  }
   const idem = input.idempotencyKey?.trim() || null
   const order = await prisma.$transaction(async (tx) => {
     await lockShopForUpdate(tx, shop.id)
@@ -912,7 +923,7 @@ export async function submitCustomerLaundryOrder(slug: string, input: {
 // itemsOverride 允许老板改清单后按新价重算正式金额；不传则按顾客提交的 items/customerItems
 export async function confirmLaundryHandover(orderId: string, override?: { items?: { name: string; qty: number; price: number }[]; itemDetail?: { name: string; count: number; mark?: string }[] }) {
   const user = await requireOwner()
-  const order = assertShopOwned(user.shopId, await prisma.order.findUnique({ where: { id: orderId } }))
+  const order = await assertLaundryOrder(user.shopId, orderId)
   const cfg = (order.config as Record<string, unknown> | null) ?? {}
   if (cfg.laundryStatus !== 'submitted') throw new Error('仅待确认单可交接')
   const shop = await prisma.shop.findUnique({ where: { id: user.shopId }, select: { config: true } })

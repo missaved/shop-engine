@@ -54,12 +54,22 @@ def main():
         oid = o["id"]
         page.goto(f"{BASE}/vi/dashboard", wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
         page.get_by_text("Tất cả").first.click(timeout=ASSERT_TIMEOUT); page.wait_for_timeout(800)
+        # 折叠卡 UI（整改 a72e760 把推进收进展开面板）：动作按钮在卡展开后才可见，先展开最新单卡（列表倒序顶卡）
+        page.get_by_text("▸").first.click(timeout=ASSERT_TIMEOUT); page.wait_for_timeout(500)
         page.get_by_text("Bắt đầu giặt").first.click(timeout=ACTION_TIMEOUT); page.wait_for_timeout(1200)
         page.get_by_text("Gửi kiểm tra").first.click(timeout=ACTION_TIMEOUT); page.wait_for_timeout(1200)
         page.get_by_text("Qua kiểm tra").first.click(timeout=ACTION_TIMEOUT); page.wait_for_timeout(1200)
         page.get_by_text("Đã lấy").first.click(timeout=ACTION_TIMEOUT); page.wait_for_timeout(1800)  # 结单
         st = db_exec(f"SELECT status FROM \"Order\" WHERE id='{oid}'")[0]["value"]
         records.append(run_assertion(lambda: st == "COMPLETED", "g2", "结单后 COMPLETED", script_tag=SCRIPT_TAG))
+        # g3（整改回归）：结单即清该单一切 PENDING 提醒（ready/逾期各档）——在删单前查（Reminder.orderId 随删置空）
+        rem = db_exec(f"SELECT count(*) FROM \"Reminder\" WHERE \"orderId\"='{oid}'::text AND status='PENDING'")
+        records.append(
+            run_assertion(
+                lambda: rem and int(rem[0]["value"]) == 0,
+                "g3", "结单后该单 PENDING 提醒清零", script_tag=SCRIPT_TAG,
+            )
+        )
         db_exec(f"DELETE FROM \"Order\" WHERE id='{oid}'::text")
     save_results(SCRIPT_TAG, FLOW, records, started, datetime.now())
     ok = all(r.status != "FAIL" for r in records)

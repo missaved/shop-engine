@@ -288,18 +288,26 @@ export async function createMotoOrder(input: {
 
 // —— 进度推进（老板一步一推，客户端只读）——
 
-// 推进到指定阶段：只能前进不可回退（queued→…→picked_up）。
-// picked_up（交接）时：status 归档 COMPLETED + 更新 Vehicle 保养字段 + 建 MOTO_SERVICE_DUE 提醒 + 生成凭证 ticketId
-export async function updateMotoOrderProgress(orderId: string, progress: MotoProgress) {
-  const user = await requireOwner()
+// assertMotoShop：租户隔离 + vertical 守卫一次到位（即头注释所称，与代码从此一致）。
+// moto 专属动作操作任意传入的 orderId 必须先经此关——只保证「单属于本店」（assertShopOwned）还不够，
+// orderId 可能指向他垂直（如洗衣）的单，须再拦 vertical≠MOTO。
+async function assertMotoShop(shopId: string, orderId: string) {
   const order = assertShopOwned(
-    user.shopId,
+    shopId,
     await prisma.order.findUnique({
       where: { id: orderId },
       include: { shop: { select: { vertical: true } } },
     }),
   )
   if (order.shop.vertical !== 'MOTO') throw new Error('非 moto 店订单')
+  return order
+}
+
+// 推进到指定阶段：只能前进不可回退（queued→…→picked_up）。
+// picked_up（交接）时：status 归档 COMPLETED + 更新 Vehicle 保养字段 + 建 MOTO_SERVICE_DUE 提醒 + 生成凭证 ticketId
+export async function updateMotoOrderProgress(orderId: string, progress: MotoProgress) {
+  const user = await requireOwner()
+  const order = await assertMotoShop(user.shopId, orderId)
   const cur = (order.config as { motoProgress?: string } | null)?.motoProgress ?? null
   const curIdx = cur ? PROGRESS_SEQ.indexOf(cur as MotoProgress) : -1
   const nextIdx = PROGRESS_SEQ.indexOf(progress)
@@ -746,14 +754,7 @@ export async function settleMotoOrder(
 ): Promise<void> {
   const user = await requireOwner()
   try {
-    const order = assertShopOwned(
-      user.shopId,
-      await prisma.order.findUnique({
-        where: { id: orderId },
-        include: { shop: { select: { vertical: true } } },
-      }),
-    )
-    if (order.shop.vertical !== 'MOTO') throw new Error('非 moto 店订单')
+    const order = await assertMotoShop(user.shopId, orderId)
     if (order.status === 'CANCELLED') throw new Error('已取消订单不可收款')
 
     const amount = Number(input.paidAmount)

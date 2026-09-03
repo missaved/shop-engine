@@ -57,36 +57,36 @@ export function VehicleForm({
     <div className="flex flex-col gap-3">
       <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-1">
-          <span className={label}>{t('plate')}</span>
-          <input className={input} value={plate} onChange={(e) => setPlate(e.target.value)} autoCapitalize="characters" />
+          <label htmlFor="plate" className={label}>{t('plate')}</label>
+          <input id="plate" name="plate" placeholder={t('plate')} className={input} value={plate} onChange={(e) => setPlate(e.target.value)} autoCapitalize="characters" />
         </div>
         <div className="flex flex-col gap-1">
-          <span className={label}>{t('brand')}</span>
-          <input className={input} value={brand} onChange={(e) => setBrand(e.target.value)} />
+          <label htmlFor="brand" className={label}>{t('brand')}</label>
+          <input id="brand" name="brand" placeholder={t('brand')} className={input} value={brand} onChange={(e) => setBrand(e.target.value)} />
         </div>
         <div className="flex flex-col gap-1">
-          <span className={label}>{t('model')}</span>
-          <input className={input} value={model} onChange={(e) => setModel(e.target.value)} />
+          <label htmlFor="model" className={label}>{t('model')}</label>
+          <input id="model" name="model" placeholder={t('model')} className={input} value={model} onChange={(e) => setModel(e.target.value)} />
         </div>
         <div className="flex flex-col gap-1">
-          <span className={label}>{t('year')}</span>
-          <input className={input} value={year} onChange={(e) => setYear(e.target.value.replace(/\D/g, '').slice(0, 4))} inputMode="numeric" />
+          <label htmlFor="year" className={label}>{t('year')}</label>
+          <input id="year" name="year" placeholder={t('year')} className={input} value={year} onChange={(e) => setYear(e.target.value.replace(/\D/g, '').slice(0, 4))} inputMode="numeric" />
         </div>
         <div className="flex flex-col gap-1">
-          <span className={label}>{t('mileage')}</span>
-          <input className={input} value={mileage} onChange={(e) => setMileage(e.target.value.replace(/\D/g, ''))} inputMode="numeric" />
+          <label htmlFor="mileage" className={label}>{t('mileage')}</label>
+          <input id="mileage" name="mileage" placeholder={t('mileage')} className={input} value={mileage} onChange={(e) => setMileage(e.target.value.replace(/\D/g, ''))} inputMode="numeric" />
         </div>
         <div className="flex flex-col gap-1">
-          <span className={label}>{t('ownerName')}</span>
-          <input className={input} value={ownerName} onChange={(e) => setOwnerName(e.target.value)} />
+          <label htmlFor="ownerName" className={label}>{t('ownerName')}</label>
+          <input id="ownerName" name="ownerName" placeholder={t('ownerName')} className={input} value={ownerName} onChange={(e) => setOwnerName(e.target.value)} />
         </div>
         <div className="col-span-2 flex flex-col gap-1">
-          <span className={label}>{t('ownerPhone')}</span>
-          <input className={input} value={ownerPhone} onChange={(e) => setOwnerPhone(e.target.value)} inputMode="tel" />
+          <label htmlFor="ownerPhone" className={label}>{t('ownerPhone')}</label>
+          <input id="ownerPhone" name="ownerPhone" placeholder={t('ownerPhone')} className={input} value={ownerPhone} onChange={(e) => setOwnerPhone(e.target.value)} inputMode="tel" />
         </div>
         <div className="col-span-2 flex flex-col gap-1">
-          <span className={label}>{t('notes')}</span>
-          <input className={input} value={notes} onChange={(e) => setNotes(e.target.value)} />
+          <label htmlFor="notes" className={label}>{t('notes')}</label>
+          <input id="notes" name="notes" placeholder={t('notes')} className={input} value={notes} onChange={(e) => setNotes(e.target.value)} />
         </div>
       </div>
       {err && <p className="text-sm text-red-600">{err}</p>}

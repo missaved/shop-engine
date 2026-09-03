@@ -217,7 +217,7 @@ export function QuickLaundry({ shop, onDone, onBack }: { shop: LaundryShop; onDo
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
           <div className="flex items-center gap-2">
             <span className="text-xs text-zinc-500">{t('careType')}</span>
-            <select value={careType} onChange={(e) => setCareType(e.target.value)} className="flex-1 rounded-lg border border-zinc-200 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800">
+            <select name="careType" aria-label={t('careType')} value={careType} onChange={(e) => setCareType(e.target.value)} className="flex-1 rounded-lg border border-zinc-200 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800">
               <option value="">{t('careNormal')}</option>
               <option value="dryclean">{t('careDryClean')}</option>
               <option value="handwash">{t('careHandWash')}</option>
@@ -226,11 +226,11 @@ export function QuickLaundry({ shop, onDone, onBack }: { shop: LaundryShop; onDo
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs text-zinc-500">{t('timeWindow')}</span>
-            <input value={timeWindow} onChange={(e) => setTimeWindow(e.target.value)} placeholder="08-12h" className="flex-1 rounded-lg border border-zinc-200 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800" />
+            <input name="timeWindow" value={timeWindow} onChange={(e) => setTimeWindow(e.target.value)} placeholder="08-12h" className="flex-1 rounded-lg border border-zinc-200 px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800" />
           </div>
         </div>
         {dispatchType !== 'in_store' && (
-          <input value={dispatchAddress} onChange={(e) => setDispatchAddress(e.target.value)} placeholder={t('address')} className="rounded-lg border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800" />
+          <input name="dispatchAddress" value={dispatchAddress} onChange={(e) => setDispatchAddress(e.target.value)} placeholder={t('address')} className="rounded-lg border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800" />
         )}
         {dispatchType !== 'in_store' && (shop.config?.deliveryFee ?? 0) > 0 && (
           <p className="text-xs text-zinc-500">{t('deliveryFee')}: +{formatPrice(shop.config?.deliveryFee ?? 0, shop.currency)}</p>
@@ -240,6 +240,7 @@ export function QuickLaundry({ shop, onDone, onBack }: { shop: LaundryShop; onDo
       {/* 顾客 + 备注 */}
       <div className="grid grid-cols-1 gap-2">
         <input
+          name="customerPhone"
           value={customerPhone}
           onChange={(e) => setCustomerPhone(e.target.value)}
           placeholder={t('customerPhone')}
@@ -247,12 +248,14 @@ export function QuickLaundry({ shop, onDone, onBack }: { shop: LaundryShop; onDo
           className="rounded-lg border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
         />
         <input
+          name="customerName"
           value={customerName}
           onChange={(e) => setCustomerName(e.target.value)}
           placeholder={t('customerName')}
           className="rounded-lg border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
         />
         <input
+          name="note"
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder={t('note')}
@@ -265,6 +268,8 @@ export function QuickLaundry({ shop, onDone, onBack }: { shop: LaundryShop; onDo
         <div className="flex items-center gap-2 rounded-lg bg-zinc-50 px-3 py-2 dark:bg-zinc-900">
           <span className="text-xs text-zinc-500">{t('discount')}</span>
           <input
+            name="discount"
+            aria-label={t('discount')}
             value={discount}
             onChange={(e) => setDiscount(Number(e.target.value) || 0)}
             inputMode="decimal"
@@ -274,6 +279,8 @@ export function QuickLaundry({ shop, onDone, onBack }: { shop: LaundryShop; onDo
         <div className="flex items-center gap-2 rounded-lg bg-zinc-50 px-3 py-2 dark:bg-zinc-900">
           <span className="text-xs text-zinc-500">{t('paidNow')}</span>
           <input
+            name="paid"
+            aria-label={t('paidNow')}
             value={paid}
             onChange={(e) => setPaid(Number(e.target.value) || 0)}
             inputMode="decimal"

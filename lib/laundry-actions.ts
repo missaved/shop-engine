@@ -35,6 +35,22 @@ export type LaundryProgress = (typeof PROGRESS_SEQ)[number]
 // 逾期分级（L_OVERDUE）：>3 天 / >7 天（模块内常量，勿导出——'use server' 文件只允许导出 async 函数）
 const OVERDUE_DAYS_1 = 3
 const OVERDUE_DAYS_2 = 7
+// 待取催取档位：LAUNDRY_READY（ready 当下一档，advanceLaundryStatus 事件创建）/
+//   LAUNDRY_OVERDUE_1（滞留 >3 天）/ LAUNDRY_OVERDUE_2（滞留 >7 天）。逾期档由 escalateLaundryOverdue 惰性生成。
+// index = 档位 level（0/1/2），供收敛低档与 overdueClass 映射共用。
+const READY_REMINDER_KEYS = ['LAUNDRY_READY', 'LAUNDRY_OVERDUE_1', 'LAUNDRY_OVERDUE_2'] as const
+const REMINDER_OVERDUE_CLASS: Record<string, 0 | 1 | 2> = {
+  LAUNDRY_READY: 0,
+  LAUNDRY_OVERDUE_1: 1,
+  LAUNDRY_OVERDUE_2: 2,
+}
+
+// 逾期滞留毫秒：基准 readyAt（订单到「待取」的时刻，advanceLaundryStatus ready 时写入）；
+// 老数据（修复前就绪的单）无 readyAt → 回退 createdAt 兜底。E 项基准修正的唯一起算点。
+function readyDaysMs(cfg: Record<string, unknown>, createdAt: Date): number {
+  const base = cfg.readyAt ? new Date(cfg.readyAt as string).getTime() : createdAt.getTime()
+  return Date.now() - base
+}
 
 // 标签码 3 位
 const TAG_CODE_MAX = 999
@@ -123,12 +139,16 @@ export async function createLaundryOrder(input: {
 
   const customerPhone = input.customerPhone ? normalizePhone(input.customerPhone) : null
   const idempotencyKey = input.idempotencyKey?.trim() || null
-  const tagCode = ''
 
   try {
     if (idempotencyKey) {
       const existing = await findIdempotentOrder(user.shopId, idempotencyKey)
-      if (existing) return { orderNo: existing.orderNo, displayNo: existing.displayNo, tagCode: null }
+      if (existing)
+        return {
+          orderNo: existing.orderNo,
+          displayNo: existing.displayNo,
+          tagCode: ((existing.config as { tagCode?: string } | null)?.tagCode) ?? null,
+        }
     }
 
     const order = await prisma.$transaction(async (tx) => {
@@ -191,11 +211,20 @@ export async function createLaundryOrder(input: {
     })
 
     revalidatePath('/[locale]/dashboard', 'page')
-    return { orderNo: order.orderNo, displayNo: order.displayNo, tagCode }
+    return {
+      orderNo: order.orderNo,
+      displayNo: order.displayNo,
+      tagCode: ((order.config as { tagCode?: string } | null)?.tagCode) ?? null,
+    }
   } catch (e) {
     if (idempotencyKey && e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
       const existing = await findIdempotentOrder(user.shopId, idempotencyKey)
-      if (existing) return { orderNo: existing.orderNo, displayNo: existing.displayNo, tagCode: null }
+      if (existing)
+        return {
+          orderNo: existing.orderNo,
+          displayNo: existing.displayNo,
+          tagCode: ((existing.config as { tagCode?: string } | null)?.tagCode) ?? null,
+        }
     }
     console.error('laundry 开单失败:', e)
     throw e
@@ -219,7 +248,11 @@ export async function advanceLaundryStatus(orderId: string, progress: LaundryPro
 
   const upd: Prisma.OrderUpdateInput = {
     status: PROGRESS_STATUS[progress] as 'PENDING' | 'IN_PROGRESS' | 'READY' | 'COMPLETED',
-    config: { ...cfg, laundryStatus: progress } as Prisma.InputJsonValue,
+    // 到「待取」落 readyAt（滞留/逾期的唯一基准；老数据缺此键则回退 createdAt 兜底）
+    config:
+      progress === 'ready'
+        ? ({ ...cfg, laundryStatus: 'ready', readyAt: new Date().toISOString() } as Prisma.InputJsonValue)
+        : ({ ...cfg, laundryStatus: progress } as Prisma.InputJsonValue),
   }
 
   // 质检（qc）时记录备注（残留/损伤；若需再洗由 rewashLaundry 退回）
@@ -252,10 +285,11 @@ export async function advanceLaundryStatus(orderId: string, progress: LaundryPro
       })
     }
   }
-  // 结单：清该单待办（催取/逾期）
+  // 结单：清该单一切 PENDING 待办（ready + 逾期各档；按 orderId 全清，覆盖面大于按 key 白名单，
+  // 语义=取走即停所有催取；同单 reminder 皆属该单，无跨垂直误伤）
   if (progress === 'collected') {
     await prisma.reminder.updateMany({
-      where: { orderId: order.id, templateKey: { in: ['LAUNDRY_READY', 'LAUNDRY_OVERDUE'] }, status: 'PENDING' },
+      where: { orderId: order.id, status: 'PENDING' },
       data: { status: 'DISMISSED' },
     })
   }
@@ -387,7 +421,8 @@ function serializeLaundryOrder(o: {
   const mode = (cfg.laundryMode as LaundryMode) ?? 'kg'
   const overdueClass = (() => {
     if (cfg.laundryStatus !== 'ready') return 0
-    const days = (Date.now() - o.createdAt.getTime()) / (24 * 60 * 60 * 1000)
+    // E 项修正：滞留天数以 readyAt（ready 时刻）为基准，不再从 createdAt（含洗涤耗时）起算
+    const days = readyDaysMs(cfg, o.createdAt) / (24 * 60 * 60 * 1000)
     return days > OVERDUE_DAYS_2 ? 2 : days > OVERDUE_DAYS_1 ? 1 : 0
   })() as 0 | 1 | 2
   return {
@@ -472,28 +507,80 @@ export async function getLaundryRevenue() {
   }
 }
 
-// —— 待办催取提醒（LAUNDRY_READY + 逾期分级）——
+// —— 待办催取提醒（LAUNDRY_READY + 逾期档位 LAUNDRY_OVERDUE_1/2）——
+// B 项修正：overdueClass 由档位 key 决定（READY→0 / OVERDUE_1→1 / OVERDUE_2→2），不再读时按 createdAt 临时算；
+// 读取前先 escalateLaundryOverdue 惰性升级逾期档（dashboard 30s 轮询自然驱动，无定时任务）。
 export async function getLaundryReminders() {
   const user = await requireOwner()
+  await escalateLaundryOverdue(user.shopId)
   const reminders = await prisma.reminder.findMany({
-    where: { shopId: user.shopId, templateKey: 'LAUNDRY_READY', status: 'PENDING', dueAt: { lte: new Date() } },
-    include: { order: { select: { createdAt: true, total: true, config: true, customerPhone: true } } },
+    where: { shopId: user.shopId, templateKey: { in: [...READY_REMINDER_KEYS] }, status: 'PENDING', dueAt: { lte: new Date() } },
+    include: { order: { select: { total: true, config: true, customerPhone: true } } },
     orderBy: { dueAt: 'asc' },
   })
   return reminders.map((r) => {
-    const days = r.order ? (Date.now() - r.order.createdAt.getTime()) / (24 * 60 * 60 * 1000) : 0
-    const overdueClass = (days > OVERDUE_DAYS_2 ? 2 : days > OVERDUE_DAYS_1 ? 1 : 0) as 0 | 1 | 2
     const cfg = (r.order?.config ?? {}) as Record<string, unknown>
     const tagCode = ((r.payload as { tagCode?: string } | null)?.tagCode ?? (cfg.tagCode as string | undefined)) ?? null
     return {
       id: r.id,
-      overdueClass,
+      overdueClass: REMINDER_OVERDUE_CLASS[r.templateKey] ?? 0,
       displayNo: (r.payload as { displayNo?: string } | null)?.displayNo ?? null,
       tagCode,
       customerPhone: r.order?.customerPhone ?? null,
       total: String(Number(r.order?.total ?? 0)),
     }
   })
+}
+
+// 逾期档位惰性升级（B 项触发点；读时驱动，副作用落在 30s 轮询上，单实例语义正确）：
+// 扫本店仍「待取 ready」未取走的单 → 按 readyAt 滞留天数建对应逾期档提醒（>3 天 → OVERDUE_1，>7 天 → OVERDUE_2）；
+// 每档只催一次（已存在 PENDING/SENT/DISMISSED 均不再建）；高档生成时把同单低档 PENDING 置 SENT（收敛，同单最多一条待办）。
+async function escalateLaundryOverdue(shopId: string): Promise<void> {
+  const orders = await prisma.order.findMany({
+    where: { shopId, status: 'READY' }, // PROGRESS_STATUS.ready = 'READY'
+    select: { id: true, displayNo: true, customerPhone: true, customerName: true, total: true, createdAt: true, config: true },
+  })
+  for (const o of orders) {
+    const cfg = (o.config ?? {}) as Record<string, unknown>
+    if (cfg.laundryStatus !== 'ready') continue // 防御：status=READY 但细分状态非 ready
+    const level = (() => {
+      const days = readyDaysMs(cfg, o.createdAt) / (24 * 60 * 60 * 1000)
+      if (days > OVERDUE_DAYS_2) return 2
+      if (days > OVERDUE_DAYS_1) return 1
+      return 0
+    })()
+    if (level === 0) continue // ready 当下档（LAUNDRY_READY）由 advanceLaundryStatus 事件创建，此处只补逾期档
+    const key = READY_REMINDER_KEYS[level]
+    const dup = await prisma.reminder.findFirst({
+      where: { shopId, orderId: o.id, templateKey: key },
+      select: { id: true },
+    })
+    if (dup) continue // 该档已有记录（PENDING 在办 / SENT 已催 / DISMISSED 已忽略）→ 每档一次
+    const lowerKeys = READY_REMINDER_KEYS.slice(0, level)
+    if (lowerKeys.length > 0) {
+      // 收敛低档：本单低档位仍 PENDING 的待办置 SENT（旧档作废），保证待办不出现同单双卡
+      await prisma.reminder.updateMany({
+        where: { shopId, orderId: o.id, templateKey: { in: [...lowerKeys] }, status: 'PENDING' },
+        data: { status: 'SENT' },
+      })
+    }
+    await prisma.reminder.create({
+      data: {
+        shopId,
+        orderId: o.id,
+        templateKey: key,
+        dueAt: new Date(),
+        status: 'PENDING',
+        payload: {
+          displayNo: o.displayNo,
+          tagCode: cfg.tagCode ?? null,
+          customerPhone: o.customerPhone,
+          customerName: o.customerName,
+          total: Number(o.total),
+        },
+      },
+    })
+  }
 }
 
 export async function markLaundryReminderSent(reminderId: string) {

@@ -80,6 +80,8 @@ def main():
         # 质检流：先切「全部」tab（新单是待洗态）
         page.goto(f"{BASE}/vi/dashboard", wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
         page.get_by_text("Tất cả").first.click(timeout=ASSERT_TIMEOUT); page.wait_for_timeout(1500)
+        # 折叠卡 UI（整改 a72e760 把推进收进展开面板）：动作按钮在卡展开后才可见，先展开最新单卡
+        page.get_by_text("▸").first.click(timeout=ASSERT_TIMEOUT); page.wait_for_timeout(500)
         page.screenshot(path="/tmp/laund-advance.png", full_page=False)
         page.get_by_text("Bắt đầu giặt").first.click(timeout=ACTION_TIMEOUT); page.wait_for_timeout(1200)
         page.get_by_text("Gửi kiểm tra").first.click(timeout=ACTION_TIMEOUT); page.wait_for_timeout(1200)
@@ -90,7 +92,7 @@ def main():
         tid = re.search(r'"ticketId":"([^"]+)"', cfg)
         records.append(run_assertion(lambda: tid is not None, "a4", "生成 ticketId", script_tag=SCRIPT_TAG))
         if tid:
-            page.goto(f"{BASE}/vi/hcm/laundry/{SLUG}/ticket/{tid.group(1)}", wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
+            page.goto(f"{BASE}/vi/hcm/laundry/{SLUG}/ticket?ticketId={tid.group(1)}", wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
             records.append(run_assertion(lambda: page.get_by_text("Mã phiếu").count() > 0, "a5", "凭证页渲染取件码", script_tag=SCRIPT_TAG, screenshot_page=page))
     save_results(SCRIPT_TAG, FLOW, records, started, datetime.now())
     ok = all(r.status != "FAIL" for r in records)

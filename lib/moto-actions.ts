@@ -864,7 +864,12 @@ export async function removeMotoItem(orderId: string, index: number): Promise<vo
 
   await prisma.order.update({
     where: { id: orderId },
-    data: { items: newItems, total: newTotal },
+    data: {
+      items: newItems,
+      total: newTotal,
+      // 审计七轮 P：删项可能使实收超应付（已收款后删项 → paidAmount > total）——clamp 冲销被删项对应实收，保 paid ≤ total 不变量；删未收款部分时 min 取原值，安全
+      paidAmount: Math.min(Number(order.paidAmount ?? 0), newTotal),
+    },
   })
   revalidatePath('/[locale]/dashboard', 'page')
 }

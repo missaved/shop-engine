@@ -13,6 +13,7 @@ import { vietnamTodayStartUtc } from '@/lib/dashboard-orders'
 import {
   MAX_ORDER_AMOUNT,
   lockShopForUpdate,
+  lockOrderForUpdate,
   nextOrderNumbers,
   findIdempotentOrder,
 } from '@/lib/order-shared'
@@ -365,12 +366,19 @@ async function assertLaundryOrder(shopId: string, orderId: string) {
   return order
 }
 
-// —— 收款（实收）——
+// —— 收款（现金实收）——
+// F（审计三轮）：实收按「本次收额累加」而非覆盖（UI 现金框默认填剩余，支持现金先部分→再收/储值补足），
+// clamp 到 total 防超收；E：interactive tx 锁订单行 + 事务内重读，防同单并发丢累加
 export async function settleLaundry(orderId: string, amount: number) {
   const user = await requireOwner()
-  const order = await assertLaundryOrder(user.shopId, orderId)
-  const paid = Math.min(Math.max(Number(amount ?? 0), 0), Number(order.total))
-  await prisma.order.update({ where: { id: order.id }, data: { paidAmount: paid } })
+  await assertLaundryOrder(user.shopId, orderId) // D 守卫（跨垂直拒绝）
+  const amt = Math.max(Number(amount ?? 0), 0)
+  await prisma.$transaction(async (tx) => {
+    await lockOrderForUpdate(tx, orderId)
+    const o = await tx.order.findUnique({ where: { id: orderId }, select: { paidAmount: true, total: true } })
+    const paid = Math.min(Number(o?.paidAmount ?? 0) + amt, Number(o?.total ?? 0))
+    await tx.order.update({ where: { id: orderId }, data: { paidAmount: paid } })
+  })
   revalidatePath('/[locale]/dashboard', 'page')
 }
 
@@ -661,40 +669,55 @@ export async function createLaundryCard(input: { customerId: string; type: 'cred
   return card
 }
 
-// 结账：从储值余额扣（充值余额扣到不足则拒）
+// 结账：从储值余额扣（充值余额扣到不足则拒）。paid 累加不覆盖（F，同 settleLaundry：支持现金先部分→储值补足）
+// D 守卫：跨垂直拒绝；E：interactive tx 先锁 Customer 余额行再锁 Order 行、事务内重读后扣——
+// 防并发超扣（两请求同读余额充足各扣一次）与同单并发丢累加
 export async function payLaundryByBalance(orderId: string, customerId: string, amount: number) {
   const user = await requireOwner()
-  const order = assertShopOwned(user.shopId, await prisma.order.findUnique({ where: { id: orderId } }))
-  const c = await prisma.customer.findFirst({ where: { id: customerId }, select: { id: true, balance: true } })
-  if (!c) throw new Error('顾客不存在')
-  const amt = Math.min(Math.max(Number(amount ?? 0), 0), Number(order.total))
-  if (Number(c.balance) < amt) throw new Error('余额不足')
-  await prisma.$transaction([
-    prisma.customer.update({ where: { id: c.id }, data: { balance: Number(c.balance) - amt } }),
-    prisma.order.update({ where: { id: order.id }, data: { paidAmount: amt } }),
-  ])
+  await assertLaundryOrder(user.shopId, orderId)
+  const amt = Math.max(Number(amount ?? 0), 0)
+  if (amt <= 0) throw new Error('金额必须大于 0')
+  await prisma.$transaction(async (tx) => {
+    // E：先锁顾客余额行（串行化同顾客并发扣款）
+    await tx.$queryRaw`SELECT id FROM "Customer" WHERE id = ${customerId} FOR UPDATE`
+    const c = await tx.customer.findUnique({ where: { id: customerId }, select: { id: true, balance: true } })
+    if (!c) throw new Error('顾客不存在')
+    if (Number(c.balance) < amt) throw new Error('余额不足')
+    // E：锁订单行 + 事务内重读 paid/total（同单并发不丢累加）
+    await lockOrderForUpdate(tx, orderId)
+    const o = await tx.order.findUnique({ where: { id: orderId }, select: { paidAmount: true, total: true } })
+    const paid = Math.min(Number(o?.paidAmount ?? 0) + amt, Number(o?.total ?? 0))
+    await tx.customer.update({ where: { id: customerId }, data: { balance: Number(c.balance) - amt } })
+    await tx.order.update({ where: { id: orderId }, data: { paidAmount: paid } })
+  })
   revalidatePath('/[locale]/dashboard', 'page')
 }
 
-// 结账：扣次卡（卡剩余次数减 1，结清整单）
+// 结账：扣次卡（卡剩余次数减 1，结清整单 —— F 语义：次卡抵整单，paid 置 total 与累加结果等价）
+// D 守卫：跨垂直拒绝；E：interactive tx 先锁 CustomerCard 行再锁 Order 行、事务内重读再扣——
+// 防并发同卡超扣（两张单并发刷同一张剩 1 次的卡，各减 1 次）与同单竞态
 export async function payLaundryByCard(orderId: string, cardId: string) {
   const user = await requireOwner()
-  const order = assertShopOwned(user.shopId, await prisma.order.findUnique({ where: { id: orderId } }))
+  await assertLaundryOrder(user.shopId, orderId)
   const card = await prisma.customerCard.findFirst({ where: { id: cardId, shopId: user.shopId } })
   if (!card || card.type !== 'count') throw new Error('次卡不存在')
-  const rem = card.remainingCount ?? 0
-  if (rem <= 0) throw new Error('次卡次数不足')
-  await prisma.$transaction([
-    prisma.customerCard.update({ where: { id: card.id }, data: { remainingCount: rem - 1 } }),
-    prisma.order.update({ where: { id: order.id }, data: { paidAmount: order.total } }),
-  ])
+  await prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM "CustomerCard" WHERE id = ${cardId} FOR UPDATE`
+    const cc = await tx.customerCard.findUnique({ where: { id: cardId }, select: { remainingCount: true } })
+    const rem = cc?.remainingCount ?? 0
+    if (rem <= 0) throw new Error('次卡次数不足')
+    await lockOrderForUpdate(tx, orderId)
+    const o = await tx.order.findUnique({ where: { id: orderId }, select: { total: true } })
+    await tx.customerCard.update({ where: { id: cardId }, data: { remainingCount: rem - 1 } })
+    await tx.order.update({ where: { id: orderId }, data: { paidAmount: Number(o?.total ?? 0) } })
+  })
   revalidatePath('/[locale]/dashboard', 'page')
 }
 
 // —— P3 理赔单（记录损坏/丢失 → 处理方式/金额；存 Order.config.claim[]，拍照已存 photo）——
 export async function addLaundryClaim(orderId: string, input: { type: 'damage' | 'lost'; note?: string; resolution: 'refund' | 'partial' | 'credit'; amount: number }) {
   const user = await requireOwner()
-  const order = assertShopOwned(user.shopId, await prisma.order.findUnique({ where: { id: orderId } }))
+  const order = await assertLaundryOrder(user.shopId, orderId) // D 守卫（跨垂直拒绝）
   const cfg = (order.config as Record<string, unknown> | null) ?? {}
   const claim = Array.isArray(cfg.claim) ? (cfg.claim as Record<string, unknown>[]) : []
   await prisma.order.update({

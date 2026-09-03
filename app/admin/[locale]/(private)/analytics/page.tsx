@@ -11,9 +11,16 @@ export default async function AnalyticsPage() {
   await requireAdmin()
   const t = await getTranslations('admin')
 
-  const now = new Date()
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-  const daysAgo30 = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
+  // 审计九轮 S3：统计窗口与老板端业务日对齐——固定 UTC+7 越南日。服务器本地(UTC)会让越南 0-7 点的
+  // 订单/访问（UTC 前一日 17-24 点）错切进上一天/上一月，故月首/今日/30 天窗口与按日归组全部落到越南日历日。
+  const VIET_OFFSET = 7 * 60 * 60 * 1000
+  const dayMs = 24 * 60 * 60 * 1000
+  const vnNow = new Date(Date.now() + VIET_OFFSET) // UTC+7 视角钟面，getUTC* = 越南日期分量
+  const vnDayStart = (y: number, m: number, d: number) => new Date(Date.UTC(y, m, d) - VIET_OFFSET) // 越南某日 00:00 → UTC
+  const todayStart = vnDayStart(vnNow.getUTCFullYear(), vnNow.getUTCMonth(), vnNow.getUTCDate())
+  const monthStart = vnDayStart(vnNow.getUTCFullYear(), vnNow.getUTCMonth(), 1) // 越南当月首日 00:00
+  const daysAgo30 = new Date(todayStart.getTime() - 29 * dayMs) // 含今天共 30 个越南业务日（同老板端 30 天档）
+  const vnDayKey = (d: Date) => new Date(d.getTime() + VIET_OFFSET).toISOString().slice(0, 10) // UTC 时刻 → 越南日历日
 
   const whereValid: Prisma.OrderWhereInput = { status: { not: 'CANCELLED' } }
 
@@ -43,17 +50,16 @@ export default async function AnalyticsPage() {
   // 近 30 天按日聚合（30 天量级，JS 聚合足够）
   const byDay = new Map<string, number>()
   for (const row of trendRows) {
-    const day = row.createdAt.toISOString().slice(0, 10)
+    const day = vnDayKey(row.createdAt)
     byDay.set(day, (byDay.get(day) ?? 0) + Number(row.total))
   }
   const trend = Array.from({ length: 30 }, (_, i) => {
-    const d = new Date(now.getTime() - (29 - i) * 24 * 60 * 60 * 1000)
-    const key = d.toISOString().slice(0, 10)
+    const d = new Date(daysAgo30.getTime() + i * dayMs)
+    const key = vnDayKey(d)
     return { day: key.slice(5), total: Math.round((byDay.get(key) ?? 0) * 100) / 100 }
   })
 
   // 访问统计（2026-08-29）：页面访问埋点聚合。来源国家读 CF-IPCountry，IP 读 CF-Connecting-IP，免 GeoIP 库
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   const [todayPv, todayUvRows, totalPv, totalUvRows, countryRows, pathRows, recentRows, visitRows] =
     await Promise.all([
       prisma.visitLog.count({ where: { createdAt: { gte: todayStart } } }),
@@ -99,15 +105,15 @@ export default async function AnalyticsPage() {
   // 访问趋势：近 30 天按日聚合 PV（行数）/ UV（distinct IP，30 天量级 JS 聚合足够）
   const visitByDay = new Map<string, { pv: number; uv: Set<string> }>()
   for (const row of visitRows) {
-    const key = row.createdAt.toISOString().slice(0, 10)
+    const key = vnDayKey(row.createdAt)
     const agg = visitByDay.get(key) ?? { pv: 0, uv: new Set<string>() }
     agg.pv++
     if (row.ip) agg.uv.add(row.ip)
     visitByDay.set(key, agg)
   }
   const visitTrend = Array.from({ length: 30 }, (_, i) => {
-    const d = new Date(now.getTime() - (29 - i) * 24 * 60 * 60 * 1000)
-    const key = d.toISOString().slice(0, 10)
+    const d = new Date(daysAgo30.getTime() + i * dayMs)
+    const key = vnDayKey(d)
     const agg = visitByDay.get(key)
     return { day: key.slice(5), pv: agg?.pv ?? 0, uv: agg?.uv.size ?? 0 }
   })
@@ -229,6 +235,7 @@ export default async function AnalyticsPage() {
                   </span>
                   <span className="shrink-0 text-xs text-zinc-400">
                     {r.createdAt.toLocaleString('zh-CN', {
+                      timeZone: 'Asia/Ho_Chi_Minh',
                       month: 'numeric',
                       day: 'numeric',
                       hour: '2-digit',

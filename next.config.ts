@@ -12,7 +12,9 @@ const securityHeaders = {
   'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=()',
   'Content-Security-Policy': [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+    // 审计 13 轮 X：撤 'unsafe-eval'——生产 webpack 产物不需要 eval，去之使 script 策略更严；
+    // 若未来第三方脚本依赖 eval（浏览器报 Refused to evaluate）再按需放行。
+    "script-src 'self' 'unsafe-inline'",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https://img.spotnear.me",
     "font-src 'self' data:",

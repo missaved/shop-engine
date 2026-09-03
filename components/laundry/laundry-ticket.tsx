@@ -162,6 +162,12 @@ export function LaundryTicket({
 
       {/* 金额 */}
       <section className="rounded-2xl border border-zinc-200 p-4 dark:border-zinc-800">
+        {Number(order.deliveryFee ?? 0) > 0 && (
+          <div className="mb-1 flex items-center justify-between text-sm">
+            <span className="text-zinc-500">{tl('deliveryFee')}（{tl('dispatchDeliver')}）</span>
+            <span className="font-medium">+{formatPrice(Number(order.deliveryFee), currency)}</span>
+          </div>
+        )}
         <div className="flex items-center justify-between text-sm">
           <span className="text-zinc-500">{tl('total')}</span>
           <span className="font-bold">{formatPrice(Number(order.total), currency)}</span>

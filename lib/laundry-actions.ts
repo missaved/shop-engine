@@ -68,6 +68,14 @@ function readRates(shop: { config?: Prisma.JsonValue | null } | null): LaundryRa
   return (cfg.laundryRates as LaundryRates | undefined) ?? null
 }
 
+// 配送费（审计五轮 M 定案：仅「deliver 送到家」收取；in_store/pickup 免费；金额 = Shop.config.deliveryFee，>0 才收）
+// 服务端权威：不信任客户端传价，一律按店配置 + dispatchType 自算。独立存 config.deliveryFee，不进 items 明细（防交接 override 覆盖丢失）。
+function deliveryFeeOf(shopCfg: Record<string, unknown> | null | undefined, dispatchType?: string): number {
+  if (dispatchType !== 'deliver') return 0
+  const fee = Number(shopCfg?.deliveryFee ?? 0)
+  return Number.isFinite(fee) && fee > 0 ? Math.round(fee) : 0
+}
+
 // 按模式重算 total（服务端权威：公斤=kg×单价 / 按件=Σ单价×件数 / 洗鞋=款式底价+Σ增值）
 function computeLaundryTotal(
   rates: LaundryRates,
@@ -140,8 +148,9 @@ export async function createLaundryOrder(input: {
 
   const { total, details } = computeLaundryTotal(rates, input)
   if (details.length === 0) throw new Error('订单内容为空')
-  const discount = Math.min(Math.max(Number(input.discount ?? 0), 0), total)
-  const finalTotal = total - discount
+  const deliveryFee = deliveryFeeOf((shop?.config ?? {}) as Record<string, unknown>, input.dispatchType) // 审计五轮 M：deliver 送到家才收，服务端按店配费权威计算
+  const discount = Math.min(Math.max(Number(input.discount ?? 0), 0), total) // 折扣只作用于洗衣费，配送费不打折
+  const finalTotal = total - discount + deliveryFee
   if (finalTotal > MAX_ORDER_AMOUNT) throw new Error('订单金额超出上限')
   const paidAmount = Math.min(Math.max(Number(input.paidAmount ?? 0), 0), finalTotal)
 
@@ -186,7 +195,7 @@ export async function createLaundryOrder(input: {
           // 老板下一步即「Bắt đầu giặt」；交接确认仅保留给顾客自助下单。
           status: PROGRESS_STATUS['washing_pending'] as 'PENDING',
           items: details as Prisma.InputJsonValue,
-          total,
+          total: total + deliveryFee, // 订单金额含配送费（审计五轮 M：进 DB → 收款/欠款/营收自动含）
           paidAmount,
           customerName: input.customerName?.trim() || null,
           customerPhone,
@@ -210,7 +219,7 @@ export async function createLaundryOrder(input: {
             ...(input.careType ? { careType: input.careType } : {}),
             ...(input.dispatchType ? { dispatchType: input.dispatchType } : {}),
             ...(input.address ? { address: input.address } : {}),
-            ...(input.deliveryFee != null ? { deliveryFee: input.deliveryFee } : {}),
+            ...(deliveryFee > 0 ? { deliveryFee } : {}), // 服务端权威配送费（审计五轮 M：不再信客户端传 input.deliveryFee）
             ...(input.timeWindow ? { timeWindow: input.timeWindow } : {}),
             discount,
           },
@@ -869,6 +878,7 @@ export async function submitCustomerLaundryOrder(slug: string, input: {
   if (!input.mode) throw new Error('请选择计价模式')
   const { total } = computeLaundryTotal(rates, input)
   if (total <= 0) throw new Error('订单内容为空')
+  const deliveryFee = deliveryFeeOf((shop.config ?? {}) as Record<string, unknown>, input.dispatchType) // 审计五轮 M：deliver 送到家才收；预估与交接正式金额都含配送费（config 锁存防交接丢）
   // 登录则绑定 customerId，游客用手机号
   let customerId: string | null = null
   try {
@@ -900,7 +910,7 @@ export async function submitCustomerLaundryOrder(slug: string, input: {
     return tx.order.create({
       data: {
         orderNo, displayNo, shopId: shop.id, status: 'PENDING', items: [{ name: input.mode, qty: 1, price: total }] as Prisma.InputJsonValue,
-        total, paidAmount: 0, customerId, customerPhone, customerName: input.customerName?.trim() || null,
+        total: total + deliveryFee, paidAmount: 0, customerId, customerPhone, customerName: input.customerName?.trim() || null,
         note: input.note?.trim() || null, idempotencyKey: idem,
         config: {
           laundryMode: input.mode, laundryStatus: 'submitted', tagCode: code, // 待老板交接确认
@@ -910,6 +920,7 @@ export async function submitCustomerLaundryOrder(slug: string, input: {
           ...(input.itemDetail ? { itemDetail: input.itemDetail } : {}),
           ...(input.careType ? { careType: input.careType } : {}),
           ...(input.dispatchType ? { dispatchType: input.dispatchType, address: input.address ?? null, timeWindow: input.timeWindow ?? null } : {}),
+          ...(deliveryFee > 0 ? { deliveryFee } : {}), // 审计五轮 M：锁存提交时店配费，交接重算不丢
           estimated: true, // 金额为预估，正式金额交接时定
         } as Prisma.InputJsonValue,
       },
@@ -930,12 +941,16 @@ export async function confirmLaundryHandover(orderId: string, override?: { items
   const rates = readRates(shop)
   const curItems = (order.items as { name: string; qty: number; price: number }[]) ?? []
   const officialItems = override?.items?.length ? override.items : curItems
-  const officialTotal = officialItems.reduce((s, it) => s + (Number(it.price) || 0) * (Number(it.qty) || 0), 0)
+  const laundryTotal = officialItems.reduce((s, it) => s + (Number(it.price) || 0) * (Number(it.qty) || 0), 0)
+  // 配送费（审计五轮 M）：优先用提交时锁存的 config.deliveryFee（顾客所见价锁定）；老自助单无锁存则按店现值兜底
+  const cfgFee = Number(cfg.deliveryFee ?? 0) || deliveryFeeOf((shop?.config ?? {}) as Record<string, unknown>, cfg.dispatchType as string)
+  const officialTotal = laundryTotal + cfgFee
   const newCfg = {
     ...cfg,
     laundryStatus: 'washing_pending',
     ticketId: crypto.randomUUID(),   // 交接时出具正式凭证
     estimated: false,
+    ...(cfgFee > 0 ? { deliveryFee: cfgFee } : {}), // 补写/保留配送费（老单无锁存时落值，供凭证与后续读取）
     ...(override?.itemDetail ? { itemDetail: override.itemDetail } : {}),
   }
   await prisma.order.update({

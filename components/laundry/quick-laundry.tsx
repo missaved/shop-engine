@@ -51,7 +51,9 @@ export function QuickLaundry({ shop, onDone, onBack }: { shop: LaundryShop; onDo
     return base + add
   }, [rates, mode, kg, itemQty, shoeStyle, shoeAddons, discount])
 
-  const finalTotal = Math.max(estTotal - discount, 0)
+  // 前端预估合计（仅展示；真实金额服务端按 rates + 配送费权威重算）。配送费仅 deliver 收（审计五轮 M 定案）。
+  const deliverFee = dispatchType === 'deliver' ? Number(shop.config?.deliveryFee ?? 0) : 0
+  const finalTotal = Math.max(estTotal - discount, 0) + (deliverFee > 0 ? deliverFee : 0)
 
   const setQty = (name: string, d: number) =>
     setItemQty((s) => ({ ...s, [name]: Math.max((s[name] ?? 0) + d, 0) }))
@@ -232,7 +234,7 @@ export function QuickLaundry({ shop, onDone, onBack }: { shop: LaundryShop; onDo
         {dispatchType !== 'in_store' && (
           <input name="dispatchAddress" value={dispatchAddress} onChange={(e) => setDispatchAddress(e.target.value)} placeholder={t('address')} className="rounded-lg border border-zinc-200 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800" />
         )}
-        {dispatchType !== 'in_store' && (shop.config?.deliveryFee ?? 0) > 0 && (
+        {dispatchType === 'deliver' && (shop.config?.deliveryFee ?? 0) > 0 && (
           <p className="text-xs text-zinc-500">{t('deliveryFee')}: +{formatPrice(shop.config?.deliveryFee ?? 0, shop.currency)}</p>
         )}
       </div>

@@ -2,6 +2,8 @@
 // city 已为数据维度（Shop.city）；按城市段聚合（listVerifiedShops(vertical, city)），加垂直零改。
 // 2026-09-01 #7 沉浸大图版：与聚合页统一——城市风景 hero + 城市名 + 各垂直区块店列表。
 // 与 /{locale}/{city}/{vertical}（单垂直聚合页）、/{locale}/{city}/{vertical}/{slug}（单店）按段数区分，不冲突。
+import type { Metadata } from 'next'
+import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
@@ -27,6 +29,26 @@ const VERTICAL_IMG: Record<string, string> = {
 
 // 本页读 DB（各垂直该城市已验证店铺 + shopCount），保持动态渲染；否则 build 期静态预渲染会把当时的店铺快照固化，seed/新店上线后看不到
 export const dynamic = 'force-dynamic'
+
+// 审计 12 轮 V：门户页差异化 SEO 元数据。title/description 用 locale 城市名 + 站点 tagline；
+// canonical 相对路径（生产 Next 自动按 VERCEL_URL 拼绝对）；og 图由 app/opengraph-image.png convention 全站提供。
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string; city: string }>
+}): Promise<Metadata> {
+  const { locale, city: cityParam } = await params
+  const city = parseCitySlug(cityParam)
+  if (!city) return {} // 非法城市 → 用 layout 兜底（页面本体自会 404）
+  const tc = await getTranslations('city')
+  const home = await getTranslations('home')
+  const title = `${tc(city)} · spotnear`
+  return {
+    title,
+    description: `${tc(city)} · ${home('tagline')}`,
+    alternates: { canonical: `/${locale}/${cityParam}` },
+  }
+}
 
 export default async function CityHomePage({
   params,
@@ -56,9 +78,14 @@ export default async function CityHomePage({
     <main className="flex flex-1 flex-col bg-[#111]">
       {/* 沉浸大图 Hero：城市风景铺满 */}
       <section className="relative flex h-[220px] flex-col justify-end overflow-hidden px-5 pb-6 pt-5">
-        <div
-          className="absolute inset-0 bg-cover bg-[center_58%]"
-          style={{ backgroundImage: "url('/hero/city.jpg')" }}
+        <Image
+          src="/hero/city.jpg"
+          alt=""
+          fill
+          sizes="100vw"
+          loading="eager"
+          fetchPriority="high"
+          className="object-cover object-[center_58%]"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-black/10" />
 

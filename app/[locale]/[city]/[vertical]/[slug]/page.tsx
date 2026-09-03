@@ -1,5 +1,6 @@
 // 客户侧单店入口页：/{vertical}/{slug}（公开访问，未登录），按 slug 派生租户
 // 多垂直门：vertical 段识别 + 垂直不符→404；非 FOOD 店铺（如 MOTO）落地自己的子页入口
+import type { Metadata } from 'next'
 import { redirect, notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { getShopBySlug, ShopUnavailableError } from '@/lib/tenant'
@@ -16,6 +17,45 @@ import type { MenuProduct } from '@/components/shop/menu-order'
 import { serializeMenuProduct, getRecommendedProducts } from '@/lib/menu'
 import { normalizeTheme } from '@/lib/theme'
 import { getTableActiveOrder } from '@/lib/actions'
+
+// 审计 12 轮 V：单店页差异化 SEO 元数据（title=店名；description 同页面 shopDesc 推导：config.description 依
+// locale 回退 → address → 店名；canonical=单店入口 URL）。Store 维护/未通过 → 空 metadata 由 layout 兜底。
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string; city: string; vertical: string; slug: string }>
+}): Promise<Metadata> {
+  const { locale, city: cityParam, vertical: verticalParam, slug } = await params
+  const vertical = parseVerticalSlug(verticalParam)
+  const city = parseCitySlug(cityParam)
+  if (!vertical || !city) return {}
+  let shop: Awaited<ReturnType<typeof getShopBySlug>>
+  try {
+    shop = await getShopBySlug(slug, { expectVertical: vertical, expectCity: city })
+  } catch (e) {
+    if (e instanceof ShopUnavailableError) return {}
+    throw e
+  }
+  const cfgDesc = shop.config as {
+    description?: string
+    descriptionZh?: string
+    descriptionEn?: string
+  } | null
+  const desc =
+    (locale === 'zh' || locale === 'zh-Hant'
+      ? cfgDesc?.descriptionZh
+      : locale === 'en'
+        ? cfgDesc?.descriptionEn
+        : undefined) ||
+    cfgDesc?.description ||
+    shop.address ||
+    shop.name
+  return {
+    title: `${shop.name} · spotnear`,
+    description: desc,
+    alternates: { canonical: localizedUrl(`/${cityParam}/${verticalParam}/${slug}`, locale as Locale) },
+  }
+}
 
 export default async function ShopMenuPage({
   params,

@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { getTranslations } from 'next-intl/server'
 import { LocaleSwitcher } from '@/components/locale-switcher'
 import { Link } from '@/i18n/navigation'
@@ -40,10 +41,15 @@ export default async function HomePage() {
     <main className="flex flex-1 flex-col bg-[#111]">
       {/* 沉浸大图 Hero：贴顶铺满 */}
       <section className="relative flex h-[220px] flex-col justify-end overflow-hidden px-5 pb-14 pt-5">
-        {/* 背景照片 */}
-        <div
-          className="absolute inset-0 bg-cover bg-[center_58%]"
-          style={{ backgroundImage: "url('/hero/hero.jpg')" }}
+        {/* 背景照片（审计 12 轮 W：CSS 背景图 → next/image，LCP 图 eager + fetchPriority high；object-cover 等价替代 bg-cover） */}
+        <Image
+          src="/hero/hero.jpg"
+          alt=""
+          fill
+          sizes="100vw"
+          loading="eager"
+          fetchPriority="high"
+          className="object-cover object-[center_58%]"
         />
         {/* 底部压暗渐变：给文字留可读区 */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-black/10" />

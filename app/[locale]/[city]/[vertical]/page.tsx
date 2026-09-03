@@ -5,6 +5,8 @@
 // 非合法垂直短码（如老式 /en/{slug}）→ 404。
 // 城市段（58 同城式 /{locale}/{city}/{vertical}）：city 已为数据维度（Shop.city），聚合按城市过滤。
 // 2026-09-01 #8 沉浸大图版：与聚合页/门户统一——城市风景 hero + 顶部分类导航 + 店铺列表。
+import type { Metadata } from 'next'
+import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import { parseVerticalSlug, VERTICALS, type Vertical } from '@/lib/vertical'
@@ -29,6 +31,29 @@ const VERTICAL_IMG: Record<string, string> = {
   SALON: '/vertical/salon.jpg',
   PET: '/vertical/pet.jpg',
   LAUNDRY: '/vertical/laundry.jpg',
+}
+
+// 审计 12 轮 V：垂直聚合页差异化 SEO 元数据（垂直名 = admin.vertical{Food...}，与页面顶栏同 key）
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string; city: string; vertical: string }>
+}): Promise<Metadata> {
+  const { locale, city: cityParam, vertical: verticalParam } = await params
+  const vertical = parseVerticalSlug(verticalParam)
+  const city = parseCitySlug(cityParam)
+  if (!vertical || !city) return {}
+  const tc = await getTranslations('city')
+  const t = await getTranslations('admin')
+  const home = await getTranslations('home')
+  const labelKey = 'vertical' + vertical[0] + vertical.slice(1).toLowerCase()
+  const verticalName = t(labelKey)
+  const title = `${tc(city)} · ${verticalName} · spotnear`
+  return {
+    title,
+    description: `${tc(city)} · ${verticalName} · ${home('tagline')}`,
+    alternates: { canonical: `/${locale}/${cityParam}/${verticalParam}` },
+  }
 }
 
 export default async function VerticalHomePage({
@@ -64,9 +89,14 @@ export default async function VerticalHomePage({
     <main className="flex flex-1 flex-col bg-[#111]">
       {/* 沉浸大图 Hero：城市风景铺满 */}
       <section className="relative flex h-[220px] flex-col justify-end overflow-hidden px-5 pb-6 pt-5">
-        <div
-          className="absolute inset-0 bg-cover bg-[center_58%]"
-          style={{ backgroundImage: "url('/hero/city.jpg')" }}
+        <Image
+          src="/hero/city.jpg"
+          alt=""
+          fill
+          sizes="100vw"
+          loading="eager"
+          fetchPriority="high"
+          className="object-cover object-[center_58%]"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-black/10" />
 

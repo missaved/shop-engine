@@ -43,8 +43,8 @@ def main():
     with make_browser() as p:
         ctx = new_context(p, tag="laund3", locale="vi-VN"); page = login(ctx)
         page.goto(f"{BASE}/vi/dashboard", wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
-        # 进设置（⚙️ aria-label = Cài đặt）
-        page.get_by_role("button", name="Cài đặt").first.click(timeout=ACTION_TIMEOUT); page.wait_for_load_state("domcontentloaded", timeout=NAV_TIMEOUT); page.wait_for_timeout(1500); page.screenshot(path="/tmp/e3-settings.png")
+        # 进设置（☰ 抽屉包含设置/会员内容）
+        page.get_by_role("button", name="Menu").first.click(timeout=ACTION_TIMEOUT); page.wait_for_timeout(800); page.wait_for_load_state("domcontentloaded", timeout=NAV_TIMEOUT); page.wait_for_timeout(1500); page.screenshot(path="/tmp/e3-settings.png")
         # 会员面板：手机号 → Tra cứu
         page.get_by_placeholder("SĐT khách").first.fill(TEST_PHONE, timeout=ASSERT_TIMEOUT)
         page.get_by_text("Tra cứu").first.click(timeout=ACTION_TIMEOUT); page.wait_for_timeout(1500)

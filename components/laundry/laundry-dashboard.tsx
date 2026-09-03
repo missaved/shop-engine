@@ -1,6 +1,6 @@
 'use client'
 // LAUNDRY 老板端一页后台：今日统计 + 待取催取 + 订单列表 + 设置配价
-// 视图：home（统计+待办+订单）→ order（三模式快速开单）/ settings（配价）
+// 顶层（home）只放核心（统计+订单+提醒）；设置/会员/退出收进 ☰ 抽屉（照 food）
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import type { LaundryShop } from './types'
@@ -12,6 +12,7 @@ import { LaundrySettings } from './laundry-settings'
 import { LaundryCustomers } from './laundry-customers'
 import { LaundryActiveCount } from './laundry-active-count'
 import { BackToTop } from '@/components/dashboard/back-to-top'
+import { SideDrawer } from '@/components/dashboard/side-drawer'
 
 export function LaundryDashboard({
   shop,
@@ -24,7 +25,7 @@ export function LaundryDashboard({
 }) {
   const t = useTranslations('laundry')
   const td = useTranslations('dashboard')
-  const [view, setView] = useState<'home' | 'order' | 'settings' | 'customers'>('home')
+  const [view, setView] = useState<'home' | 'order'>('home')
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-col gap-4 px-6 py-4">
@@ -35,7 +36,7 @@ export function LaundryDashboard({
       )}
       <header className="sticky top-0 z-30 -mx-6 mb-2 flex items-center justify-between border-b border-zinc-100 bg-orange-50/90 px-6 py-3 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90">
         <div className="flex items-center gap-2">
-          {view !== 'home' && (
+          {view === 'order' && (
             <button
               onClick={() => setView('home')}
               className="mr-1 text-lg text-zinc-400"
@@ -48,24 +49,17 @@ export function LaundryDashboard({
         </div>
         <div className="flex items-center gap-2">
           <LaundryActiveCount />
-          {view === 'home' && (
-            <>
-              <button
-                onClick={() => setView('settings')}
-                aria-label={t('settings')}
-                className="rounded-full border border-zinc-200 px-2.5 py-1.5 text-sm dark:border-zinc-700"
-              >
-                ⚙️
-              </button>
-              <button
-                onClick={() => setView('customers')}
-                aria-label={t('customers')}
-                className="rounded-full border border-zinc-200 px-2.5 py-1.5 text-sm dark:border-zinc-700"
-              >
-                👥
-              </button>
-            </>
-          )}
+          <SideDrawer
+            trigger={
+              <button type="button" className="flex items-center gap-1 rounded-md px-1 py-1 text-lg leading-none text-zinc-400" aria-label={t('menu')}>☰</button>
+            }
+            title={<span>{shop.name}</span>}
+          >
+            <div className="flex flex-col gap-4">
+              <LaundrySettings shop={shop} onLogout={onLogout} />
+              <LaundryCustomers currency={shop.currency} />
+            </div>
+          </SideDrawer>
         </div>
       </header>
 
@@ -86,9 +80,6 @@ export function LaundryDashboard({
       {view === 'order' && (
         <QuickLaundry shop={shop} onDone={() => setView('home')} onBack={() => setView('home')} />
       )}
-
-      {view === 'settings' && <LaundrySettings shop={shop} onLogout={onLogout} />}
-      {view === 'customers' && <LaundryCustomers currency={shop.currency} />}
       <BackToTop />
     </main>
   )

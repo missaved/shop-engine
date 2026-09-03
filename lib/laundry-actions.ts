@@ -244,7 +244,9 @@ export async function advanceLaundryStatus(orderId: string, progress: LaundryPro
   const nextIdx = PROGRESS_SEQ.indexOf(progress)
   const curIdx = PROGRESS_SEQ.indexOf(cur)
   if (nextIdx < 0) throw new Error('非法状态')
+  // 强制逐步（审计二轮 B）：仅允许相邻推进，防跳步漏 qc 备注 / readyAt / LAUNDRY_READY 提醒 / collected 清理
   if (curIdx >= nextIdx) throw new Error('状态不能回退')
+  if (curIdx + 1 !== nextIdx) throw new Error('状态需逐步推进')
 
   const upd: Prisma.OrderUpdateInput = {
     status: PROGRESS_STATUS[progress] as 'PENDING' | 'IN_PROGRESS' | 'READY' | 'COMPLETED',
@@ -352,21 +354,33 @@ export async function cancelLaundryOrder(orderId: string) {
   revalidatePath('/[locale]/dashboard', 'page')
 }
 
+// 洗衣专属动作垂直守卫（审计二轮 C，对齐 moto assertMotoShop）：settleLaundry/markDebtPaid 原先只有
+// assertShopOwned（防跨店不防跨垂直），可误作用于非 LAUNDRY 单；advanceLaundryStatus 等早内联此守卫
+async function assertLaundryOrder(shopId: string, orderId: string) {
+  const order = assertShopOwned(
+    shopId,
+    await prisma.order.findUnique({ where: { id: orderId }, include: { shop: { select: { vertical: true } } } }),
+  )
+  if (order.shop.vertical !== 'LAUNDRY') throw new Error('非洗衣店订单')
+  return order
+}
+
 // —— 收款（实收）——
 export async function settleLaundry(orderId: string, amount: number) {
   const user = await requireOwner()
-  const order = assertShopOwned(
-    user.shopId,
-    await prisma.order.findUnique({ where: { id: orderId } }),
-  )
+  const order = await assertLaundryOrder(user.shopId, orderId)
   const paid = Math.min(Math.max(Number(amount ?? 0), 0), Number(order.total))
   await prisma.order.update({ where: { id: order.id }, data: { paidAmount: paid } })
   revalidatePath('/[locale]/dashboard', 'page')
 }
 
 // —— 欠款收回 ——
+// 去 MAX_SAFE_INTEGER 哨兵（审计二轮 C）：直接置 paidAmount=total，语义直白，不再借 settleLaundry 的 clamp 拐弯
 export async function markDebtPaid(orderId: string) {
-  await settleLaundry(orderId, Number.MAX_SAFE_INTEGER)
+  const user = await requireOwner()
+  const order = await assertLaundryOrder(user.shopId, orderId)
+  await prisma.order.update({ where: { id: order.id }, data: { paidAmount: Number(order.total) } })
+  revalidatePath('/[locale]/dashboard', 'page')
 }
 
 // —— 设置（计价 + 收款信息）——

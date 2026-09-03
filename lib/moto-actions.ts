@@ -7,7 +7,7 @@ import { prisma } from '@/lib/prisma'
 import { Prisma } from '@/generated/prisma/client'
 import { requireOwner } from '@/lib/dal'
 import { assertShopOwned } from '@/lib/tenant'
-import { normalizePhone } from '@/lib/phone'
+import { normalizePhone, PHONE_RE } from '@/lib/phone'
 import { normalizePlate } from '@/lib/plate'
 import { vietnamTodayStartUtc } from '@/lib/dashboard-orders'
 import { extractVehicleFromPhoto } from './ocr'
@@ -121,6 +121,7 @@ export async function saveVehicle(input: {
   const plate = normalizePlate(input.plate)
   if (!plate) throw new Error('车牌不能为空')
   const ownerPhone = input.ownerPhone ? normalizePhone(input.ownerPhone) : undefined
+  assertValidOwnerPhone(ownerPhone)
   const data = {
     brand: input.brand?.trim() || null,
     model: input.model?.trim() || null,
@@ -140,6 +141,12 @@ export async function saveVehicle(input: {
 }
 
 // —— 快捷开单 ——
+
+// 手机号落库前格式校验（对齐 food，PHONE_RE 单源见 lib/phone）：ownerPhone 可选，空值放行；
+// 非法号落库会让客户按 phone 认领车辆永远匹配不到（lib/customer-actions.ts 精确匹配）
+function assertValidOwnerPhone(phone: string | null | undefined): void {
+  if (phone && !PHONE_RE.test(phone)) throw new Error('手机号格式不正确')
+}
 
 // 开单（7 步向导第 7 步「开工」）：事务锁号 + 建档（开单即建档）+ 写 moto config。
 // total=Σ(qty*price)-discount；欠款由 total-paidAmount 推导（不独立存，防双写）。
@@ -186,6 +193,7 @@ export async function createMotoOrder(input: {
     .filter((it) => it.kind === 'labor')
     .reduce((s, it) => s + it.price * it.qty, 0)
   const ownerPhone = input.ownerPhone ? normalizePhone(input.ownerPhone) : null
+  assertValidOwnerPhone(ownerPhone)
   const idempotencyKey = input.idempotencyKey?.trim() || null
 
   try {
@@ -312,7 +320,11 @@ export async function updateMotoOrderProgress(orderId: string, progress: MotoPro
   const curIdx = cur ? PROGRESS_SEQ.indexOf(cur as MotoProgress) : -1
   const nextIdx = PROGRESS_SEQ.indexOf(progress)
   if (nextIdx < 0) throw new Error('非法进度')
-  if (curIdx >= nextIdx && progress !== 'picked_up') throw new Error('进度不能回退')
+  // 强制逐步（审计二轮 B）：普通步骤必须相邻推进，防跳步漏中间事件（保养/凭证/提醒均挂在特定步）；
+  // picked_up（交接）保留直达特例（裁决）：未完成(curIdx<5)可任意前置直达交接；
+  // 已完成(curIdx>=5)再交接一律抛错，防 ticketId 被覆盖重发凭证
+  if (curIdx >= nextIdx) throw new Error('进度不能回退')
+  if (progress !== 'picked_up' && curIdx + 1 !== nextIdx) throw new Error('进度需逐步推进')
 
   const cfg = (order.config as Record<string, unknown> | null) ?? {}
   const items = (order.items as unknown as {

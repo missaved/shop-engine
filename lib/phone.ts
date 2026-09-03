@@ -21,3 +21,8 @@ export function normalizePhone(raw?: string | null): string {
   }
   return p
 }
+
+// 手机号格式校验（归一化后）：纯数字 7–15 位，兼容越南 0 开头 10 位 / 中国 11 位 / 国际号换算后的长度
+// 单一来源：food（shop-actions）与 moto（moto-actions）共用，落库前须过此正则，
+// 防非法号落库致客户按 phone 认领/查单匹配不到（2026-09-03 二轮审计 A 收拢）
+export const PHONE_RE = /^\d{7,15}$/

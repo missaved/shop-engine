@@ -11,7 +11,7 @@ import { getCurrentUser } from '@/lib/dal'
 import { isShopExpired } from '@/lib/billing'
 import { formatPrice } from '@/lib/format'
 import { isRateLimited, recordFailure } from '@/lib/rate-limit'
-import { normalizePhone } from '@/lib/phone'
+import { normalizePhone, PHONE_RE } from '@/lib/phone'
 import {
   aggregateCartItems,
   itemSubtotal,
@@ -34,9 +34,7 @@ export type OrderType = 'dine_in' | 'takeaway' | 'delivery'
 const ORDER_TABLE_LOCKED_ORDER_TYPES = new Set<OrderType>(['dine_in'])
 
 // 下单安全上限（防伪造/异常输入，P0-3）
-// 手机号正则：归一化后纯数字，兼容越南 0 开头 10 位 / 中国 11 位 / 国际号（+86/+84 在 normalizePhone 已换算）
-const PHONE_RE = /^\d{7,15}$/
-
+// 手机号正则统一见 lib/phone.ts PHONE_RE（2026-09-03 审计 A 收拢单源）
 // 营业时间是否在营业中（openHours 字符串 "07:00-22:00"，支持跨午夜）
 function isOpenNow(openHours?: string): boolean {
   if (!openHours) return true

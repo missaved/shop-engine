@@ -1,4 +1,6 @@
-// M6b 凭证页：/{locale}/{vertical}/{slug}/ticket/[ticketId]，公开只读（无写接口）
+// M6b 凭证页：/{locale}/{vertical}/{slug}/ticket?ticketId=<uuid>，公开只读（无写接口）
+// 对齐 food 的 track（track/page.tsx 读 searchParams）：shopSubUrl(...,'ticket',{ticketId}) 生成 /ticket?ticketId=x（query），
+// 故本路由读 searchParams.ticketId，与 food 同构；旧的 /ticket/[ticketId]（path）形态废弃（历来的 404、无有效存量）。
 // 安全（6.8）：ticketId=randomUUID 不可猜（防遍历）；查不到/取消单 → 404；PII 最小化（不显示完整手机号）
 import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
@@ -16,15 +18,19 @@ type PaymentConfig = {
 
 export default async function MotoTicketPage({
   params,
+  searchParams,
 }: {
-  params: Promise<{ locale: string; city: string; vertical: string; slug: string; ticketId: string }>
+  params: Promise<{ locale: string; city: string; vertical: string; slug: string }>
+  searchParams: Promise<{ ticketId?: string }>
 }) {
-  const { slug, city: cityParam, vertical: verticalParam, ticketId } = await params
+  const { slug, city: cityParam, vertical: verticalParam } = await params
   // 凭证路由：MOTO 与 LAUNDRY 共享此页（按 vertical 分流渲染）；其余垂直 404
   const vertical = parseVerticalSlug(verticalParam)
   if (vertical !== 'MOTO' && vertical !== 'LAUNDRY') notFound()
   const city = parseCitySlug(cityParam)
   if (!city) notFound()
+  const { ticketId } = await searchParams
+  if (!ticketId) notFound()
   let shop: Awaited<ReturnType<typeof getShopBySlug>>
   try {
     shop = await getShopBySlug(slug, { expectVertical: vertical, expectCity: city })

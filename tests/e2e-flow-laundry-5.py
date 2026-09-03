@@ -62,9 +62,10 @@ def main():
         if not o:
             save_results(SCRIPT_TAG, FLOW, records, started, datetime.now()); return
         oid = o["id"]
-        # 推进：全部 tab → 开始洗涤 → 质检 → 通过 → 待取
+        # 推进：开始洗涤 → 质检 → 通过 → 待取
         page.goto(f"{BASE}/vi/dashboard", wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
-        page.get_by_text("Tất cả").first.click(timeout=ASSERT_TIMEOUT); page.wait_for_timeout(800)
+        # Block E 订单卡默认折叠：先点单号展开，才能点推进按钮
+        page.get_by_text(o["dn"]).first.click(timeout=ACTION_TIMEOUT); page.wait_for_timeout(600)
         page.get_by_text("Bắt đầu giặt").first.click(timeout=ACTION_TIMEOUT); page.wait_for_timeout(1200)
         page.get_by_text("Gửi kiểm tra").first.click(timeout=ACTION_TIMEOUT); page.wait_for_timeout(1200)
         page.get_by_text("Qua kiểm tra").first.click(timeout=ACTION_TIMEOUT); page.wait_for_timeout(1200)

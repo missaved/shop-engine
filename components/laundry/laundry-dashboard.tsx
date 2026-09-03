@@ -4,7 +4,6 @@
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
 import type { LaundryShop } from './types'
-import { LaundryStats } from './laundry-stats'
 import { LaundryOrders } from './laundry-orders'
 import { LaundryReminderList } from './laundry-reminder-list'
 import { QuickLaundry } from './quick-laundry'
@@ -36,6 +35,20 @@ export function LaundryDashboard({
       )}
       <header className="sticky top-0 z-30 -mx-6 mb-2 flex items-center justify-between border-b border-zinc-100 bg-orange-50/90 px-6 py-3 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90">
         <div className="flex items-center gap-2">
+          <SideDrawer
+            trigger={
+              <span className="flex items-center gap-2">
+                <span className="text-lg leading-none text-zinc-400">☰</span>
+                <span className="text-lg font-semibold">{shop.name}</span>
+              </span>
+            }
+            title={<span>{shop.name}</span>}
+          >
+            <div className="flex flex-col gap-4">
+              <LaundrySettings shop={shop} onLogout={onLogout} />
+              <LaundryCustomers currency={shop.currency} />
+            </div>
+          </SideDrawer>
           {view === 'order' && (
             <button
               onClick={() => setView('home')}
@@ -45,21 +58,9 @@ export function LaundryDashboard({
               ←
             </button>
           )}
-          <span className="text-lg font-semibold">{shop.name}</span>
         </div>
         <div className="flex items-center gap-2">
           <LaundryActiveCount />
-          <SideDrawer
-            trigger={
-              <button type="button" className="flex items-center gap-1 rounded-md px-1 py-1 text-lg leading-none text-zinc-400" aria-label={t('menu')}>☰</button>
-            }
-            title={<span>{shop.name}</span>}
-          >
-            <div className="flex flex-col gap-4">
-              <LaundrySettings shop={shop} onLogout={onLogout} />
-              <LaundryCustomers currency={shop.currency} />
-            </div>
-          </SideDrawer>
         </div>
       </header>
 
@@ -71,7 +72,6 @@ export function LaundryDashboard({
           >
             + {t('createOrder')}
           </button>
-          <LaundryStats currency={shop.currency} />
           <LaundryOrders currency={shop.currency} shop={shop} />
           <LaundryReminderList shopName={shop.name} />
         </>

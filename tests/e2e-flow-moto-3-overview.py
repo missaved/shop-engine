@@ -22,7 +22,7 @@ from e2e_common import (
 )
 
 SCRIPT_TAG = "moto-3-overview"
-FLOW = "moto 老板端：概览卡 + 流水 + 车牌筛选"
+FLOW = "moto 老板端：抽屉收支卡 + 流水 + 车牌筛选（F-m 后概览卡入抽屉）"
 
 SLUG = "demo-moto"
 MOTO_PHONE = "0901122334"
@@ -95,8 +95,14 @@ def login_moto_owner(ctx):
 
 
 def stats_card(page, label: str):
-    """概览卡的父容器（label + value 的 card div）"""
+    """概览卡的父容器（label + value 的 card div）—— F-m 后概览 4卡已随 MotoStats 移除，仅历史参考"""
     return page.get_by_text(label).first.locator("xpath=..")
+
+
+def open_drawer(page):
+    """F-m 决策⑤⑥：统计/流水收进 ☰ 抽屉 —— 点 ☰ 店名 trigger 开抽屉"""
+    page.get_by_text("☰").first.click(timeout=ASSERT_TIMEOUT)
+    page.wait_for_timeout(700)
 
 
 def main():
@@ -114,21 +120,17 @@ def main():
         ctx = new_context(p, tag="moto")
         boss = login_moto_owner(ctx)
 
-        # R1 概览 4 卡：实收 500kđ / 待取 1 / 待提醒 1 / 欠款 150kđ
+        # R1 抽屉收支卡（F-m 决策⑤⑥：概览 4卡已随 MotoStats 移出主页）
+        #   抽屉 MotoRevenueCard(Doanh thu) 今日收入 = 500kđ（200k+300k 已付单）；待取/待提醒/欠款数字卡已移除，
+        #   待取由 r2 车牌筛选、欠款由 r4 流水欠款 tab、待提醒由 MotoReminderList(主页仍留) 覆盖。
         def r1():
             boss.reload(wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
-            boss.get_by_text("Thu hôm nay").wait_for(state="visible", timeout=ACTION_TIMEOUT)
+            open_drawer(boss)
+            boss.get_by_text("Doanh thu").first.wait_for(state="visible", timeout=ACTION_TIMEOUT)
             boss.get_by_text("500kđ").first.wait_for(state="visible", timeout=ASSERT_TIMEOUT)
-            boss.get_by_text("150kđ").first.wait_for(state="visible", timeout=ASSERT_TIMEOUT)
-            assert (
-                stats_card(boss, "Chờ lấy xe").get_by_text("1").count() >= 1
-            ), "待取卡数字 != 1"
-            assert (
-                stats_card(boss, "Nhắc bảo dưỡng").get_by_text("1").count() >= 1
-            ), "待提醒卡数字 != 1"
 
         records.append(
-            run_assertion(r1, "moto-r1", "概览卡：实收/待取/待提醒/欠款数值正确", script_tag=SCRIPT_TAG, screenshot_page=boss)
+            run_assertion(r1, "moto-r1", "抽屉收支卡：今日收入 500kđ（实收）", script_tag=SCRIPT_TAG, screenshot_page=boss)
         )
 
         # R2 订单列表车牌筛选：输入 59X111111 只剩 1 条；清空恢复
@@ -148,9 +150,10 @@ def main():
             run_assertion(r2, "moto-r2", "订单列表车牌筛选 + 清空恢复", script_tag=SCRIPT_TAG, screenshot_page=boss)
         )
 
-        # R3 流水收入：今日 income = 500kđ（reload 后等 server action 数据返回，勿只等标题）
+        # R3 流水收入：今日 income = 500kđ（F-m 后 MotoLedger 在 ☰ 抽屉，先开抽屉）
         def r3():
             boss.reload(wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
+            open_drawer(boss)
             ledger = boss.locator("section").filter(has_text="Sổ thu")
             ledger.get_by_text("500kđ").wait_for(state="visible", timeout=ACTION_TIMEOUT)
             assert ledger.get_by_text("500kđ").count() >= 1, "流水收入 != 500kđ"
@@ -159,9 +162,10 @@ def main():
             run_assertion(r3, "moto-r3", "流水视图：今日收入 500kđ", script_tag=SCRIPT_TAG, screenshot_page=boss)
         )
 
-        # R4 流水欠款 tab：只有欠款单 59X333333
+        # R4 流水欠款 tab：只有欠款单 59X333333（先开抽屉操作 MotoLedger）
         def r4():
             boss.reload(wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
+            open_drawer(boss)
             ledger = boss.locator("section").filter(has_text="Sổ thu")
             ledger.get_by_text("500kđ").wait_for(state="visible", timeout=ACTION_TIMEOUT)
             ledger.get_by_role("button", name=re.compile("Còn nợ")).click(timeout=ASSERT_TIMEOUT)
@@ -172,9 +176,10 @@ def main():
             run_assertion(r4, "moto-r4", "流水欠款 tab：仅欠款单", script_tag=SCRIPT_TAG, screenshot_page=boss)
         )
 
-        # R5 流水收回 tab：已结清单 59X111111 + 59X222222，无欠款单
+        # R5 流水收回 tab：已结清单 59X111111 + 59X222222，无欠款单（先开抽屉操作 MotoLedger）
         def r5():
             boss.reload(wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
+            open_drawer(boss)
             ledger = boss.locator("section").filter(has_text="Sổ thu")
             ledger.get_by_text("500kđ").wait_for(state="visible", timeout=ACTION_TIMEOUT)
             ledger.get_by_role("button", name=re.compile("Đã thu")).click(timeout=ASSERT_TIMEOUT)

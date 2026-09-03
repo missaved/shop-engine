@@ -67,10 +67,11 @@ def main():
         ctx = new_context(p, tag="boss")
         boss = login(ctx, MOTO_PHONE, MOTO_PWD)
 
-        # S1 进入设置页：点 ⚙️ → 出现「本店服务预设」
+        # S1 进入设置：Block C/F-m 后设置收进 ☰ 抽屉（旧 ⚙️/Cài đặt 大按钮已删）→ 点 ☰ 店名 trigger
         def s1():
             boss.reload(wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
-            boss.get_by_role("button", name="Cài đặt", exact=True).click(timeout=ASSERT_TIMEOUT)
+            boss.get_by_text("☰").first.click(timeout=ASSERT_TIMEOUT)
+            boss.wait_for_timeout(700)
             boss.get_by_text("Dịch vụ của tiệm").wait_for(state="visible", timeout=ACTION_TIMEOUT)
 
         records.append(

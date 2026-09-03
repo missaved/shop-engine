@@ -54,7 +54,8 @@ T_AMOUNT = "350kđ"
 
 def setup():
     # 幂等清理 + 造测试数据：一条进行中订单（repairing）+ 一条已交接历史单
-    db_exec(f"DELETE FROM \"Order\" WHERE \"displayNo\" IN ('MT-260831-002','MT-260831-003') AND \"shopId\"='{SHOP_ID}'")
+    # 双键清理（orderNo OR displayNo）：防历史同 orderNo 异 displayNo 残留导致整条 INSERT 原子失败
+    db_exec(f"""DELETE FROM "Order" WHERE "shopId"='{SHOP_ID}' AND ("orderNo" IN (990001,990002) OR "displayNo" IN ('MT-260831-002','MT-260831-003'))""")
     db_exec(f"DELETE FROM \"Customer\" WHERE phone IN ({_sql_quote(OWNER_PHONE)},{_sql_quote(CUST2_PHONE)})")
     db_exec(f"UPDATE \"Vehicle\" SET \"ownerCustomerId\"=NULL WHERE \"shopId\"='{SHOP_ID}' AND \"plate\"='{PLATE}'")
     db_exec(f"""
@@ -82,7 +83,7 @@ def main():
         # 预置 locale cookie 跳过浏览器语言自动跳转
         page.goto(f"{BASE}/vi", wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
         ctx.add_cookies([{"name": "locale-picked", "value": "1", "url": BASE}])
-        page.goto(f"{BASE}/vi/s/{SLUG}/lookup", wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
+        page.goto(f"{BASE}/vi/hcm/moto/{SLUG}/lookup", wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
 
         def s1():
             page.get_by_text(T_TITLE, exact=True).wait_for(state="visible", timeout=ACTION_TIMEOUT)
@@ -178,7 +179,7 @@ def main():
         page2 = ctx2.new_page()
         page2.set_default_timeout(ASSERT_TIMEOUT)
         page2.set_default_navigation_timeout(NAV_TIMEOUT)
-        page2.goto(f"{BASE}/vi/s/{SLUG}/lookup", wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
+        page2.goto(f"{BASE}/vi/hcm/moto/{SLUG}/lookup", wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
 
         def s7():
             # 注册新客户（该手机号在 demo-moto 无车辆）

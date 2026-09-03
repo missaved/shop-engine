@@ -127,39 +127,51 @@ def main():
 
         # D3 推进进度至交接 picked_up（素材④）
         def d3():
-            boss.reload(wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
+            boss.goto(f"{BASE}/vi/dashboard", wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
             boss.get_by_text("Lệnh hôm nay").wait_for(state="visible", timeout=ACTION_TIMEOUT)
             for target in ["Đang kiểm tra", "Đã báo giá", "Đang sửa", "Chờ lấy xe", "Đã bàn giao"]:
+                # Block D 订单卡默认折叠：每次点车牌展开(reset 10s 收回)，再点推进按钮
+                boss.get_by_text(PLATE).first.click(timeout=ASSERT_TIMEOUT)
                 boss.get_by_role("button", name=re.compile(f"→ {target}")).first.click(
                     timeout=ASSERT_TIMEOUT
                 )
-                boss.get_by_text(target, exact=True).first.wait_for(
-                    state="visible", timeout=ACTION_TIMEOUT
-                )
+                if target == "Đã bàn giao":
+                    # M6b 交接后自动跳凭证页（既有行为），不再等 badge；回 dashboard 展开截 picked_up 订单卡
+                    boss.wait_for_timeout(1600)
+                    boss.goto(f"{BASE}/vi/dashboard", wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
+                    boss.get_by_text("Lệnh hôm nay").wait_for(state="visible", timeout=ACTION_TIMEOUT)
+                    boss.get_by_text(PLATE).first.click(timeout=ASSERT_TIMEOUT)
+                else:
+                    boss.get_by_text(target, exact=True).first.wait_for(
+                        state="visible", timeout=ACTION_TIMEOUT
+                    )
             shot(boss, "fb-moto-04-picked.png")
 
         records.append(
             run_assertion(d3, "moto-d3", "推进进度至交接（素材④交接完成）", script_tag=SCRIPT_TAG, screenshot_page=boss)
         )
 
-        # D4 概览视图：4 卡 + 流水（素材⑤）
-        # 注：M6b 后交接（d3 最后一步）自动跳凭证页，此处先导航回 dashboard 再验证概览
+        # D4 概览：营业额卡 + 每日流水（素材⑤）—— F-m 后概览 4卡/流水已收进 ☰ 抽屉（决策⑤⑥）
+        # 注：M6b 后交接（d3 最后一步）自动跳凭证页，此处先导航回 dashboard 再开抽屉验证概览
         def d4():
             boss.goto(f"{BASE}/vi/dashboard", wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
-            boss.get_by_text("Thu hôm nay").wait_for(state="visible", timeout=ACTION_TIMEOUT)
-            boss.get_by_text(PRICE).first.wait_for(state="visible", timeout=ASSERT_TIMEOUT)
+            boss.get_by_text("☰").first.click(timeout=ASSERT_TIMEOUT)
+            boss.wait_for_timeout(500)
+            boss.get_by_text("Doanh thu").first.wait_for(state="visible", timeout=ACTION_TIMEOUT)
             ledger = boss.locator("section").filter(has_text="Sổ thu")
             ledger.get_by_text(PRICE).first.wait_for(state="visible", timeout=ACTION_TIMEOUT)
             shot(boss, "fb-moto-05-overview.png")
 
         records.append(
-            run_assertion(d4, "moto-d4", "概览 4 卡 + 流水收入（素材⑤概览）", script_tag=SCRIPT_TAG, screenshot_page=boss)
+            run_assertion(d4, "moto-d4", "抽屉营业额卡(Doanh thu) + 每日流水(Sổ thu)（素材⑤概览）", script_tag=SCRIPT_TAG, screenshot_page=boss)
         )
 
         # D5 设置视图：服务预设/车型/收款/店铺（素材⑥）
         def d5():
             boss.goto(f"{BASE}/vi/dashboard", wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
-            boss.get_by_role("button", name="Cài đặt", exact=True).click(timeout=ASSERT_TIMEOUT)
+            # Block C/F-m：设置收进 ☰ 抽屉，点 ☰ 店名 trigger 开抽屉
+            boss.get_by_text("☰").first.click(timeout=ASSERT_TIMEOUT)
+            boss.wait_for_timeout(500)
             boss.get_by_text("Dịch vụ của tiệm").wait_for(state="visible", timeout=ACTION_TIMEOUT)
             shot(boss, "fb-moto-06-settings.png")
 

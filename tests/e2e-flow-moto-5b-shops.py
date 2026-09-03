@@ -121,23 +121,28 @@ def main():
         )
         ctx2.close()
 
-        # ============ B3 客户侧只读不拦 ============
+        # ============ B3 客户侧只读不拦（订正为 moto 实况）============
+        # 原 URL /vi/s/{slug} 二层路由不存在（404）；moto 顾客入口 = /vi/{city}/{vertical}/{slug}/lookup 查询站。
+        # getShopBySlug 对到期店不拦截（仅 maintenance/not_approved 拦）→ 到期店 lookup 照常可访问。
+        # 到期提示只在老板端横幅（dashboard.subscriptionExpired）；顾客端无 .menu.expired（food 菜单页专属）。
         ctx3 = new_context(p, tag="cust5b")
 
         def b3():
             page = ctx3.new_page()
             page.set_default_timeout(ASSERT_TIMEOUT)
             page.set_default_navigation_timeout(NAV_TIMEOUT)
-            page.goto(f"{BASE}/vi/s/{NEW_SLUG}", wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
+            page.goto(f"{BASE}/vi/hcm/moto/{NEW_SLUG}/lookup", wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
             page.wait_for_timeout(1500)
             body = page.locator("body").inner_text()
-            # 页面正常渲染（店名可见 = 只读可浏览）+ 到期提示（下单被拦）
+            # ① 店名可见（到期不拦浏览/查询）② lookup 查询区可操作（含匿名查询标题/按钮）
             assert NEW_NAME in body, f"店名不可见:\n{body[:200]}"
-            assert CUST_EXPIRED in body, f"客户侧到期提示缺失:\n{body[:300]}"
+            assert "Tra cứu" in body, f"lookup 查询区不可用:\n{body[:300]}"
+            # ③ 顾客端无到期提示文案（到期仅在老板端呈现，锁定语义）
+            assert CUST_EXPIRED not in body, f"顾客端出现到期提示（不应有）:\n{body[:300]}"
             page.close()
 
         records.append(
-            run_assertion(b3, "moto-b3", "客户侧 /s/demo-moto2 只读可浏览 + 到期提示（不拦浏览拦下单）", script_tag=SCRIPT_TAG, screenshot_page=None)
+            run_assertion(b3, "moto-b3", "到期店客户侧 /lookup 只读可访问（店名+查询区可用，无顾客端到期提示）", script_tag=SCRIPT_TAG, screenshot_page=None)
         )
         ctx3.close()
 

@@ -150,16 +150,23 @@ def main():
 
         # D 推进进度直到交接（queued→…→picked_up）
         def d():
-            boss.reload(wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
+            boss.goto(f"{BASE}/vi/dashboard", wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
             boss.get_by_text("Lệnh hôm nay").wait_for(state="visible", timeout=ACTION_TIMEOUT)
             for target in ["Đang kiểm tra", "Đã báo giá", "Đang sửa", "Chờ lấy xe", "Đã bàn giao"]:
+                # Block D 订单卡默认折叠：每次点车牌展开(reset 10s 收回)，再点推进按钮
+                boss.get_by_text(PLATE).first.click(timeout=ASSERT_TIMEOUT)
                 boss.get_by_role("button", name=re.compile(f"→ {target}")).first.click(
                     timeout=ASSERT_TIMEOUT
                 )
-                # badge 精确匹配（避免子串误命中残留按钮 → 误判推进完成）
-                boss.get_by_text(target, exact=True).first.wait_for(
-                    state="visible", timeout=ACTION_TIMEOUT
-                )
+                if target == "Đã bàn giao":
+                    # M6b 交接后自动跳凭证页（既有行为），不再等 badge；回 dashboard 供 e_order DB 校验
+                    boss.wait_for_timeout(1600)
+                    boss.goto(f"{BASE}/vi/dashboard", wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
+                else:
+                    # badge 精确匹配（避免子串误命中残留按钮 → 误判推进完成）
+                    boss.get_by_text(target, exact=True).first.wait_for(
+                        state="visible", timeout=ACTION_TIMEOUT
+                    )
             # 交接后无推进按钮（done）
             left = boss.get_by_role("button", name=re.compile("→ Đã bàn giao")).count()
             assert left == 0, f"残留推进按钮={left}，列表：\n{boss.locator('main').inner_text()[:900]}"

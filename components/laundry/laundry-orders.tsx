@@ -1,12 +1,11 @@
 'use client'
 // L4 订单列表：tab（洗涤中 / 待取 / 已结单）+ 推进/结单/收款/取消 + 逾期分级高亮（>3d/>7d）
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import {
   getLaundryOrders,
   advanceLaundryStatus,
   rewashLaundry,
-  cancelLaundryOrder,
   settleLaundry,
   getLaundryCustomer,
   payLaundryByBalance,
@@ -18,6 +17,13 @@ import {
 } from '@/lib/laundry-actions'
 import { formatPrice } from '@/lib/format'
 import type { LaundryOrderPlain, LaundryShop } from './types'
+
+// 订单时间：dd/MM HH:mm（折叠行展示用，照 food order-list）
+function formatTime(iso: string): string {
+  const d = new Date(iso)
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${p(d.getDate())}/${p(d.getMonth() + 1)} ${p(d.getHours())}:${p(d.getMinutes())}`
+}
 
 const STATUS_KEY: Record<string, string> = {
   washing_pending: 'progressWashingPending',
@@ -49,7 +55,6 @@ const nextOf = (s: string | null): LaundryProgress | null => {
 export function LaundryOrders({ currency, shop }: { currency: string; shop: LaundryShop }) {
   const t = useTranslations('laundry')
   const [orders, setOrders] = useState<LaundryOrderPlain[]>([])
-  const [tab, setTab] = useState<LaundryProgress | 'all'>('washing')
   const [pays, setPays] = useState<Record<string, string>>({})
   const [busyId, setBusyId] = useState('')
   const [settleOpenId, setSettleOpenId] = useState<string | null>(null)
@@ -92,6 +97,35 @@ export function LaundryOrders({ currency, shop }: { currency: string; shop: Laun
     }
   }
 
+  // Block E：订单卡默认折叠成一行（单号｜状态｜时间｜金额），点展开、10s 自动收回（照 food order-list）
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
+  const isFolded = (o: LaundryOrderPlain) => collapsed[o.id] ?? true
+  const collapseTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
+  const scheduleAutoCollapse = useCallback((id: string) => {
+    const timers = collapseTimersRef.current
+    const prev = timers.get(id)
+    if (prev) clearTimeout(prev)
+    timers.set(
+      id,
+      setTimeout(() => {
+        setCollapsed((prev) => ({ ...prev, [id]: true }))
+        timers.delete(id)
+      }, 10_000),
+    )
+  }, [])
+  const expandOrder = (id: string) => {
+    setCollapsed((prev) => ({ ...prev, [id]: false }))
+    scheduleAutoCollapse(id)
+  }
+  // 卸载时清空所有自动收回计时器（防泄漏）
+  useEffect(() => {
+    const timers = collapseTimersRef.current
+    return () => {
+      timers.forEach((timer) => clearTimeout(timer))
+      timers.clear()
+    }
+  }, [])
+
   // A3 次要行：复制摘要 / 发Zalo（复用 laundry-ticket 文案结构）
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const buildText = (o: LaundryOrderPlain) => {
@@ -111,23 +145,25 @@ export function LaundryOrders({ currency, shop }: { currency: string; shop: Laun
     if (phone) window.open(`https://zalo.me/${phone}`, '_blank')
   }
 
+  // 进行中集合（与 countLaundryActive 的 ACTIVE 一致）：这些单恒显、置顶
+  const ACTIVE = ['submitted', 'washing_pending', 'washing', 'qc', 'ready']
   // 终态(已结单)只显示当天（UTC+7 业务日，vs food 一致）；有开关可查看全部历史
   const isTodayVN = (iso: string) => {
     const off = 7 * 60 * 60 * 1000
     const day = (ms: number) => new Date(ms + off).toISOString().slice(0, 10)
     return day(new Date(iso).getTime()) === day(Date.now())
   }
-  const filtered = orders.filter((o) => {
-    if (tab === 'all') return true
-    if (o.laundryStatus !== tab) return false
-    // 「已结单」默认只显示当天
-    if (tab === 'collected' && !showAllCollected) return isTodayVN(o.createdAt)
-    return true
+  // 平铺规则（用户定稿 ①②③）：进行中置顶 / 终态仅当天 / 取消单默认隐藏（查全部可翻到）
+  const isActive = (o: LaundryOrderPlain) => ACTIVE.includes(o.laundryStatus)
+  const shown = orders.filter((o) => {
+    if (o.status === 'CANCELLED') return showAllCollected // ③ 取消单仅"查全部"可见
+    if (isActive(o)) return true // ① 进行中恒显
+    return showAllCollected || isTodayVN(o.createdAt) // ② 终态仅当天（collected）
   })
-  const submittedCount = orders.filter((o) => o.laundryStatus === 'submitted').length
-
-  const tabLabel = (k: LaundryProgress | 'all') =>
-    k === 'all' ? t('tabAll') : t(STATUS_KEY[k] ?? 'progressWashingPending')
+  // ① 进行中置顶、终态沉底；各组内按 createdAt desc（后端已 desc）
+  const activeList = shown.filter(isActive)
+  const terminalList = shown.filter((o) => !isActive(o))
+  const ordered = [...activeList, ...terminalList]
 
   return (
     <section className="flex flex-col gap-3">
@@ -163,35 +199,16 @@ export function LaundryOrders({ currency, shop }: { currency: string; shop: Laun
           })}
         </div>
       )}
-      <div className="flex gap-1 overflow-x-auto rounded-xl bg-zinc-100 p-1 dark:bg-zinc-800">
-        {(['all', 'submitted', 'washing_pending', 'washing', 'qc', 'ready', 'collected'] as const).map((k) => (
-          <button
-            key={k}
-            onClick={() => setTab(k)}
-            className={`flex-none whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-              tab === k ? 'bg-white text-zinc-900 shadow-sm dark:bg-zinc-700 dark:text-white' : 'text-zinc-500'
-            }`}
-          >
-            {tabLabel(k)}
-            {k === 'submitted' && submittedCount > 0 && (
-              <span className="ml-1.5 inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-xs font-bold text-white">{submittedCount}</span>
-            )}
-          </button>
-        ))}
-      </div>
-      {tab === 'collected' && (
+      {searchResults === null && (
         <button
           onClick={() => setShowAllCollected((v) => !v)}
-          className="self-start rounded-lg border border-zinc-200 px-3 py-1 text-xs font-medium text-zinc-500 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:hover:bg-zinc-800"
+          className="self-start text-xs text-zinc-500 underline"
         >
           {showAllCollected ? t('todayOnly') : t('viewAll')}
         </button>
       )}
-
-      {filtered.length === 0 && <p className="py-6 text-center text-sm text-zinc-400">{t('empty')}</p>}
-
       <div className="flex flex-col gap-3">
-        {filtered.map((o) => {
+        {ordered.map((o) => {
           const debt = Number(o.total) - Number(o.paidAmount)
           const isReady = o.laundryStatus === 'ready'
           const next = nextOf(o.laundryStatus)
@@ -202,6 +219,27 @@ export function LaundryOrders({ currency, shop }: { currency: string; shop: Laun
                 ? 'bg-amber-500'
                 : 'bg-green-500'
           const st = STATUS_STYLE[o.laundryStatus ?? ''] ?? STATUS_STYLE.cancelled
+          // Block E：默认折叠成一行（单号｜状态｜时间｜金额），点展开、10s 自动收回
+          const folded = isFolded(o)
+          if (folded) {
+            return (
+              <div
+                key={o.id}
+                onClick={() => expandOrder(o.id)}
+                className="flex cursor-pointer items-center justify-between rounded-xl border border-zinc-200 bg-white px-4 py-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+              >
+                <div className="flex items-center gap-2 text-left">
+                  <span className="text-xs text-zinc-400">▸</span>
+                  <span className="font-medium">{o.displayNo}</span>
+                  {o.laundryStatus && (
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${st.badge}`}>{t(STATUS_KEY[o.laundryStatus] ?? 'progressWashingPending')}</span>
+                  )}
+                  <span className="text-xs text-zinc-400">{formatTime(o.createdAt)}</span>
+                </div>
+                <span className="font-medium">{formatPrice(Number(o.total), currency)}</span>
+              </div>
+            )
+          }
           return (
             <div
               key={o.id}
@@ -210,6 +248,12 @@ export function LaundryOrders({ currency, shop }: { currency: string; shop: Laun
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-semibold">{o.displayNo}</span>
+                  <button
+                    onClick={() => setCollapsed((prev) => ({ ...prev, [o.id]: true }))}
+                    className="text-xs text-zinc-400 hover:text-zinc-600"
+                  >
+                    ▾
+                  </button>
                   {o.tagCode && <span className="text-xs text-zinc-400">{o.tagCode}</span>}
                   <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${st.badge}`}>{t(STATUS_KEY[o.laundryStatus] ?? 'progressWashingPending')}</span>
                   <span className="flex items-center gap-1 text-xs text-zinc-500">

@@ -824,7 +824,13 @@
     "description": "Description",
     "shopDescZh": "Intro (CN)",
     "shopDescEn": "Intro (EN)",
-    "activeCount": "Active {n}"
+    "activeCount": "Active {n}",
+    "viewAll": "View all",
+    "todayOnly": "Today only",
+    "debtAmount": "Owe {amount}",
+    "paid": "Paid",
+    "partial": "Partial",
+    "unpaid": "Unpaid"
   },
   "customer": {
     "title": "Vehicle lookup",

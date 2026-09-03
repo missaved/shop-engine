@@ -824,7 +824,13 @@
     "description": "รายละเอียด",
     "shopDescZh": "รายละเอียด (CN)",
     "shopDescEn": "รายละเอียด (EN)",
-    "activeCount": "กำลังดำเนินการ {n}"
+    "activeCount": "กำลังดำเนินการ {n}",
+    "viewAll": "ดูทั้งหมด",
+    "todayOnly": "วันนี้เท่านั้น",
+    "debtAmount": "ค้าง {amount}",
+    "paid": "ชำระแล้ว",
+    "partial": "บางส่วน",
+    "unpaid": "ยังไม่ชำระ"
   },
   "customer": {
     "title": "ตรวจสอบรถ",

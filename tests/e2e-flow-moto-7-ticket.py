@@ -6,6 +6,7 @@ import sys
 import uuid
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import urlparse, parse_qs
 
 sys.path.insert(0, str(Path(__file__).parent / "lib"))
 from e2e_common import (
@@ -83,12 +84,15 @@ def main():
 
         def s1():
             # 幂等：重试场景下若已在凭证页则跳过推进动作（推进是一次性状态变化）
-            if "/ticket/" not in page.url:
+            if "/ticket?" not in page.url:
                 # 测试单是唯一 waiting_pickup → 「→ Đã bàn giao」按钮唯一
+                # Block D 订单卡默认折叠：先点车牌展开折叠卡，再点推进按钮
+                page.get_by_text(PLATE, exact=True).first.click(timeout=ASSERT_TIMEOUT)
+                page.wait_for_timeout(400)
                 page.get_by_role("button", name=T_PICKUP_BTN, exact=True).first.click(timeout=ASSERT_TIMEOUT)
-                page.wait_for_url(lambda url: "/ticket/" in url, timeout=ACTION_TIMEOUT)
+                page.wait_for_url(lambda url: "/ticket?" in url, timeout=ACTION_TIMEOUT)
                 page.wait_for_load_state("domcontentloaded", timeout=NAV_TIMEOUT)
-            ticket_id["v"] = page.url.rstrip("/").split("/")[-1]
+            ticket_id["v"] = parse_qs(urlparse(page.url).query).get("ticketId", [""])[0]
             # 凭证内容：标题/订单号/车牌/进度/金额/收款（heading 定位避开 __next-route-announcer__）
             page.get_by_role("heading", name=T_TITLE, exact=True).wait_for(state="visible", timeout=ACTION_TIMEOUT)
             body = page.locator("body")
@@ -152,7 +156,7 @@ def main():
             page5.set_default_timeout(ASSERT_TIMEOUT)
             page5.set_default_navigation_timeout(NAV_TIMEOUT)
             resp = page5.goto(
-                f"{BASE}/vi/s/{SLUG}/ticket/{uuid.uuid4().hex}", wait_until="domcontentloaded", timeout=NAV_TIMEOUT
+                f"{BASE}/vi/hcm/moto/{SLUG}/ticket?ticketId={uuid.uuid4().hex}", wait_until="domcontentloaded", timeout=NAV_TIMEOUT
             )
             assert resp.status == 404, f"随机 ticketId 未 404: {resp.status}"
             page5.close()
@@ -170,7 +174,7 @@ def main():
             page6.set_default_timeout(ASSERT_TIMEOUT)
             page6.set_default_navigation_timeout(NAV_TIMEOUT)
             resp = page6.goto(
-                f"{BASE}/vi/s/demo-pho/ticket/abc", wait_until="domcontentloaded", timeout=NAV_TIMEOUT
+                f"{BASE}/vi/hcm/food/demo-pho/ticket?ticketId=abc", wait_until="domcontentloaded", timeout=NAV_TIMEOUT
             )
             assert resp.status == 404, f"food 店凭证页未 404: {resp.status}"
             page6.close()
@@ -195,7 +199,7 @@ def main():
                 pg = c7.new_page()
                 pg.set_default_timeout(ASSERT_TIMEOUT)
                 pg.set_default_navigation_timeout(NAV_TIMEOUT)
-                pg.goto(f"{BASE}/{loc}/s/{SLUG}/ticket/{tid}", wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
+                pg.goto(f"{BASE}/{loc}/hcm/moto/{SLUG}/ticket?ticketId={tid}", wait_until="domcontentloaded", timeout=NAV_TIMEOUT)
                 pg.get_by_text(title, exact=True).wait_for(state="visible", timeout=ACTION_TIMEOUT)
                 b = pg.locator("body").inner_text()
                 assert "Missing message" not in b, f"{loc} Missing message"

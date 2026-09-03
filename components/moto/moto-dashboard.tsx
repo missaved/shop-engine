@@ -10,12 +10,11 @@ import { VehicleForm } from './vehicle-form'
 import { QuickOrder } from './quick-order'
 import { MotoOrders } from './moto-orders'
 import { MotoReminderList } from './moto-reminder-list'
-import { MotoStats } from './moto-stats'
 import { MotoLedger } from './moto-ledger'
 import { MotoSettings } from './moto-settings'
 import { BackToTop } from '@/components/dashboard/back-to-top'
-import { LocaleSwitcher } from '@/components/locale-switcher'
 import { MotoActiveCount } from './moto-active-count'
+import { SideDrawer } from '@/components/dashboard/side-drawer'
 import type { MotoShop, VehiclePlain } from './types'
 
 export function MotoDashboard({
@@ -30,7 +29,7 @@ export function MotoDashboard({
   const t = useTranslations('moto')
   // 订阅到期横幅（M5.2b 垂直无关链路）：与 food 老板端同文案，dashboard namespace
   const td = useTranslations('dashboard')
-  const [view, setView] = useState<'home' | 'vehicle' | 'order' | 'settings'>('home')
+  const [view, setView] = useState<'home' | 'vehicle' | 'order'>('home')
   const [vehicle, setVehicle] = useState<VehiclePlain | null>(null)
   const [editing, setEditing] = useState(false)
   const [plate, setPlate] = useState('')
@@ -52,48 +51,44 @@ export function MotoDashboard({
       {/* 顶栏：店名 + 新开单 + 退出 */}
       <header className="sticky top-0 z-30 -mx-6 mb-2 flex items-center justify-between border-b border-zinc-100 bg-orange-50/90 px-6 py-3 backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90">
         <div className="flex items-center gap-2">
+          <SideDrawer
+            trigger={
+              <span className="flex items-center gap-2">
+                <span className="text-lg leading-none text-zinc-400">☰</span>
+                <span className="text-lg font-semibold">{shop.name}</span>
+              </span>
+            }
+            title={<span>{shop.name}</span>}
+          >
+            <div className="flex flex-col gap-4">
+              <MotoSettings shop={shop} onLogout={onLogout} />
+              {/* F-m 每日流水收进抽屉（决策⑤） */}
+              <MotoLedger currency={shop.currency} />
+            </div>
+          </SideDrawer>
           {view !== 'home' && (
             <button
-              onClick={() => {
-                setView('home')
-                setEditing(false)
-              }}
+              onClick={() => { setView('home'); setEditing(false) }}
               className="mr-1 text-lg text-zinc-400"
               aria-label={t('back')}
             >
               ←
             </button>
           )}
-          <span className="text-lg font-semibold">{shop.name}</span>
         </div>
         <div className="flex items-center gap-2">
           <MotoActiveCount />
-          <LocaleSwitcher />
-          {view === 'home' && (
-            <>
-              <button
-                onClick={() => openOrder(null, '')}
-                className="rounded-full bg-amber-500 px-3 py-1.5 text-sm font-medium text-white shadow-sm"
-              >
-                + {t('createOrder')}
-              </button>
-              {/* M4.3 设置入口 */}
-              <button
-                onClick={() => setView('settings')}
-                aria-label={t('settings')}
-                className="rounded-full border border-zinc-200 px-2.5 py-1.5 text-sm dark:border-zinc-700"
-              >
-                ⚙️
-              </button>
-            </>
-          )}
         </div>
       </header>
 
       {view === 'home' && (
         <>
-          {/* M4.1 概览卡：今日实收 / 待取 / 待提醒 / 欠款 */}
-          <MotoStats currency={shop.currency} />
+          <button
+            onClick={() => openOrder(null, '')}
+            className="self-start rounded-full bg-amber-500 px-4 py-2 text-sm font-medium text-white shadow-sm"
+          >
+            + {t('createOrder')}
+          </button>
           <PlateSearch
             onFound={(v) => {
               setVehicle(v)
@@ -108,20 +103,8 @@ export function MotoDashboard({
             }}
           />
           <MotoReminderList shopName={shop.name} />
-          <MotoOrders vertical={shop.vertical} slug={shop.slug} currency={shop.currency} city={shop.city} />
-          {/* M4.2 流水视图：按日收入 / 欠款 / 收回 */}
-          <MotoLedger currency={shop.currency} />
+          <MotoOrders vertical={shop.vertical} slug={shop.slug} currency={shop.currency} city={shop.city} shopName={shop.name} shopPhone={shop.phone} />
         </>
-      )}
-
-      {view === 'settings' && (
-        <MotoSettings
-          shop={shop}
-          onLogout={onLogout}
-          onSaved={() => {
-            /* 数据均走 server action + client 轮询，保存后无需额外刷新 */
-          }}
-        />
       )}
 
       {view === 'vehicle' &&

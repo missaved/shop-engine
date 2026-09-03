@@ -476,11 +476,11 @@ function serializeMotoOrder(o: {
 
 export async function getMotoOrders() {
   const user = await requireOwner()
-  const todayStart = vietnamTodayStartUtc()
+  // ①②③ 平铺：后端返回全量（对齐 laundry getLaundryOrders），前端再按「进行中恒显/终态仅当天/取消单默认隐藏」分层
   const orders = await prisma.order.findMany({
-    where: { shopId: user.shopId, createdAt: { gte: todayStart } },
+    where: { shopId: user.shopId },
     orderBy: { createdAt: 'desc' },
-    take: 50,
+    take: 100,
   })
   return orders.map(serializeMotoOrder)
 }

@@ -824,7 +824,13 @@
     "description": "Giới thiệu",
     "shopDescZh": "Giới thiệu (Trung)",
     "shopDescEn": "Giới thiệu (Anh)",
-    "activeCount": "Đang xử lý {n}"
+    "activeCount": "Đang xử lý {n}",
+    "viewAll": "Xem tất cả",
+    "todayOnly": "Chỉ hôm nay",
+    "debtAmount": "Nợ {amount}",
+    "paid": "Đã thu",
+    "partial": "Thu một phần",
+    "unpaid": "Chưa thu"
   },
   "customer": {
     "title": "Tra cứu xe",

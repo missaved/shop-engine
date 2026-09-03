@@ -824,7 +824,13 @@
     "description": "店铺简介",
     "shopDescZh": "中文简介",
     "shopDescEn": "英文简介",
-    "activeCount": "进行中 {n}"
+    "activeCount": "进行中 {n}",
+    "viewAll": "查看全部",
+    "todayOnly": "仅今天",
+    "debtAmount": "欠 {amount}",
+    "paid": "已收清",
+    "partial": "部分",
+    "unpaid": "未收"
   },
   "customer": {
     "title": "车辆查询",
